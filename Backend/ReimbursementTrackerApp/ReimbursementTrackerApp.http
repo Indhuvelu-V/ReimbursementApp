@@ -1,0 +1,6 @@
+@ReimbursementTrackerApp_HostAddress = http://localhost:5138
+
+GET {{ReimbursementTrackerApp_HostAddress}}/api/Reimbursement/
+Accept: application/json
+
+###

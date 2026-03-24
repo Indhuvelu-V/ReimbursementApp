@@ -1,0 +1,25 @@
+<div class="policy-container">
+
+  <h2>Reimbursement Policies</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Policy ID</th>
+        <th>Category</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let policy of policies">
+        <td>{{ policy.policyId }}</td>
+        <td><span class="category">{{ policy.categoryName }}</span></td>
+        <td>{{ policy.description }}</td>
+      </tr>
+      <tr *ngIf="!policies.length">
+        <td colspan="3" style="text-align:center; color:#94a3b8;">No policies found.</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>

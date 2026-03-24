@@ -1,0 +1,78 @@
+/* ============ Global Loader Overlay ============ */
+.loader-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.spinner-ring {
+  padding: 20px;
+  background: #1e293b;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+
+/* ============ Typed Toasts ============ */
+.toast-typed {
+  min-width: 300px;
+  max-width: 420px;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: slideInRight 0.25s ease;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(80px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+.toast-typed .toast-body {
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+}
+
+.toast-icon { font-size: 18px; flex-shrink: 0; }
+
+/* Success */
+.toast-success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+.toast-success .toast-icon { color: #bbf7d0; }
+
+/* Error */
+.toast-error {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+.toast-error .toast-icon { color: #fecaca; }
+
+/* Warning */
+.toast-warning {
+  background: linear-gradient(135deg, #d97706, #b45309);
+}
+.toast-warning .toast-icon { color: #fef3c7; }
+
+/* Info */
+.toast-info {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+.toast-info .toast-icon { color: #bfdbfe; }
+
+/* ============ Global responsive table scroll ============ */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ============ Scrollbar styling ============ */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0f172a; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }

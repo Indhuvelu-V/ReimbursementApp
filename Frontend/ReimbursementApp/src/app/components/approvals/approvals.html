@@ -1,0 +1,99 @@
+<div class="approval-container">
+
+  <h2><i class="bi bi-check2-square me-2"></i>Approvals — {{ role }}</h2>
+
+  <div *ngIf="loading" class="text-center my-3">
+    <div class="spinner-border text-primary"></div>
+  </div>
+
+  <!-- ============ MANAGER APPROVAL FORM ============ -->
+  <div *ngIf="role === 'Manager'" class="approval-form-card">
+
+    <h5 class="mb-3"><i class="bi bi-person-check me-2"></i>Manager Approval</h5>
+
+    <form [formGroup]="approvalForm" (ngSubmit)="approve()">
+
+      <!-- Req 10: Dropdown of Submitted expenses -->
+      <div class="form-group">
+        <label>Select Submitted Expense</label>
+        <select formControlName="expenseId" class="dark-input">
+          <option value="">— Choose from submitted expenses —</option>
+          <option *ngFor="let e of submittedExpenses" [value]="e.expenseId">
+            {{ e.expenseId }} | {{ e.categoryName }} | ₹{{ e.amount }} | {{ e.expenseDate }}
+          </option>
+        </select>
+        <small class="hint">Or type an Expense ID below directly</small>
+        <input formControlName="expenseId" placeholder="Expense ID" class="dark-input mt-1" />
+      </div>
+
+      <div class="form-group">
+        <label>Decision</label>
+        <select formControlName="status" class="dark-input">
+          <option value="approved">✅ Approve</option>
+          <option value="rejected">❌ Reject</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Comments</label>
+        <input formControlName="comments" placeholder="Optional comments..." class="dark-input" />
+      </div>
+
+      <button type="submit" class="btn-submit-approval" [disabled]="approvalForm.invalid">
+        <i class="bi bi-send me-2"></i>Submit Decision
+      </button>
+
+    </form>
+
+  </div>
+
+  <!-- ============ ADMIN VIEW TABLE ============ -->
+  <div *ngIf="role === 'Admin' && !loading">
+
+    <div *ngIf="!approvals.length" class="no-data">
+      <i class="bi bi-inbox me-2"></i>No approvals found.
+    </div>
+
+    <div *ngIf="approvals.length" class="table-responsive">
+      <table class="approval-table">
+        <thead>
+          <tr>
+            <th>Expense ID</th>
+            <th>Approver</th>
+            <th>Level</th>
+            <th>Status</th>
+            <th>Approved At</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of approvals">
+            <td><code>{{ a.expenseId }}</code></td>
+            <td>{{ a.approverName }}</td>
+            <td>
+              <span class="level-badge" [ngClass]="a.level === 'Manager' ? 'level-mgr' : 'level-fin'">
+                {{ a.level }}
+              </span>
+            </td>
+            <td>
+              <span [ngClass]="{
+                'status-approved': a.status === 'Approved',
+                'status-rejected': a.status === 'Rejected',
+                'status-pending':  a.status === 'Pending'
+              }">{{ a.status }}</span>
+            </td>
+            <td>{{ a.approvedAt | date:'short' }}</td>
+            <td>{{ a.comments || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Non-authorized message -->
+  <div *ngIf="role !== 'Manager' && role !== 'Admin'" class="alert-msg">
+    <i class="bi bi-lock me-2"></i>You are not authorized to access approvals.
+  </div>
+
+</div>

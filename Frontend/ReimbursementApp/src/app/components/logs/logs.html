@@ -1,0 +1,128 @@
+<div class="logs-container">
+
+  <h2 class="text-center">
+    <i class="bi bi-journal-text me-2"></i>Audit Logs
+  </h2>
+
+  <!-- Non-Admin message — UNCHANGED -->
+  <div *ngIf="isOtherUser()" class="alert alert-warning text-center">
+    <i class="bi bi-lock me-2"></i>You are not authorized to view audit logs.
+  </div>
+
+  <!-- Admin view — UNCHANGED wrapper -->
+  <div *ngIf="isAdmin()">
+
+    <!-- ===== NEW: DATE FILTER BAR ===== -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label">From</label>
+        <input type="date" class="filter-input" [(ngModel)]="fromDate" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">To</label>
+        <input type="date" class="filter-input" [(ngModel)]="toDate" />
+      </div>
+      <div class="filter-actions">
+        <button class="btn-filter-apply" (click)="applyFilter()">
+          <i class="bi bi-funnel me-1"></i>Apply
+        </button>
+        <button class="btn-filter-clear" (click)="clearFilter()">
+          <i class="bi bi-x-circle me-1"></i>Clear
+        </button>
+      </div>
+      <span class="filter-total">{{ total }} record{{ total !== 1 ? 's' : '' }}</span>
+    </div>
+    <!-- ===== END NEW FILTER BAR ===== -->
+
+    <div class="table-responsive">
+      <table class="table table-dark table-hover logs-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Role</th>
+            <th>Action</th>
+            <th>Amount</th>
+            <th>Date</th>  <!-- FIXED: now renders via formatDate() for correct UTC→IST -->
+            <th>Delete</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let log of logs; let i = index">
+            <td class="idx-cell">{{ (page - 1) * size + i + 1 }}</td>
+            <td>{{ log.userName || log.userId || '—' }}</td>
+            <td>
+              <span class="role-badge" [ngClass]="{
+                'role-admin':    log.role === 'Admin'    || log.role === 0,
+                'role-employee': log.role === 'Employee' || log.role === 1,
+                'role-manager':  log.role === 'Manager'  || log.role === 2,
+                'role-finance':  log.role === 'Finance'  || log.role === 3
+              }">{{ log.role }}</span>
+            </td>
+            <td class="action-cell" [title]="log.action">{{ log.action }}</td>
+            <td class="amount-cell">{{ formatAmount(log.amount) }}</td>
+            <!-- FIXED: was  log.date | date:'dd MMM yy, HH:mm'  (no timezone = wrong)
+                 Now uses formatDate() which converts UTC → IST correctly -->
+            <td class="date-cell">{{ formatDate(log.date) }}</td>
+            <td>
+              <!-- UNCHANGED: custom confirmation popup -->
+              <button class="btn btn-danger btn-sm" (click)="confirmDelete(log)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="!logs.length">
+            <td colspan="7" class="text-center text-muted py-4">
+              <i class="bi bi-inbox me-2"></i>No logs found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination — UNCHANGED -->
+    <div class="pagination-row d-flex justify-content-between align-items-center mt-3">
+      <button class="btn btn-outline-light btn-sm" (click)="prevPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i> Prev
+      </button>
+      <span class="page-info">Page {{ page }} of {{ totalPages() }} &nbsp;|&nbsp; {{ total }} records</span>
+      <button class="btn btn-outline-light btn-sm" (click)="nextPage()" [disabled]="page * size >= total">
+        Next <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ===== DELETE CONFIRMATION POPUP — UNCHANGED ===== -->
+<div *ngIf="showDeleteConfirm" class="confirm-overlay" (click)="cancelDelete()">
+  <div class="confirm-box" (click)="$event.stopPropagation()">
+
+    <div class="confirm-icon">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+
+    <h5>Delete Audit Log?</h5>
+    <p>Are you sure you want to delete this log?</p>
+
+    <div *ngIf="pendingDeleteLog" class="confirm-log-detail">
+      <strong>Action:</strong> {{ pendingDeleteLog.action }}<br/>
+      <strong>User:</strong>   {{ pendingDeleteLog.userName || '—' }}<br/>
+      <!-- FIXED: date display in popup also uses formatDate() -->
+      <strong>Date:</strong>   {{ formatDate(pendingDeleteLog.date) }}
+    </div>
+
+    <p class="confirm-warning">This action <strong>cannot be undone</strong>.</p>
+
+    <div class="confirm-actions">
+      <button class="btn-confirm-cancel" (click)="cancelDelete()">
+        <i class="bi bi-x-circle me-1"></i>Cancel
+      </button>
+      <button class="btn-confirm-delete" (click)="executeDelete()">
+        <i class="bi bi-trash me-1"></i>Yes, Delete
+      </button>
+    </div>
+
+  </div>
+</div>

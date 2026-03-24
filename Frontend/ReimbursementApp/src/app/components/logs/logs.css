@@ -1,0 +1,245 @@
+.logs-container {
+  margin: 20px;
+  padding: 25px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #0f172a, #1f2937);
+  color: #f1f5f9;
+}
+
+h2 { color: #38bdf8; margin-bottom: 20px; }
+
+/* Table — UNCHANGED */
+.logs-table th {
+  background: #020617;
+  color: #38bdf8;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding: 12px 10px;
+}
+.logs-table td {
+  background: #1f2937;
+  font-size: 13px;
+  padding: 10px;
+  vertical-align: middle;
+}
+.logs-table tbody tr:hover { background: #334155; }
+
+.idx-cell { color: #64748b; font-size: 12px; }
+
+.action-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e2e8f0;
+  cursor: default;
+}
+
+.amount-cell { color: #22c55e; font-weight: 600; white-space: nowrap; }
+
+/* NEW: date cell — monospace for alignment */
+.date-cell {
+  white-space: nowrap;
+  color: #94a3b8;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Role badges — UNCHANGED */
+.role-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.role-admin    { background: rgba(239,68,68,0.2);   color: #ef4444; border: 1px solid #ef4444; }
+.role-employee { background: rgba(56,189,248,0.2);  color: #38bdf8; border: 1px solid #38bdf8; }
+.role-manager  { background: rgba(168,85,247,0.2);  color: #a855f7; border: 1px solid #a855f7; }
+.role-finance  { background: rgba(34,197,94,0.2);   color: #22c55e; border: 1px solid #22c55e; }
+
+/* Delete button — UNCHANGED */
+.btn-danger {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  transition: all 0.2s;
+}
+.btn-danger:hover { transform: scale(1.05); box-shadow: 0 3px 10px rgba(239,68,68,0.4); }
+
+/* Alert — UNCHANGED */
+.alert-warning {
+  background: rgba(251,191,36,0.1);
+  border: 1px solid #facc15;
+  color: #facc15;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+/* Pagination — UNCHANGED */
+.pagination-row { padding-top: 4px; }
+.page-info { color: #94a3b8; font-size: 13px; }
+.btn-outline-light { border-color: #64748b; color: #e2e8f0; font-size: 12px; }
+.btn-outline-light:hover { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+
+/* ============================================================
+   NEW: DATE FILTER BAR
+   ============================================================ */
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.filter-input {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  min-width: 150px;
+}
+
+.filter-input:focus { border-color: #3b82f6; }
+
+/* date picker icon colour fix */
+.filter-input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.btn-filter-apply {
+  background: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-filter-apply:hover { background: #2563eb; transform: translateY(-1px); }
+
+.btn-filter-clear {
+  background: transparent;
+  border: 1px solid #475569;
+  color: #94a3b8;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-filter-clear:hover { border-color: #ef4444; color: #ef4444; }
+
+.filter-total {
+  margin-left: auto;
+  font-size: 12px;
+  color: #64748b;
+  align-self: center;
+}
+
+/* ============================================================
+   DELETE CONFIRMATION POPUP — UNCHANGED
+   ============================================================ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  backdrop-filter: blur(2px);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.confirm-box {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 32px 28px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.confirm-icon { font-size: 2.5rem; color: #f59e0b; margin-bottom: 14px; }
+.confirm-box h5 { color: #f1f5f9; font-size: 1.2rem; margin-bottom: 8px; }
+.confirm-box p  { color: #94a3b8; font-size: 14px; margin-bottom: 10px; }
+
+.confirm-log-detail {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #cbd5e1;
+  text-align: left;
+  margin: 12px 0;
+  line-height: 1.8;
+}
+
+.confirm-warning { color: #f87171 !important; font-size: 13px !important; margin-bottom: 20px !important; }
+
+.confirm-actions { display: flex; gap: 12px; justify-content: center; }
+
+.btn-confirm-cancel {
+  background: #334155; color: #e2e8f0; border: none; border-radius: 8px;
+  padding: 10px 22px; font-size: 14px; cursor: pointer; transition: background 0.2s;
+}
+.btn-confirm-cancel:hover { background: #475569; }
+
+.btn-confirm-delete {
+  background: linear-gradient(45deg, #ef4444, #dc2626); color: #fff;
+  border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-confirm-delete:hover { background: #b91c1c; transform: translateY(-1px); }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .filter-bar   { flex-direction: column; align-items: stretch; }
+  .filter-total { margin-left: 0; }
+  .filter-input { min-width: unset; width: 100%; }
+}

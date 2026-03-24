@@ -1,0 +1,65 @@
+.bell-wrapper { position: relative; display: inline-block; }
+ 
+.bell-container { cursor: pointer; position: relative; padding: 4px; border-radius: 50%; transition: all 0.25s ease; }
+ 
+.bell-icon { font-size: 20px; color: #e2e8f0; transition: color 0.25s, transform 0.25s; }
+.bell-container:hover .bell-icon { color: #38bdf8; transform: rotate(20deg) scale(1.1); }
+ 
+.badge-count {
+  position: absolute; top: -4px; right: -8px;
+  background: #ef4444; color: #fff;
+  font-size: 10px; font-weight: 700;
+  padding: 1px 5px; border-radius: 999px; min-width: 18px; text-align: center;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+  50%       { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+}
+ 
+.dropdown-box {
+  position: absolute; right: 0; top: 38px; width: 296px;
+  background: #1e293b; color: #e2e8f0;
+  border-radius: 10px; box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+  z-index: 2000; overflow: hidden;
+  animation: slideDown 0.18s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+ 
+.dropdown-header {
+  padding: 11px 14px; font-weight: 700; font-size: 13px;
+  border-bottom: 1px solid #334155; background: #0f172a; color: #38bdf8;
+  display: flex; align-items: center;
+}
+ 
+.dropdown-item {
+  padding: 10px 14px; border-bottom: 1px solid #1e293b;
+  cursor: pointer; font-size: 13px; transition: background 0.2s;
+  border-left: 3px solid transparent;
+}
+.dropdown-item:hover { background: #334155; }
+ 
+.item-unread  { border-left-color: #3b82f6; }
+.item-replied { border-left-color: #22c55e; }
+.item-read    { border-left-color: #475569; }
+ 
+.msg  { font-size: 13px; color: #e2e8f0; line-height: 1.4; }
+.time { font-size: 11px; color: #94a3b8; }
+ 
+.accent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot-blue  { background: #3b82f6; }
+.dot-green { background: #22c55e; }
+.dot-gray  { background: #64748b; }
+ 
+.empty { padding: 18px 14px; text-align: center; color: #64748b; font-size: 13px; }
+ 
+.view-all {
+  padding: 10px 14px; text-align: center; cursor: pointer;
+  background: #0f172a; font-weight: 600; font-size: 13px;
+  color: #38bdf8; transition: background 0.2s;
+}
+.view-all:hover { background: #1e40af; color: #fff; }
+ 

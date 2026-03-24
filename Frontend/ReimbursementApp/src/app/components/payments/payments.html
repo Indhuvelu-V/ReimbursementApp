@@ -1,0 +1,169 @@
+<div class="payments-container">
+
+  <h2><i class="bi bi-cash-stack me-2"></i>Payments 💰</h2>
+
+  <!-- FINANCE: Complete Payment Form -->
+  <div *ngIf="isFinance()" class="payment-form-card">
+    <h5><i class="bi bi-check2-circle me-2"></i>Complete Payment</h5>
+    <div class="form-group">
+      <label>Select Approved Expense</label>
+      <select [(ngModel)]="selectedExpenseId" class="dark-input">
+        <option value="">— Select approved expense —</option>
+        <option *ngFor="let exp of approvedExpenses" [value]="exp.expenseId">
+          {{ exp.expenseId }} | {{ exp.categoryName }} | ₹{{ exp.amount }}
+        </option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Reference No <span class="req">*</span></label>
+      <input [(ngModel)]="referenceNo" placeholder="e.g. REF-20240001" class="dark-input" />
+    </div>
+    <div class="form-group">
+      <label>Payment Mode</label>
+      <select [(ngModel)]="paymentMode" class="dark-input">
+        <option value="BankTransfer">Bank Transfer</option>
+        <option value="Cash">Cash</option>
+        <option value="Cheque">Cheque</option>
+      </select>
+    </div>
+    <button class="btn-pay" (click)="completePayment()">
+      <i class="bi bi-send-check me-2"></i>Complete Payment
+    </button>
+    <hr class="divider" />
+  </div>
+
+  <!-- SEARCH SECTION (Employee + Manager) -->
+  <div *ngIf="isEmployee() || isManager()" class="search-section">
+    <label class="form-label">Enter Expense ID to view payment:</label>
+    <div class="search-row">
+      <input type="text" [(ngModel)]="searchExpenseId" placeholder="Expense ID" class="dark-input" />
+      <button class="btn-search" (click)="searchPaymentByExpenseId()">
+        <i class="bi bi-search me-2"></i>Search
+      </button>
+    </div>
+
+    <!-- SEARCH RESULTS -->
+    <div *ngIf="searchResults.length > 0" class="table-responsive mt-3">
+      <table class="payment-table">
+        <thead>
+          <tr>
+            <th>Payment ID</th>
+            <th>User</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Mode</th>
+            <th>Reference No</th>
+            <th>Date</th>
+            <th *ngIf="isFinanceOrAdmin()">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of searchResults">
+            <td><code>{{ p.paymentId }}</code></td>
+            <td>{{ p.userName || p.userId || '—' }}</td>
+            <td class="amount-cell">{{ p.amountInRupees || ('₹' + p.amountPaid) }}</td>
+            <td>
+              <span [ngClass]="{
+                'status-paid': p.paymentStatus === 'Paid',
+                'status-pending': p.paymentStatus === 'Pending',
+                'status-other': p.paymentStatus !== 'Paid' && p.paymentStatus !== 'Pending'
+              }">
+                <i class="bi" [ngClass]="p.paymentStatus === 'Paid' ? 'bi-check-circle-fill' : 'bi-clock-fill'"></i>
+                {{ p.paymentStatus }}
+              </span>
+            </td>
+            <td>{{ p.paymentMode || '—' }}</td>
+            <td>{{ p.referenceNo || '—' }}</td>
+            <td>{{ p.paymentDate | date:'dd MMM yyyy' }}</td>
+            <td *ngIf="isFinanceOrAdmin()">
+              <button class="btn-view" (click)="viewPayment(p.expenseId)">
+                <i class="bi bi-eye"></i> View
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="searchResults.length === 0 && !searching && searchExpenseId" class="no-data">
+      <i class="bi bi-inbox me-2"></i>No payment found for this Expense ID.
+    </div>
+  </div>
+
+  <!-- PAYMENTS TABLE (Finance/Admin) -->
+  <div *ngIf="payments.length > 0" class="table-responsive mt-3">
+    <table class="payment-table">
+      <thead>
+        <tr>
+          <th>Payment ID</th>
+          <th>User</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Mode</th>
+          <th>Reference No</th>
+          <th>Date</th>
+          <th *ngIf="isFinanceOrAdmin()">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of payments">
+          <td><code>{{ p.paymentId }}</code></td>
+          <td>{{ p.userName || p.userId || '—' }}</td>
+          <td class="amount-cell">{{ p.amountInRupees || ('₹' + p.amountPaid) }}</td>
+          <td>
+            <span [ngClass]="{
+              'status-paid': p.paymentStatus === 'Paid',
+              'status-pending': p.paymentStatus === 'Pending',
+              'status-other': p.paymentStatus !== 'Paid' && p.paymentStatus !== 'Pending'
+            }">
+              <i class="bi" [ngClass]="p.paymentStatus === 'Paid' ? 'bi-check-circle-fill' : 'bi-clock-fill'"></i>
+              {{ p.paymentStatus }}
+            </span>
+          </td>
+          <td>{{ p.paymentMode || '—' }}</td>
+          <td>{{ p.referenceNo || '—' }}</td>
+          <td>{{ p.paymentDate | date:'dd MMM yyyy' }}</td>
+          <td *ngIf="isFinanceOrAdmin()">
+            <button class="btn-view" (click)="viewPayment(p.expenseId)">
+              <i class="bi bi-eye"></i> View
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FINANCE/ADMIN: Approved Expenses List -->
+  <div *ngIf="isFinanceOrAdmin() && approvedExpenses.length > 0" class="approved-list mt-3">
+    <h6 class="mb-3 text-info"><i class="bi bi-list-check me-2"></i>View Payment by Expense</h6>
+    <div *ngFor="let exp of approvedExpenses" class="expense-row">
+      <span class="exp-info"><code>{{ exp.expenseId }}</code> | ₹{{ exp.amount }} | {{ exp.categoryName }}</span>
+      <button class="btn-view-sm" (click)="viewPayment(exp.expenseId)">
+        <i class="bi bi-eye me-1"></i>View Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- NO ACCESS MESSAGE -->
+  <div *ngIf="!isEmployee() && !isManager() && !isFinanceOrAdmin()" class="alert-msg">
+    <i class="bi bi-lock me-2"></i>You do not have access to view payments.
+  </div>
+
+  <!-- PAYMENT MODAL -->
+  <div class="modal-backdrop" *ngIf="showPaymentModal" (click)="closePaymentModal()"></div>
+  <div class="payment-modal" *ngIf="showPaymentModal">
+    <div class="modal-header">
+      <h5>Payment Details</h5>
+      <button class="close-btn" (click)="closePaymentModal()">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="modalPaymentDetails">
+      <p><strong>Expense ID:</strong> {{ modalPaymentDetails.expenseId }}</p>
+      <p><strong>User:</strong> {{ modalPaymentDetails.userName || '—' }}</p>
+      <p><strong>Amount:</strong> {{ modalPaymentDetails.amountInRupees || ('₹' + modalPaymentDetails.amountPaid) }}</p>
+      <p><strong>Status:</strong> {{ modalPaymentDetails.paymentStatus }}</p>
+      <p><strong>Mode:</strong> {{ modalPaymentDetails.paymentMode }}</p>
+      <p><strong>Reference No:</strong> {{ modalPaymentDetails.referenceNo }}</p>
+      <p><strong>Date:</strong> {{ modalPaymentDetails.paymentDate | date:'dd MMM yyyy' }}</p>
+    </div>
+  </div>
+
+</div>

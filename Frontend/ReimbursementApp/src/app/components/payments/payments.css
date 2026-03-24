@@ -1,0 +1,54 @@
+.payments-container { margin: 20px; padding: 25px; border-radius: 16px; background: linear-gradient(145deg,#0f172a,#1f2937); color: #f1f5f9; box-shadow:0 10px 30px rgba(0,0,0,0.6); }
+h2 { color: #38bdf8; font-weight: 600; }
+
+.payment-form-card { background:#1e293b;border-radius:12px;padding:20px;border:1px solid #334155;margin-bottom:20px; }
+.payment-form-card h5 { color:#e2e8f0;margin-bottom:18px; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:12px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:5px; }
+.req { color:#ef4444; }
+.dark-input { width:100%; background:rgba(15,23,42,0.9); border:1px solid #475569; color:#f1f5f9; border-radius:8px; padding:10px 12px; font-size:14px; transition:all 0.2s; }
+.dark-input:focus { border-color:#38bdf8; box-shadow:0 0 6px rgba(56,189,248,0.5); outline:none; }
+.dark-input option { background:#1e293b; }
+
+.btn-pay { background:linear-gradient(45deg,#22c55e,#16a34a); color:#fff; border:none; border-radius:8px; padding:11px 24px; font-size:14px; font-weight:600; cursor:pointer; width:100%; transition:all 0.2s; }
+.btn-pay:hover { background:#15803d; transform:translateY(-2px); }
+
+.divider { border-color:#334155; margin:20px 0; }
+
+.search-section { margin-bottom:16px; }
+.search-row { display:flex; gap:10px; }
+.btn-search { background:linear-gradient(45deg,#3b82f6,#2563eb); color:#fff; border:none; border-radius:8px; padding:10px 20px; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+.btn-search:hover { background:#1d4ed8; transform:translateY(-2px); }
+
+.payment-table { width:100%; border-collapse:collapse; border-radius:12px; overflow:hidden; }
+.payment-table th { background:#020617; color:#38bdf8; padding:12px 14px; font-size:12px; text-transform:uppercase; letter-spacing:1px; text-align:center; }
+.payment-table td { background:#1f2937; padding:11px 14px; text-align:center; border-bottom:1px solid #334155; font-size:13px; }
+.payment-table tbody tr:hover { background:#334155; }
+.payment-table code { font-size:11px; color:#38bdf8; }
+
+.amount-cell { font-weight:700;color:#22c55e; }
+.status-paid { color:#22c55e;font-weight:600; }
+.status-pending { color:#facc15;font-weight:600; }
+.status-other { color:#94a3b8; }
+
+.btn-view, .btn-view-sm { background:rgba(56,189,248,0.1); color:#38bdf8; border:1px solid #38bdf8; border-radius:6px; padding:4px 12px; font-size:12px; cursor:pointer; transition:all 0.2s; }
+.btn-view:hover, .btn-view-sm:hover { background:#38bdf8; color:#0f172a; }
+
+.approved-list { border-top:1px solid #334155; padding-top:16px; }
+.expense-row { display:flex; align-items:center; justify-content:space-between; background:#1e293b; border-radius:8px; padding:10px 14px; margin-bottom:8px; flex-wrap:wrap; gap:8px; }
+.exp-info { font-size:13px; color:#e2e8f0; }
+
+.no-data { text-align:center; color:#475569; padding:30px; }
+.alert-msg { background:rgba(251,191,36,0.15); border:1px solid #facc15; color:#facc15; border-radius:10px; padding:14px; text-align:center; }
+
+/* ================= MODAL ================= */
+.modal-backdrop { position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(15,23,42,0.7); z-index:1000; }
+.payment-modal { position:fixed; top:50%; left:50%; width:320px; max-width:90vw; background:#1e293b; border-radius:12px; box-shadow:0 8px 20px rgba(0,0,0,0.8); color:#f1f5f9; transform:translate(-50%,-50%); z-index:1001; padding:20px 25px; font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif; }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #334155; padding-bottom:8px; }
+.modal-header h5 { margin:0; color:#38bdf8; font-weight:600; }
+.close-btn { background:transparent; border:none; font-size:28px; line-height:1; color:#94a3b8; cursor:pointer; transition:color 0.2s ease; }
+.close-btn:hover { color:#ef4444; }
+.modal-body p { margin:8px 0; font-size:14px; }
+.modal-body strong { color:#60a5fa; }
+
+@media (max-width:768px){.search-row{flex-direction:column;}.payment-table th,.payment-table td{font-size:11px;padding:8px;}}  
