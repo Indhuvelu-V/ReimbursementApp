@@ -246,6 +246,22 @@
   },
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.ExpenseController",
+    "Method": "ResubmitExpense",
+    "RelativePath": "api/Expense/Resubmit/{expenseId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "expenseId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ExpenseController",
     "Method": "SubmitExpense",
     "RelativePath": "api/Expense/Submit/{expenseId}",
     "HttpMethod": "POST",
@@ -308,6 +324,22 @@
         "Name": "categoryType",
         "Type": "System.String",
         "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.FileUploadController",
+    "Method": "UploadFiles",
+    "RelativePath": "api/FileUpload",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "files",
+        "Type": "System.Collections.Generic.List\u00601[[Microsoft.AspNetCore.Http.IFormFile, Microsoft.AspNetCore.Http.Features, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60]]",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []

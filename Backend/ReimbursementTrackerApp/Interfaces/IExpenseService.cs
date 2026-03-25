@@ -21,6 +21,9 @@ namespace ReimbursementTrackerApp.Interfaces
 
         Task<List<CreateExpenseResponseDto>> GetMyExpenses();
 
+        // ✅ NEW — Resubmit a Rejected or Draft expense (Draft → Submitted)
+        Task<CreateExpenseResponseDto?> ResubmitExpense(string expenseId);
+
 
 
         Task<CreateExpenseResponseDto?> SubmitExpense(string expenseId);
