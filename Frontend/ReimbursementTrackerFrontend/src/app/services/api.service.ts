@@ -30,9 +30,14 @@ export class APIService {
   resubmitExpense(expenseId: string): Observable<any> { return this.http.post(`${this.baseUrl}/Expense/Resubmit/${expenseId}`, {}); }
   deleteExpense(expenseId: string): Observable<any> { return this.http.delete(`${this.baseUrl}/Expense/${expenseId}`); }
   getMyExpenses(): Observable<any> { return this.http.get(`${this.baseUrl}/Expense/userexpenses`); }
-  getAllExpenses(pageNumber: number = 1, pageSize: number = 10): Observable<{ data: CreateExpenseResponseDto[], totalRecords: number }> {
-    const params = new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize);
-    return this.http.post<{ data: CreateExpenseResponseDto[], totalRecords: number }>(`${this.baseUrl}/Expense/all`, {}, { params });
+  getAllExpenses(pageNumber: number = 1, pageSize: number = 10, status?: string, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null): Observable<{ data: any[], totalRecords: number }> {
+    let params = new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize);
+    if (status)    params = params.set('Status', status);
+    if (fromDate)  params = params.set('FromDate', fromDate);
+    if (toDate)    params = params.set('ToDate', toDate);
+    if (minAmount != null) params = params.set('MinAmount', minAmount);
+    if (maxAmount != null) params = params.set('MaxAmount', maxAmount);
+    return this.http.post<{ data: any[], totalRecords: number }>(`${this.baseUrl}/Expense/all`, {}, { params });
   }
   uploadFiles(formData: FormData): Observable<any> { return this.http.post(`${this.baseUrl}/FileUpload`, formData); }
   getMyNotifications(): Observable<CreateNotificationResponseDto[]> { return this.http.get<CreateNotificationResponseDto[]>(`${this.baseUrl}/Notification/GetMyNotifications`); }
@@ -44,12 +49,19 @@ export class APIService {
   apiUpdateCategory(request: CreateExpenseCategoryRequestDto): Observable<CreateExpenseCategoryResponseDto> { return this.http.put<CreateExpenseCategoryResponseDto>(`${this.baseUrl}/ExpenseCategory`, request); }
   completePayment(expenseId: string, request: { referenceNo: string; paymentMode: string }): Observable<any> { return this.http.post(`${this.baseUrl}/Payment/CompletePayment/${expenseId}`, request); }
   getPaymentByExpenseId(expenseId: string): Observable<CreatePaymentResponseDto> { return this.http.get<CreatePaymentResponseDto>(`${this.baseUrl}/Payment/${expenseId}`); }
-  getAllPayments(page: number = 1, pageSize: number = 10): Observable<any> {
-    const params = new HttpParams().set('PageNumber', page).set('PageSize', pageSize);
+  getAllPayments(page: number = 1, pageSize: number = 10, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null, status?: string): Observable<any> {
+    let params = new HttpParams().set('PageNumber', page).set('PageSize', pageSize);
+    if (fromDate)   params = params.set('FromDate', fromDate);
+    if (toDate)     params = params.set('ToDate', toDate);
+    if (minAmount != null) params = params.set('MinAmount', minAmount);
+    if (maxAmount != null) params = params.set('MaxAmount', maxAmount);
+    if (status)     params = params.set('Status', status);
     return this.http.post(`${this.baseUrl}/Payment`, {}, { params });
   }
-  getAllUsers(page: number = 1, size: number = 10): Observable<any> {
-    const params = new HttpParams().set('pageNumber', page).set('pageSize', size);
+  getAllUsers(page: number = 1, size: number = 10, role?: string, name?: string): Observable<any> {
+    let params = new HttpParams().set('pageNumber', page).set('pageSize', size);
+    if (role) params = params.set('Role', role);
+    if (name) params = params.set('Name', name);
     return this.http.post(`${this.baseUrl}/Users/allusers`, {}, { params });
   }
   getUserById(userId: string): Observable<User> { return this.http.get<User>(`${this.baseUrl}/Users/${userId}`); }

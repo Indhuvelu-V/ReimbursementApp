@@ -202,13 +202,16 @@ using System.Text.Json.Serialization;
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================================
-// CONTROLLERS + JSON
+// CONTROLLERS + JSON + FILTERS
 // =====================================================
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<AuditLogActionFilter>();
+})
+.AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 // =====================================================
 // SWAGGER
@@ -292,7 +295,7 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<IPolicyService, PolicyService>();
 
-// ? NEW — File upload service (validates + saves files to wwwroot/uploads)
+// ? NEW ï¿½ File upload service (validates + saves files to wwwroot/uploads)
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 #endregion
 
@@ -300,10 +303,6 @@ builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 // AUDIT LOG FILTER
 // =====================================================
 builder.Services.AddScoped<AuditLogActionFilter>();
-builder.Services.AddControllers(options =>
-{
-    options.Filters.Add<AuditLogActionFilter>();
-});
 
 // =====================================================
 // JWT AUTHENTICATION
@@ -330,7 +329,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // =====================================================
 var app = builder.Build();
 
-// ?? Ensure wwwroot/uploads folder exists on startup ??????????????????????????
+// ?? Ensure wwwroot/uploads folder exists on startup 
 // This prevents any race condition on the first upload request.
 var wwwRoot = app.Environment.WebRootPath
                    ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
@@ -341,25 +340,25 @@ if (!Directory.Exists(uploadsPath))
     Console.WriteLine($"[Startup] Created uploads folder at: {uploadsPath}");
 }
 
-// ?? Seed categories ??????????????????????????????????????????????????????????
+// ?? Seed categories
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ReimbursementContext>();
     await CategorySeeder.SeedCategoriesAsync(context);
 }
 
-// ?? HTTP Pipeline ?????????????????????????????????????????????????????????????
+// ?? HTTP Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// ? STATIC FILES — serves wwwroot folder including wwwroot/uploads
+// ? STATIC FILES ï¿½ serves wwwroot folder including wwwroot/uploads
 // Uploaded files are accessible via:
 //   http://localhost:5138/uploads/{filename}
 // Accessible to Admin, Manager, Finance (no auth required on static files
-// since the path is direct and not guessable — GUID filenames used).
+// since the path is direct and not guessable ï¿½ GUID filenames used).
 app.UseStaticFiles();
 
 // ?? Optional: if you want uploads outside wwwroot (e.g. /uploads at project root)

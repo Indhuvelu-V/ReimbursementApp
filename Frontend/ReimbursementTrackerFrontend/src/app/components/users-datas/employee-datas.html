@@ -83,6 +83,38 @@
       <i class="bi bi-table" style="color:var(--accent)"></i>All Users
     </p>
 
+    <!-- Filter bar -->
+    <div class="filter-bar-card">
+      <div class="admin-filter-row">
+        <div class="filter-group">
+          <label class="filter-label">Role</label>
+          <select [(ngModel)]="filterRole" class="dark-input" style="padding-left:12px">
+            <option value="">All Roles</option>
+            <option value="Employee">Employee</option>
+            <option value="Manager">Manager</option>
+            <option value="Finance">Finance</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="filter-group" style="flex:2">
+          <label class="filter-label">Name</label>
+          <div class="search-input-wrap">
+            <i class="bi bi-person-badge search-icon"></i>
+            <input type="text" [(ngModel)]="filterName" class="dark-input"
+              placeholder="Search by name..." (keyup.enter)="applyFilters()" />
+          </div>
+        </div>
+        <div class="filter-group filter-actions-group">
+          <button class="btn-search" style="padding:10px 16px" (click)="applyFilters()">
+            <i class="bi bi-funnel-fill"></i>Apply
+          </button>
+          <button class="btn-clear" (click)="clearFilters()">
+            <i class="bi bi-x-circle"></i>Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="table-wrapper">
       <table class="data-table">
         <thead>
@@ -125,13 +157,14 @@
       <!-- Pagination -->
       <div class="pagination-bar">
         <span class="pg-info">
-          Page <strong>{{ page }}</strong> &nbsp;·&nbsp; <strong>{{ totalRecords }}</strong> total users
+          Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong>
+          &nbsp;·&nbsp; <strong>{{ totalRecords }}</strong> total users
         </span>
         <div class="pg-buttons">
           <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
             <i class="bi bi-chevron-left"></i>Prev
           </button>
-          <button class="pg-btn" (click)="nextPage()" [disabled]="page * size >= totalRecords">
+          <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
             Next<i class="bi bi-chevron-right"></i>
           </button>
         </div>

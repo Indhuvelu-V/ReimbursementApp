@@ -102,15 +102,15 @@
           <label class="field-label">
             <i class="bi bi-paperclip me-1"></i>Documents<span class="field-optional">(optional)</span>
           </label>
-          <label class="file-drop" [class.has-files]="files.length > 0">
-            <input type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.xlsx,.xls,.doc,.docx"
-                   (change)="onFileChange($event)" class="file-hidden" />
+          <label class="file-drop" [class.has-files]="files.length > 0" (click)="fileInput.click(); $event.preventDefault()">
             <i class="bi bi-cloud-arrow-up file-drop-icon"></i>
             <span class="file-drop-text">
               {{ files.length ? files.length + ' file(s) selected' : 'Click or drag to upload' }}
             </span>
             <span class="file-drop-hint">PNG, JPG, PDF, XLSX, DOC — max 10MB each</span>
           </label>
+          <input #fileInput type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.xlsx,.xls,.doc,.docx"
+                 (change)="onFileChange($event)" class="file-hidden" style="display:none" />
           <div *ngIf="filePreviews.length > 0" class="selected-files-grid">
             <div *ngFor="let fp of filePreviews; let i = index" class="selected-file-item">
               <img *ngIf="fp.isImage" [src]="fp.url" alt="preview" class="selected-file-img" />

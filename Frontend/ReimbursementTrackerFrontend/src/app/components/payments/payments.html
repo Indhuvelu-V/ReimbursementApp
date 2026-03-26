@@ -1,6 +1,5 @@
 <div class="payments-wrapper fade-in">
 
-
   <div class="page-header">
     <div class="page-header-left">
       <div class="page-icon" style="background:rgba(45,212,191,0.12);border-color:rgba(45,212,191,0.25);">
@@ -12,83 +11,100 @@
       </div>
     </div>
     <div *ngIf="isFinanceOrAdmin()" class="stat-chip" style="background:rgba(45,212,191,0.1);border-color:rgba(45,212,191,0.25);">
-      <span class="stat-chip-num" style="color:var(--teal)">{{ filteredPayments.length }}</span>
+      <span class="stat-chip-num" style="color:var(--teal)">{{ totalRecords }}</span>
       <span class="stat-chip-label">Records</span>
     </div>
   </div>
 
-
-  <div *ngIf="isFinance()" class="form-card">
-    <div class="form-card-header">
-      <div class="form-card-title">
-        <div class="form-card-icon" style="background:rgba(45,212,191,0.12);color:var(--teal)">
-          <i class="bi bi-check2-circle"></i>
+  <!-- FINANCE: Awaiting Payment List -->
+  <div *ngIf="isFinance()">
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-title">
+          <div class="form-card-icon" style="background:rgba(45,212,191,0.12);color:var(--teal)">
+            <i class="bi bi-list-check"></i>
+          </div>
+          <span>Approved — Awaiting Payment ({{ approvedTotal }})</span>
         </div>
-        <span>Complete Payment</span>
       </div>
-    </div>
-    <div class="form-row">
-      <div class="field">
-        <label class="field-label">Select Approved Expense</label>
-        <select [(ngModel)]="selectedExpenseId" class="field-input">
-          <option value="">— Select approved expense —</option>
-          <option *ngFor="let exp of approvedExpenses" [value]="exp.expenseId">
-            {{ exp.expenseId }} | {{ exp.categoryName }} | {{ exp.amountInRupees || ('₹' + exp.amount) }}
-          </option>
-        </select>
-      </div>
-      <div class="field">
-        <label class="field-label">Reference No <span style="color:var(--status-rejected)">*</span></label>
-        <input [(ngModel)]="referenceNo" placeholder="e.g. REF-20240001" class="field-input" />
-      </div>
-      <div class="field">
-        <label class="field-label">Payment Mode</label>
-        <select [(ngModel)]="paymentMode" class="field-input">
-          <option value="BankTransfer">Bank Transfer</option>
-          <option value="Cash">Cash</option>
-          <option value="Cheque">Cheque</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-actions" style="margin-top:20px">
-      <button class="btn-primary" style="background:linear-gradient(135deg,var(--teal),#06b6d4)" (click)="completePayment()">
-        <i class="bi bi-send-check"></i>Complete Payment
-      </button>
-    </div>
 
+      <!-- Awaiting filter bar -->
+      <div class="admin-filter-row" style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border)">
+        <div class="filter-group">
+          <label class="field-label">Min Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="awaitingFilterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Max Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="awaitingFilterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">From Date</label>
+          <input type="date" [(ngModel)]="awaitingFilterDateFrom" class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">To Date</label>
+          <input type="date" [(ngModel)]="awaitingFilterDateTo" class="field-input filter-select" />
+        </div>
+        <div class="filter-group filter-actions-group">
+          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyAwaitingFilters()">
+            <i class="bi bi-funnel-fill"></i>Apply
+          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearAwaitingFilters()">
+            <i class="bi bi-x-circle"></i>Reset
+          </button>
+        </div>
+      </div>
 
-    <div *ngIf="approvedExpenses.length > 0" style="margin-top:24px;padding-top:20px;border-top:1px solid var(--border)">
-      <h6 class="section-heading" style="margin-bottom:12px"><i class="bi bi-list-check me-2" style="color:var(--teal)"></i>Approved — Awaiting Payment ({{ approvedExpenses.length }})</h6>
-      <div class="quick-pay-list">
+      <div *ngIf="approvedExpenses.length === 0" class="empty-state" style="padding:24px 0">
+        <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
+        <p class="empty-sub">No approved expenses match your filters.</p>
+      </div>
+
+      <div class="quick-pay-list" *ngIf="approvedExpenses.length > 0">
         <div *ngFor="let exp of approvedExpenses" class="quick-pay-row">
           <div class="quick-pay-info">
             <code>{{ exp.expenseId }}</code>
             <span>{{ exp.categoryName }}</span>
-            <span class="amount-pill">{{ exp.amountInRupees || ('₹' + exp.amount) }}</span>
+            <span class="amount-pill">{{ exp.amountInRupees || ('&#8377;' + exp.amount) }}</span>
           </div>
           <div class="quick-pay-actions">
             <button *ngIf="exp.documentUrls?.length" class="btn-view-docs" (click)="openFileModal(exp.documentUrls)">
               <i class="bi bi-paperclip me-1"></i>{{ exp.documentUrls.length }} File{{ exp.documentUrls.length !== 1 ? 's' : '' }}
             </button>
-            <button class="action-btn btn-pay-now" (click)="selectedExpenseId = exp.expenseId">
-              <i class="bi bi-check-circle"></i>Select
-            </button>
-            <button class="action-btn btn-view-history" (click)="viewPaymentDetails(exp.expenseId)">
+            <button class="action-btn btn-view-history" (click)="viewExpenseDetails(exp)">
               <i class="bi bi-eye"></i>Details
+            </button>
+            <button class="action-btn btn-pay-now" (click)="openCompleteModal(exp)">
+              <i class="bi bi-send-check"></i>Pay Now
             </button>
           </div>
         </div>
       </div>
+
+      <div class="pagination-bar" *ngIf="approvedTotalPages() > 1" style="margin-top:12px">
+        <button class="pg-btn" (click)="approvedPrevPage()" [disabled]="approvedPage === 1">
+          <i class="bi bi-chevron-left"></i>Prev
+        </button>
+        <span class="pg-info">Page <strong>{{ approvedPage }}</strong> of <strong>{{ approvedTotalPages() }}</strong> &nbsp;·&nbsp; {{ approvedTotal }} records</span>
+        <button class="pg-btn" (click)="approvedNextPage()" [disabled]="approvedPage >= approvedTotalPages()">
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="approvedTotal === 0 && !awaitingFilterDateFrom && !awaitingFilterDateTo && !awaitingFilterMinAmount && !awaitingFilterMaxAmount" class="empty-state" style="padding:40px 0">
+      <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
+      <h3 class="empty-title">No pending payments</h3>
+      <p class="empty-sub">All approved expenses have been paid.</p>
     </div>
   </div>
 
-
+  <!-- EMPLOYEE / MANAGER: Search -->
   <div *ngIf="isEmployee() || isManager()" class="form-card">
     <div class="form-card-header">
       <div class="form-card-title">
-        <div class="form-card-icon">
-          <i class="bi bi-search"></i>
-        </div>
+        <div class="form-card-icon"><i class="bi bi-search"></i></div>
         <span>Find Payment by Expense ID</span>
       </div>
     </div>
@@ -138,9 +154,8 @@
     </div>
   </div>
 
-
+  <!-- FINANCE / ADMIN: Filter + Records -->
   <div *ngIf="isFinanceOrAdmin()">
-
 
     <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
       <div class="admin-filter-row">
@@ -227,10 +242,9 @@
         </div>
       </div>
 
-    
       <div class="pagination-bar">
         <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
-        <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;·&nbsp; {{ filteredPayments.length }} records</span>
+        <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;·&nbsp; {{ totalRecords }} records</span>
         <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next <i class="bi bi-chevron-right"></i></button>
       </div>
     </div>
@@ -242,7 +256,64 @@
 
 </div>
 
+<!-- Complete Payment Modal -->
+<div class="modal-backdrop" *ngIf="showCompleteModal" (click)="closeCompleteModal()"></div>
+<div class="modal-box" *ngIf="showCompleteModal">
+  <div class="modal-head">
+    <h4><i class="bi bi-send-check me-2" style="color:var(--teal)"></i>Complete Payment</h4>
+    <button class="modal-close-btn" (click)="closeCompleteModal()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" *ngIf="completeExp">
+    <!-- Expense summary -->
+    <div class="complete-exp-summary">
+      <div class="ces-row">
+        <span class="ces-label">Expense ID</span>
+        <code>{{ completeExp.expenseId }}</code>
+      </div>
+      <div class="ces-row">
+        <span class="ces-label">Category</span>
+        <span class="ces-val">{{ completeExp.categoryName }}</span>
+      </div>
+      <div class="ces-row">
+        <span class="ces-label">Amount</span>
+        <span class="ces-amount">{{ completeExp.amountInRupees || ('₹' + completeExp.amount) }}</span>
+      </div>
+    </div>
 
+    <!-- Payment fields -->
+    <div class="complete-pay-fields">
+      <div class="field">
+        <label class="field-label">Reference No <span style="color:var(--status-rejected)">*</span></label>
+        <input [(ngModel)]="referenceNo" placeholder="e.g. REF-20240001" class="field-input" />
+      </div>
+      <div class="field">
+        <label class="field-label">Payment Mode</label>
+        <div class="pay-mode-group">
+          <button class="pay-mode-btn" [class.active]="paymentMode === 'BankTransfer'" (click)="paymentMode = 'BankTransfer'">
+            <i class="bi bi-bank"></i>Bank Transfer
+          </button>
+          <button class="pay-mode-btn" [class.active]="paymentMode === 'Cash'" (click)="paymentMode = 'Cash'">
+            <i class="bi bi-cash"></i>Cash
+          </button>
+          <button class="pay-mode-btn" [class.active]="paymentMode === 'Cheque'" (click)="paymentMode = 'Cheque'">
+            <i class="bi bi-file-earmark-text"></i>Cheque
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions" style="margin-top:20px">
+      <button class="btn-primary" style="background:linear-gradient(135deg,var(--teal),#06b6d4)" (click)="completePayment()">
+        <i class="bi bi-send-check"></i>Complete Payment
+      </button>
+      <button class="btn-ghost" (click)="closeCompleteModal()">
+        <i class="bi bi-x-circle"></i>Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Detail Modal -->
 <div class="modal-backdrop" *ngIf="showPaymentModal" (click)="closePaymentModal()"></div>
 <div class="modal-box" *ngIf="showPaymentModal">
   <div class="modal-head">
@@ -278,5 +349,37 @@
   </div>
 </div>
 
+<!-- Expense Detail Modal (awaiting list Details button) -->
+<div class="modal-backdrop" *ngIf="showExpenseModal" (click)="closeExpenseModal()"></div>
+<div class="modal-box" *ngIf="showExpenseModal">
+  <div class="modal-head">
+    <h4><i class="bi bi-receipt me-2" style="color:var(--teal)"></i>Expense Details</h4>
+    <button class="modal-close-btn" (click)="closeExpenseModal()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" *ngIf="modalExpenseDetails">
+    <div class="detail-grid">
+      <div class="detail-item"><span class="detail-label">Expense ID</span><code>{{ modalExpenseDetails.expenseId }}</code></div>
+      <div class="detail-item"><span class="detail-label">Category</span><span class="detail-val">{{ modalExpenseDetails.categoryName }}</span></div>
+      <div class="detail-item"><span class="detail-label">Amount</span><span class="detail-val detail-amount">{{ modalExpenseDetails.amountInRupees || ('&#8377;' + modalExpenseDetails.amount) }}</span></div>
+      <div class="detail-item"><span class="detail-label">Date</span><span class="detail-val">{{ modalExpenseDetails.expenseDate }}</span></div>
+      <div class="detail-item"><span class="detail-label">Status</span><span class="status-badge badge-Approved">{{ modalExpenseDetails.status }}</span></div>
+    </div>
+    <div *ngIf="modalExpenseDetails.documentUrls?.length" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border)">
+      <p class="section-heading" style="font-size:13px;margin-bottom:12px"><i class="bi bi-paperclip me-1"></i>Attached Documents</p>
+      <div class="file-preview-grid">
+        <a *ngFor="let url of modalExpenseDetails.documentUrls; let i = index"
+           [href]="apiSvc.resolveFileUrl(url)" target="_blank" class="file-preview-item">
+          <div *ngIf="apiSvc.isImageUrl(url)">
+            <img [src]="apiSvc.resolveFileUrl(url)" class="file-preview-img" alt="doc {{i+1}}" />
+          </div>
+          <div *ngIf="!apiSvc.isImageUrl(url)" class="file-preview-doc">
+            <i class="bi" [ngClass]="apiSvc.fileIcon(url)"></i>
+          </div>
+          <div class="file-preview-label">Doc {{ i + 1 }}</div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <app-file-view-modal [visible]="showFileModal" [urls]="modalFileUrls" (closed)="closeFileModal()"></app-file-view-modal>

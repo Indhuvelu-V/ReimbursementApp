@@ -13,8 +13,16 @@
             set => _pageSize = value > MaxPageSize ? MaxPageSize : value;
         }
 
-        // Add these two for date filtering
         public string? FromDate { get; set; }
         public string? ToDate { get; set; }
+        public decimal? MinAmount { get; set; }
+        public decimal? MaxAmount { get; set; }
+
+        // User filters
+        public string? Role { get; set; }
+        public string? Name { get; set; }
+
+        // Expense filters
+        public string? Status { get; set; }
     }
 }

@@ -70,3 +70,7 @@
   .admin-filter-row { flex-direction: column; }
   .filter-group { min-width: 100%; }
 }
+
+/* Inline comment input on approval cards */
+.inline-comment { margin-top: 12px; }
+.comment-input { font-size: 12px !important; padding: 7px 10px !important; }

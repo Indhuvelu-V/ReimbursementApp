@@ -245,6 +245,7 @@ using ReimbursementTrackerApp.Models;
 using ReimbursementTrackerApp.Models.Common;
 using ReimbursementTrackerApp.Models.DTOs;
 using ReimbursementTrackerApp.Models.Enums;
+using ReimbursementTrackerApp.Models.helper;
 using System.Security.Claims;
 
 namespace ReimbursementTrackerApp.Services
@@ -354,8 +355,30 @@ namespace ReimbursementTrackerApp.Services
                     p.User = await _userRepo.GetByIdAsync(p.UserId);
             }
 
-            var paymentsPage = allPayments
-                .OrderByDescending(p => p.PaymentDate)
+            // Apply date, amount, and status filters
+            var filtered = allPayments.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(paginationParams.Status))
+                filtered = filtered.Where(p => p.PaymentStatus.ToString().Equals(paginationParams.Status, StringComparison.OrdinalIgnoreCase));
+
+            if (!string.IsNullOrWhiteSpace(paginationParams.FromDate) &&
+                DateTime.TryParse(paginationParams.FromDate, out var fromDate))
+                filtered = filtered.Where(p => p.PaymentDate.HasValue && p.PaymentDate.Value.Date >= fromDate.Date);
+
+            if (!string.IsNullOrWhiteSpace(paginationParams.ToDate) &&
+                DateTime.TryParse(paginationParams.ToDate, out var toDate))
+                filtered = filtered.Where(p => p.PaymentDate.HasValue && p.PaymentDate.Value.Date <= toDate.Date);
+
+            if (paginationParams.MinAmount.HasValue)
+                filtered = filtered.Where(p => p.AmountPaid >= paginationParams.MinAmount.Value);
+
+            if (paginationParams.MaxAmount.HasValue)
+                filtered = filtered.Where(p => p.AmountPaid <= paginationParams.MaxAmount.Value);
+
+            var filteredList = filtered.OrderByDescending(p => p.PaymentDate).ToList();
+            var totalCount = filteredList.Count;
+
+            var paymentsPage = filteredList
                 .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
                 .Take(paginationParams.PageSize)
                 .ToList();
@@ -371,7 +394,7 @@ namespace ReimbursementTrackerApp.Services
 
             return new PagedResponse<CreatePaymentResponseDto>(
                 paymentDtos,
-                allPayments.Count(),
+                totalCount,
                 paginationParams.PageNumber,
                 paginationParams.PageSize
             );
@@ -433,7 +456,7 @@ namespace ReimbursementTrackerApp.Services
                 PaymentMode = payment.PaymentMode ?? "",
                 ReferenceNo = payment.ReferenceNo ?? "",
                 PaymentDate = payment.PaymentDate ?? DateTime.Now,
-                AmountInRupees = payment.AmountPaid.ToString("C"),
+                AmountInRupees = CurrencyHelper.FormatRupees(payment.AmountPaid),
                 ExpenseId = payment.ExpenseId,
 
                 // ✅ Reuse stored paths — NO re-upload, same /uploads/xyz.jpg from DB

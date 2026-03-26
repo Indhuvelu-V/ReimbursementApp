@@ -71,3 +71,31 @@
   .detail-grid { grid-template-columns: 1fr; }
   .admin-filter-row { flex-direction: column; }
 }
+
+/* Complete Payment Modal */
+.complete-exp-summary {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--r-md); padding: 14px 18px; margin-bottom: 20px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.ces-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ces-label { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; }
+.ces-val { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.ces-amount { font-size: 20px; font-weight: 800; color: var(--teal); font-family: 'JetBrains Mono', monospace; }
+
+.complete-pay-fields { display: flex; flex-direction: column; gap: 16px; }
+
+/* Payment mode button group */
+.pay-mode-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.pay-mode-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: var(--r-md);
+  background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--text-muted); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.pay-mode-btn:hover { border-color: var(--teal); color: var(--teal); }
+.pay-mode-btn.active {
+  background: rgba(45,212,191,0.12); border-color: var(--teal);
+  color: var(--teal);
+}

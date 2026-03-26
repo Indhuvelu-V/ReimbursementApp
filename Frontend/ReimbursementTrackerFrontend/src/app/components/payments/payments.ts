@@ -24,8 +24,15 @@ export class Payments implements OnInit {
   filteredPayments: any[] = [];
   pagedPayments: any[] = [];
   approvedExpenses: any[] = [];
+  approvedTotal = 0;
+  approvedPage = 1; approvedPageSize = 6;
 
-  selectedExpenseId = ''; referenceNo = ''; paymentMode = 'BankTransfer';
+  // Awaiting list filters
+  awaitingFilterDateFrom = '';
+  awaitingFilterDateTo = '';
+  awaitingFilterMinAmount: number | null = null;
+  awaitingFilterMaxAmount: number | null = null;
+
   role: string = ''; loading = false;
   searchExpenseId = ''; searchResults: any[] = []; searching = false;
 
@@ -38,8 +45,19 @@ export class Payments implements OnInit {
   sortBy: 'amount' | 'date' | '' = '';
   sortDir: 'asc' | 'desc' = 'desc';
 
-  // Pagination
+  // Server-side pagination
   page = 1; pageSize = 6;
+  totalRecords = 0;
+
+  // Inline complete-payment modal (triggered from awaiting list)
+  showCompleteModal = false;
+  completeExp: any = null;
+  referenceNo = '';
+  paymentMode = 'BankTransfer';
+
+  // Expense detail modal (for Details button in awaiting list)
+  showExpenseModal = false;
+  modalExpenseDetails: any = null;
 
   // Payment Detail Modal
   showPaymentModal = false; modalPaymentDetails: any = null;
@@ -60,21 +78,55 @@ export class Payments implements OnInit {
   isFinance(): boolean      { return this.role?.toLowerCase() === 'finance'; }
 
   loadApprovedExpenses() {
-    this.api.getAllExpenses(1, 200).subscribe({
-      next: (res) => { const all = res.data ?? res ?? []; this.approvedExpenses = all.filter((e: any) => e.status === 'Approved'); },
+    this.api.getAllExpenses(
+      this.approvedPage, this.approvedPageSize,
+      'Approved',
+      this.awaitingFilterDateFrom || undefined,
+      this.awaitingFilterDateTo || undefined,
+      this.awaitingFilterMinAmount,
+      this.awaitingFilterMaxAmount
+    ).subscribe({
+      next: (res) => {
+        this.approvedExpenses = res.data ?? res ?? [];
+        this.approvedTotal = res.totalRecords ?? this.approvedExpenses.length;
+      },
       error: () => {}
     });
   }
 
+  applyAwaitingFilters() { this.approvedPage = 1; this.loadApprovedExpenses(); }
+  clearAwaitingFilters() {
+    this.awaitingFilterDateFrom = ''; this.awaitingFilterDateTo = '';
+    this.awaitingFilterMinAmount = null; this.awaitingFilterMaxAmount = null;
+    this.approvedPage = 1; this.loadApprovedExpenses();
+  }
+  approvedTotalPages() { return Math.ceil(this.approvedTotal / this.approvedPageSize); }
+  approvedNextPage() { if (this.approvedPage < this.approvedTotalPages()) { this.approvedPage++; this.loadApprovedExpenses(); } }
+  approvedPrevPage() { if (this.approvedPage > 1) { this.approvedPage--; this.loadApprovedExpenses(); } }
+
+  // Open inline modal for a specific expense
+  openCompleteModal(exp: any) {
+    this.completeExp = exp;
+    this.referenceNo = '';
+    this.paymentMode = 'BankTransfer';
+    this.showCompleteModal = true;
+  }
+
+  closeCompleteModal() {
+    this.showCompleteModal = false;
+    this.completeExp = null;
+    this.referenceNo = '';
+  }
+
   completePayment() {
     if (!this.isFinance()) { this.toast.showError('Only Finance users can complete payments.'); return; }
-    if (!this.selectedExpenseId) { this.toast.showWarning('Please select an expense to pay.'); return; }
+    if (!this.completeExp?.expenseId) { this.toast.showWarning('No expense selected.'); return; }
     if (!this.referenceNo.trim()) { this.toast.showWarning('Reference number is required.'); return; }
     this.loader.show();
-    this.api.completePayment(this.selectedExpenseId, { referenceNo: this.referenceNo, paymentMode: this.paymentMode }).subscribe({
+    this.api.completePayment(this.completeExp.expenseId, { referenceNo: this.referenceNo, paymentMode: this.paymentMode }).subscribe({
       next: () => {
         this.toast.show('Payment completed successfully 💰');
-        this.selectedExpenseId = ''; this.referenceNo = '';
+        this.closeCompleteModal();
         this.loadPayments(); this.loadApprovedExpenses(); this.loader.hide();
       },
       error: (err) => { this.toast.showError(err?.error?.message || 'Failed to complete payment.'); this.loader.hide(); }
@@ -83,46 +135,46 @@ export class Payments implements OnInit {
 
   loadPayments() {
     this.loading = true; this.loader.show();
-    this.api.getAllPayments(1, 200).subscribe({
+    this.api.getAllPayments(
+      this.page, this.pageSize,
+      this.filterDateFrom || undefined,
+      this.filterDateTo || undefined,
+      this.filterMinAmount,
+      this.filterMaxAmount,
+      this.filterStatus || undefined
+    ).subscribe({
       next: (res: any) => {
-        this.payments = res.data ?? res ?? [];
-        this.applyFilters();
+        const raw: any[] = res.data ?? res ?? [];
+        this.totalRecords = res.totalRecords ?? raw.length;
+        let data = [...raw];
+        if (this.sortBy === 'amount') data.sort((a, b) => this.sortDir === 'asc' ? a.amountPaid - b.amountPaid : b.amountPaid - a.amountPaid);
+        if (this.sortBy === 'date')   data.sort((a, b) => this.sortDir === 'asc' ? new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime() : new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
+        this.filteredPayments = data;
+        this.pagedPayments = data;
         this.loading = false; this.loader.hide();
       },
       error: () => { this.toast.showError('Failed to load payments.'); this.loading = false; this.loader.hide(); }
     });
   }
 
-  applyFilters() {
-    let data = [...this.payments];
-    if (this.filterStatus) data = data.filter(p => p.paymentStatus === this.filterStatus);
-    if (this.filterMinAmount !== null) data = data.filter(p => p.amountPaid >= this.filterMinAmount!);
-    if (this.filterMaxAmount !== null) data = data.filter(p => p.amountPaid <= this.filterMaxAmount!);
-    if (this.filterDateFrom) data = data.filter(p => new Date(p.paymentDate) >= new Date(this.filterDateFrom));
-    if (this.filterDateTo)   data = data.filter(p => new Date(p.paymentDate) <= new Date(this.filterDateTo + 'T23:59:59'));
-    if (this.sortBy === 'amount') data.sort((a, b) => this.sortDir === 'asc' ? a.amountPaid - b.amountPaid : b.amountPaid - a.amountPaid);
-    if (this.sortBy === 'date')   data.sort((a, b) => this.sortDir === 'asc' ? new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime() : new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-    this.filteredPayments = data;
-    this.page = 1;
-    this.updatePage();
-  }
+  applyFilters() { this.page = 1; this.loadPayments(); }
 
-  updatePage() {
-    const start = (this.page - 1) * this.pageSize;
-    this.pagedPayments = this.filteredPayments.slice(start, start + this.pageSize);
-  }
-
-  totalPages() { return Math.ceil(this.filteredPayments.length / this.pageSize); }
-  nextPage() { if (this.page < this.totalPages()) { this.page++; this.updatePage(); } }
-  prevPage() { if (this.page > 1) { this.page--; this.updatePage(); } }
+  totalPages() { return Math.ceil(this.totalRecords / this.pageSize); }
+  nextPage() { if (this.page < this.totalPages()) { this.page++; this.loadPayments(); } }
+  prevPage() { if (this.page > 1) { this.page--; this.loadPayments(); } }
 
   toggleSort(field: 'amount' | 'date') {
     if (this.sortBy === field) { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; }
     else { this.sortBy = field; this.sortDir = 'desc'; }
-    this.applyFilters();
+    this.loadPayments();
   }
 
-  clearFilters() { this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = ''; this.filterMinAmount = null; this.filterMaxAmount = null; this.sortBy = ''; this.sortDir = 'desc'; this.applyFilters(); }
+  clearFilters() {
+    this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = '';
+    this.filterMinAmount = null; this.filterMaxAmount = null;
+    this.sortBy = ''; this.sortDir = 'desc'; this.page = 1;
+    this.loadPayments();
+  }
 
   searchPaymentByExpenseId() {
     if (!this.searchExpenseId.trim()) { this.toast.showWarning('Please enter an Expense ID.'); return; }
@@ -152,6 +204,11 @@ export class Payments implements OnInit {
   }
 
   closePaymentModal() { this.showPaymentModal = false; this.modalPaymentDetails = null; }
+
+  // Show expense details directly (for awaiting list Details button)
+  viewExpenseDetails(exp: any) { this.modalExpenseDetails = exp; this.showExpenseModal = true; }
+  closeExpenseModal() { this.showExpenseModal = false; this.modalExpenseDetails = null; }
+
   openFileModal(urls: string[]) { this.modalFileUrls = urls || []; this.showFileModal = true; }
   closeFileModal() { this.showFileModal = false; this.modalFileUrls = []; }
 }

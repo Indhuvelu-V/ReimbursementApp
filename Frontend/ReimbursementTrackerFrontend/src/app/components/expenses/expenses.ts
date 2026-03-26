@@ -249,13 +249,15 @@ export class Expenses implements OnInit {
   // ── File handling ──────────────────────────────────────────────────────────
 
   onFileChange(event: any) {
-    const selected: File[] = Array.from(event.target.files);
-    this.files        = selected;
+    const selected: File[] = Array.from(event.target.files ?? []);
+    if (!selected.length) return;
+    this.files = selected;
     this.filePreviews = selected.map(f => ({
       url:     f.type.startsWith('image/') ? URL.createObjectURL(f) : '',
       name:    f.name,
       isImage: f.type.startsWith('image/')
     }));
+    event.target.value = '';
   }
 
   removeFile(i: number) {
@@ -356,8 +358,12 @@ export class Expenses implements OnInit {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  delete(id: string) {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+  async delete(id: string) {
+    const ok = await this.toast.confirm(
+      'Delete Expense',
+      `Are you sure you want to delete expense ${id}? This cannot be undone.`
+    );
+    if (!ok) return;
     this.loader.show();
     this.api.deleteExpense(id).subscribe({
       next:  (res) => { this.toast.show(res?.message || 'Expense deleted ✅'); this.loadExpenses(); },

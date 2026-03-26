@@ -252,6 +252,10 @@ namespace ReimbursementTrackerApp.Services
             if (expense.Status != ExpenseStatus.Submitted)
                 throw new InvalidOperationException("Expense must be in Submitted state.");
 
+            // ✅ Self-approval restriction: a manager cannot approve their own expense
+            if (expense.UserId == request.ManagerId)
+                throw new InvalidOperationException("You cannot approve your own expense. Another manager must review it.");
+
             var approval = new Approval
             {
                 ApprovalId = Guid.NewGuid().ToString(),

@@ -1,47 +1,42 @@
-import { inject } from '@angular/core';
-import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
-import { TokenService } from '../services/token.service';
 
-// Maps each protected route to the role that owns it
-const ROUTE_ROLE_MAP: Record<string, string> = {
-  employee: 'employee',
-  manager:  'manager',
-  finance:  'finance',
-  admin:    'admin',
-};
+import { inject } from "@angular/core";
+import { CanActivateFn, Router, UrlTree } from "@angular/router";
+import { TokenService } from "../services/token.service";
 
-// Maps each role to its own home route
-const ROLE_HOME_MAP: Record<string, string> = {
-  employee: '/employee',
-  manager:  '/manager',
-  finance:  '/finance',
-  admin:    '/admin',
-};
-
-export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
+export const authGuard: CanActivateFn = (route, state): boolean | UrlTree => {
+  const token = sessionStorage.getItem('token');
   const tokenService = inject(TokenService);
-  const router       = inject(Router);
+  const router = inject(Router);
 
-  // 1. Not logged in → login page
-  if (!tokenService.isLoggedIn()) {
-    router.navigate(['/login']);
-    return false;
+  if (!token) {
+    return router.createUrlTree(['/login']); // not logged in
   }
 
-  // 2. Get role from JWT token (lowercase)
-  const role = tokenService.getRoleFromToken()?.toLowerCase() ?? '';
+  const role = tokenService.getRoleFromToken();
+  console.log('User role from token:', role);
 
-  // 3. Which top-level route is being accessed? e.g. 'employee', 'admin'
-  const targetRoute = route.url[0]?.path?.toLowerCase() ?? '';
-
-  // 4. Enforce: only the correct role can enter the matching route
-  const allowedRole = ROUTE_ROLE_MAP[targetRoute];
-  if (allowedRole && role !== allowedRole) {
-    // Employee trying /admin, /manager etc. → redirect to their own dashboard
-    const home = ROLE_HOME_MAP[role] ?? '/login';
-    router.navigate([home]);
-    return false;
+  if (!role) {
+    return router.createUrlTree(['/login']);
   }
 
-  return true;
+  const roleDashboardMap: Record<string, string> = {
+    Employee: '/employee',
+    Manager: '/manager',
+    Admin: '/admin',
+    Finance: '/finance'
+  };
+
+  const allowedDashboard = roleDashboardMap[role];
+
+  if (!allowedDashboard) {
+    return router.createUrlTree(['/login']);
+  }
+
+  // ✅ Allow all child routes of dashboard by using startsWith
+  if (state.url.startsWith(allowedDashboard)) {
+    return true;
+  }
+
+  // Redirect to the allowed dashboard
+  return router.createUrlTree([allowedDashboard]);
 };

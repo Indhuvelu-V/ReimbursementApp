@@ -1,22 +1,41 @@
-<div class="policies-container">
-  <h2><i class="bi bi-file-earmark-text"></i>Reimbursement Policies</h2>
+<div class="policies-wrapper fade-in">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.25);">
+        <i class="bi bi-shield-check" style="color:var(--violet)"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Reimbursement Policies</h1>
+        <p class="page-sub">Guidelines and limits for expense reimbursements</p>
+      </div>
+    </div>
+    <div *ngIf="policies.length" class="stat-chip" style="background:rgba(99,102,241,0.1);border-color:rgba(99,102,241,0.25);">
+      <span class="stat-chip-num" style="color:var(--violet)">{{ policies.length }}</span>
+      <span class="stat-chip-label">Policies</span>
+    </div>
+  </div>
 
   <div *ngIf="!policies.length" class="empty-state">
     <div class="empty-icon"><i class="bi bi-file-earmark-x"></i></div>
     <h3 class="empty-title">No policies found</h3>
-    <p class="empty-sub">Policies will appear here once they are added by an administrator.</p>
+    <p class="empty-sub">Policies will appear here once added by an administrator.</p>
   </div>
 
   <div class="policy-grid" *ngIf="policies.length">
-    <div class="policy-card" *ngFor="let p of policies">
+    <div class="policy-card" *ngFor="let p of policies; let i = index">
       <div class="policy-card-header">
-        <div class="policy-icon"><i class="bi bi-shield-check"></i></div>
-        <div>
-          <div class="policy-category">{{ p.categoryName }}</div>
-          <div class="policy-id">ID: {{ p.policyId }}</div>
+        <div class="policy-icon">
+          <i class="bi bi-shield-check"></i>
         </div>
+        <div class="policy-header-info">
+          <div class="policy-category">{{ p.categoryName }}</div>
+          <code class="policy-id">{{ p.policyId }}</code>
+        </div>
+        <span class="policy-index">#{{ i + 1 }}</span>
       </div>
       <div class="policy-description">{{ p.description }}</div>
     </div>
   </div>
+
 </div>

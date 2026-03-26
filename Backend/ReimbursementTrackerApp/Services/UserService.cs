@@ -128,10 +128,18 @@ namespace ReimbursementTrackerApp.Services
             {
                 var users = await _userRepo.GetAllAsync() ?? new List<User>();
 
-                var totalRecords = users.Count();
+                var query = users.AsEnumerable();
 
-                var pagedUsers = users
-                    .OrderBy(u => u.UserId)
+                if (!string.IsNullOrWhiteSpace(paginationParams.Role))
+                    query = query.Where(u => u.Role.ToString().Equals(paginationParams.Role, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(paginationParams.Name))
+                    query = query.Where(u => u.UserName.Contains(paginationParams.Name, StringComparison.OrdinalIgnoreCase));
+
+                var filtered = query.OrderBy(u => u.UserId).ToList();
+                var totalRecords = filtered.Count;
+
+                var pagedUsers = filtered
                     .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
                     .Take(paginationParams.PageSize)
                     .Select(u => new CreateUserResponseDto
@@ -151,11 +159,7 @@ namespace ReimbursementTrackerApp.Services
                 });
 
                 return new PagedResponse<CreateUserResponseDto>(
-                    pagedUsers,
-                    totalRecords,
-                    paginationParams.PageNumber,
-                    paginationParams.PageSize
-                );
+                    pagedUsers, totalRecords, paginationParams.PageNumber, paginationParams.PageSize);
             }
             catch (Exception ex)
             {

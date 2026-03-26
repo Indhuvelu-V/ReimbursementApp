@@ -7,6 +7,7 @@ namespace ReimbursementTrackerApp.Models.DTOs
     public class CreateExpenseResponseDto
     {
         public string ExpenseId { get; set; } = string.Empty;
+        public string UserId { get; set; } = string.Empty;
         public string CategoryId { get; set; } = string.Empty;
         public string CategoryName { get; set; } = string.Empty;
         public decimal Amount { get; set; }

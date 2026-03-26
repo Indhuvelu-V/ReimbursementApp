@@ -1,0 +1,49 @@
+<ng-container *ngIf="visible">
+  <div class="modal-backdrop" (click)="close()"></div>
+  <div class="modal-box file-modal">
+    <div class="modal-head">
+      <h4>
+        <i class="bi bi-paperclip me-2" style="color:var(--accent)"></i>Attached Documents
+        <span class="doc-count">{{ urls.length }} file{{ urls.length !== 1 ? 's' : '' }}</span>
+      </h4>
+      <button class="modal-close-btn" (click)="close()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <div *ngIf="!urls || urls.length === 0" class="no-docs">
+        <i class="bi bi-inbox"></i>
+        <p>No documents uploaded for this expense.</p>
+      </div>
+      <div *ngIf="urls && urls.length > 0" class="file-preview-grid">
+        <div *ngFor="let url of urls; let i = index" class="file-preview-item-wrap">
+          <div *ngIf="api.isImageUrl(url)" class="file-preview-item" (click)="openFullscreen(url)" role="button">
+            <img [src]="api.resolveFileUrl(url)" alt="Document {{i+1}}" class="file-preview-img"
+                 (error)="onImgError($event)" />
+            <div class="file-preview-overlay"><i class="bi bi-zoom-in"></i></div>
+            <div class="file-preview-label"><i class="bi bi-image me-1"></i>Image {{ i + 1 }}</div>
+          </div>
+          <a *ngIf="!api.isImageUrl(url)" [href]="api.resolveFileUrl(url)" target="_blank" class="file-preview-item">
+            <div class="file-preview-doc">
+              <i class="bi" [ngClass]="api.fileIcon(url)"></i>
+              <span class="file-ext-badge">{{ ext(url) | uppercase }}</span>
+            </div>
+            <div class="file-preview-overlay"><i class="bi bi-box-arrow-up-right"></i></div>
+            <div class="file-preview-label"><i class="bi bi-file-earmark me-1"></i>{{ api.fileName(url) }}</div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</ng-container>
+
+<ng-container *ngIf="fullscreenUrl">
+  <div class="lightbox-backdrop" (click)="closeFullscreen()">
+    <div class="lightbox-toolbar">
+      <a [href]="api.resolveFileUrl(fullscreenUrl)" target="_blank" class="lightbox-btn" title="Open in new tab" (click)="$event.stopPropagation()">
+        <i class="bi bi-box-arrow-up-right"></i>
+      </a>
+      <button class="lightbox-btn" (click)="closeFullscreen()" title="Close"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <img [src]="api.resolveFileUrl(fullscreenUrl)" class="lightbox-img" alt="Preview"
+         (click)="$event.stopPropagation()" />
+  </div>
+</ng-container>

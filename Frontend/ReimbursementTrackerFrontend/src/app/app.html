@@ -1,7 +1,3 @@
-<!-- ============================================================
-   APP SHELL — Loader + Toast + Theme Toggle + Router
-   ============================================================ -->
-
 <!-- Global Spinner Overlay -->
 @if (loader.isLoading()) {
   <div class="loader-overlay">
@@ -16,7 +12,7 @@
 
 <!-- Global Toast -->
 @if (toast.showToast()) {
-  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1080;">
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:10100;">
     <div class="toast show toast-typed"
          [ngClass]="{
            'toast-success': toast.type() === 'success',
@@ -27,12 +23,36 @@
       <div class="toast-body">
         <i class="bi toast-icon"
            [ngClass]="{
-             'bi-check-circle-fill':          toast.type() === 'success',
-             'bi-x-circle-fill':              toast.type() === 'error',
-             'bi-exclamation-triangle-fill':  toast.type() === 'warning',
-             'bi-info-circle-fill':           toast.type() === 'info'
+             'bi-check-circle-fill':         toast.type() === 'success',
+             'bi-x-circle-fill':             toast.type() === 'error',
+             'bi-exclamation-triangle-fill': toast.type() === 'warning',
+             'bi-info-circle-fill':          toast.type() === 'info'
            }"></i>
         <span>{{ toast.message() }}</span>
+      </div>
+      <div class="toast-progress"></div>
+    </div>
+  </div>
+}
+
+<!-- Global Confirm Modal -->
+@if (toast.showConfirm()) {
+  <div class="modal-backdrop" (click)="toast.cancelConfirm()"></div>
+  <div class="modal-box confirm-modal">
+    <div class="modal-body" style="padding:32px 28px;text-align:center">
+      <div class="confirm-icon-wrap">
+        <i class="bi bi-trash3-fill"></i>
+      </div>
+      <p class="confirm-title">{{ toast.confirmTitle() }}</p>
+      <p class="confirm-sub">{{ toast.confirmMessage() }}</p>
+      <div class="confirm-actions">
+        <button class="btn-ghost" style="padding:9px 20px;font-size:13px;font-weight:600"
+          (click)="toast.cancelConfirm()">
+          <i class="bi bi-x-circle me-1"></i>Cancel
+        </button>
+        <button class="btn-confirm-delete" (click)="toast.acceptConfirm()">
+          <i class="bi bi-trash3"></i>Delete
+        </button>
       </div>
     </div>
   </div>

@@ -3,7 +3,12 @@
   "WorkspaceRootPath": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Indhu.V\\Downloads\\ReimbursementApp_SignalPagination\\backend_changes\\ExpenseService_GetAllExpenses.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\services\\expenseservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -12,10 +17,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\services\\approvalservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:services\\approvalservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:services\\paymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Indhu.V\\Downloads\\BackendChanges\\BackendChanges\\Interfaces\\IFileUploadService.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
@@ -47,10 +48,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\controllers\\expensecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:controllers\\expensecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|c:\\users\\indhu.v\\onedrive - new american funding\\reimbursementapp\\backend\\reimbursementtrackerapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{C7A5FBF8-F95B-E799-C377-962DCA2D7A6C}|ReimbursementTrackerApp.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -60,47 +57,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 5,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "ExpenseService_GetAllExpenses.cs",
-              "DocumentMoniker": "C:\\Users\\Indhu.V\\Downloads\\ReimbursementApp_SignalPagination\\backend_changes\\ExpenseService_GetAllExpenses.cs",
-              "RelativeDocumentMoniker": "..\\..\\..\\..\\Downloads\\ReimbursementApp_SignalPagination\\backend_changes\\ExpenseService_GetAllExpenses.cs",
-              "ToolTip": "C:\\Users\\Indhu.V\\Downloads\\ReimbursementApp_SignalPagination\\backend_changes\\ExpenseService_GetAllExpenses.cs",
-              "RelativeToolTip": "..\\..\\..\\..\\Downloads\\ReimbursementApp_SignalPagination\\backend_changes\\ExpenseService_GetAllExpenses.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-26T07:02:51.707Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "PaymentService.cs",
-              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\PaymentService.cs",
-              "RelativeDocumentMoniker": "Services\\PaymentService.cs",
-              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\PaymentService.cs",
-              "RelativeToolTip": "Services\\PaymentService.cs",
-              "ViewState": "AgIAAM0AAAAAAAAAAAAAALcBAABKAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:11:24.931Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "FileUploadService.cs",
-              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\FileUploadService.cs",
-              "RelativeDocumentMoniker": "Services\\FileUploadService.cs",
-              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\FileUploadService.cs",
-              "RelativeToolTip": "Services\\FileUploadService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAxAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:07:04.044Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 6,
@@ -139,29 +97,67 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "ApprovalService.cs",
               "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\ApprovalService.cs",
               "RelativeDocumentMoniker": "Services\\ApprovalService.cs",
               "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\ApprovalService.cs",
               "RelativeToolTip": "Services\\ApprovalService.cs",
-              "ViewState": "AgIAANgAAAAAAAAAAAAAAOMAAAAvAAAAAAAAAA==",
+              "ViewState": "AgIAAGEBAAAAAAAAAAAAAOMAAAAvAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-24T16:09:22.803Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
               "Title": "ExpenseService.cs",
               "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\ExpenseService.cs",
               "RelativeDocumentMoniker": "Services\\ExpenseService.cs",
               "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\ExpenseService.cs",
               "RelativeToolTip": "Services\\ExpenseService.cs",
-              "ViewState": "AgIAAGICAAAAAAAAAAAAAHcCAAAqAAAAAAAAAA==",
+              "ViewState": "AgIAALECAAAAAAAAAAAAAJMCAABFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-24T16:06:15.535Z",
               "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAAAEsBAAA2AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-24T16:00:27.601Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "PaymentService.cs",
+              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\PaymentService.cs",
+              "RelativeDocumentMoniker": "Services\\PaymentService.cs",
+              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\PaymentService.cs",
+              "RelativeToolTip": "Services\\PaymentService.cs",
+              "ViewState": "AgIAAMkBAAAAAAAAAAAAAM4BAABKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-24T16:11:24.931Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "FileUploadService.cs",
+              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\FileUploadService.cs",
+              "RelativeDocumentMoniker": "Services\\FileUploadService.cs",
+              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Services\\FileUploadService.cs",
+              "RelativeToolTip": "Services\\FileUploadService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAxAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-03-24T16:07:04.044Z"
             },
             {
               "$type": "Document",
@@ -173,8 +169,7 @@
               "RelativeToolTip": "..\\..\\..\\..\\Downloads\\BackendChanges\\BackendChanges\\Interfaces\\IFileUploadService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-25T12:54:20.672Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-25T12:54:20.672Z"
             },
             {
               "$type": "Document",
@@ -211,18 +206,6 @@
               "ViewState": "AgIAAM4BAAAAAAAAAAAUwPwBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-03-24T16:00:54Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "Program.cs",
-              "DocumentMoniker": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Program.cs",
-              "RelativeDocumentMoniker": "Program.cs",
-              "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Program.cs",
-              "RelativeToolTip": "Program.cs",
-              "ViewState": "AgIAAE4BAAAAAAAAAAAiwH4BAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:00:27.601Z"
             }
           ]
         },

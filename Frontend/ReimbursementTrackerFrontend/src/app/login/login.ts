@@ -62,7 +62,7 @@ export class Login {
             this.toast.showWarning('Invalid role: ' + role);
             this.router.navigate(['/login']);
         }
-        this.toast.show(`Welcome back! Logged in as ${role ?? 'user'} ✅`);
+        this.toast.show(`Welcome!  ${role ?? 'user'} ✅`);
         this.password.setValue('');
       },
       error: (err) => {

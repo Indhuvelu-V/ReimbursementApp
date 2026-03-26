@@ -102,3 +102,10 @@
   .user-detail-grid { grid-template-columns: 1fr 1fr; }
   .data-table th, .data-table td { font-size: 12px; padding: 10px 10px; }
 }
+
+/* Filter bar */
+.filter-bar-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.admin-filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 140px; flex: 1; }
+.filter-label { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; }
+.filter-actions-group { display: flex; gap: 8px; flex-direction: row; align-items: flex-end; flex: 0; min-width: auto; }

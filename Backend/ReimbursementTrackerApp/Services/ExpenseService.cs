@@ -376,12 +376,9 @@ namespace ReimbursementTrackerApp.Services
                     $"You cannot create expenses for past or future months.");
 
             // ── Handle file uploads ──────────────────────────────────────────
+            // Files are saved by the controller via FileUploadService before calling this method.
+            // DocumentUrls already contains the saved paths — no re-upload needed here.
             var documentUrls = request.DocumentUrls ?? new List<string>();
-            if (request.Documents != null && request.Documents.Count > 0)
-            {
-                var uploadedUrls = await _fileUploadService.SaveFilesAsync(request.Documents);
-                documentUrls.AddRange(uploadedUrls);
-            }
 
             // ── Fetch category ────────────────────────────────────────────────
             var category = await _categoryRepo.GetByIdAsync(request.CategoryId);
@@ -495,13 +492,8 @@ namespace ReimbursementTrackerApp.Services
             var oldAmount = existingExpense.Amount;
             var oldDocs = existingExpense.DocumentUrls ?? new List<string>();
 
-            // ── Handle new file uploads, appending to existing URLs ───────────
+            // ── Files already saved by controller; DocumentUrls contains paths ─
             var documentUrls = dto.DocumentUrls?.ToList() ?? new List<string>(oldDocs);
-            if (dto.Documents != null && dto.Documents.Count > 0)
-            {
-                var uploadedUrls = await _fileUploadService.SaveFilesAsync(dto.Documents);
-                documentUrls.AddRange(uploadedUrls);
-            }
 
             existingExpense.Amount = dto.Amount;
             existingExpense.CategoryId = dto.CategoryId;
@@ -584,14 +576,35 @@ namespace ReimbursementTrackerApp.Services
 
             var expenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
 
-            var query = expenses.AsQueryable();
+            var query = expenses.AsEnumerable();
 
             if (role == UserRole.Employee)
                 query = query.Where(e => e.UserId == userId);
 
-            var total = query.Count();
+            // Status filter
+            if (!string.IsNullOrWhiteSpace(paginationParams.Status))
+                query = query.Where(e => e.Status.ToString().Equals(paginationParams.Status, StringComparison.OrdinalIgnoreCase));
 
-            var data = query
+            // Date filters
+            if (!string.IsNullOrWhiteSpace(paginationParams.FromDate) &&
+                DateTime.TryParse(paginationParams.FromDate, out var fromDate))
+                query = query.Where(e => e.ExpenseDate.Date >= fromDate.Date);
+
+            if (!string.IsNullOrWhiteSpace(paginationParams.ToDate) &&
+                DateTime.TryParse(paginationParams.ToDate, out var toDate))
+                query = query.Where(e => e.ExpenseDate.Date <= toDate.Date);
+
+            // Amount filters
+            if (paginationParams.MinAmount.HasValue)
+                query = query.Where(e => e.Amount >= paginationParams.MinAmount.Value);
+
+            if (paginationParams.MaxAmount.HasValue)
+                query = query.Where(e => e.Amount <= paginationParams.MaxAmount.Value);
+
+            var filtered = query.OrderByDescending(e => e.ExpenseDate).ToList();
+            var total = filtered.Count;
+
+            var data = filtered
                 .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
                 .Take(paginationParams.PageSize)
                 .Select(MapToDto)
@@ -697,6 +710,7 @@ namespace ReimbursementTrackerApp.Services
             return new CreateExpenseResponseDto
             {
                 ExpenseId = e.ExpenseId ?? "",
+                UserId = e.UserId ?? "",
                 CategoryId = e.CategoryId ?? "",
                 CategoryName = e.Category?.CategoryName.ToString() ?? e.CategoryName,
                 Amount = e.Amount,
