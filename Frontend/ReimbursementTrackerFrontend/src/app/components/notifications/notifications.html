@@ -1,0 +1,96 @@
+<div class="notif-container">
+
+  <!-- Manager: Create Notification Form -->
+  <div *ngIf="isManager()" class="manager-form-card">
+    <h5><i class="bi bi-megaphone"></i>Send Notification to Employee</h5>
+    <div class="form-group">
+      <label>Employee User ID</label>
+      <input type="text" class="dark-input" [(ngModel)]="newNotifUserId" placeholder="Enter employee user ID" />
+    </div>
+    <div class="form-group">
+      <label>Message</label>
+      <input type="text" class="dark-input" [(ngModel)]="newNotifMessage" placeholder="Type your message..." />
+    </div>
+    <button class="btn-send-notif" (click)="sendNotification()" [disabled]="!newNotifUserId || !newNotifMessage">
+      <i class="bi bi-send"></i>Send
+    </button>
+  </div>
+
+  <!-- Header -->
+  <div class="notif-header">
+    <div class="notif-header-left">
+      <div class="page-icon"><i class="bi bi-bell-fill"></i></div>
+      <div>
+        <h2>Notifications</h2>
+        <p class="notif-sub">Your activity feed</p>
+      </div>
+    </div>
+    <div class="notif-header-right">
+      <span *ngIf="unreadCount > 0" class="unread-badge">{{ unreadCount }} unread</span>
+      <button *ngIf="unreadCount > 0" class="btn-mark-all" (click)="markAllRead()">
+        <i class="bi bi-check-all"></i>Mark All Read
+      </button>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <span class="legend-item"><span class="dot dot-blue"></span>Unread</span>
+    <span class="legend-item"><span class="dot dot-green"></span>Replied by Manager</span>
+    <span class="legend-item"><span class="dot dot-gray"></span>Read</span>
+  </div>
+
+  <!-- Filter tabs -->
+  <div class="filter-tabs">
+    <button class="tab-btn" [class.active]="activeTab==='all'" (click)="setTab('all')">All <span class="tab-count">{{ notifications.length }}</span></button>
+    <button class="tab-btn unread-tab" [class.active]="activeTab==='unread'" (click)="setTab('unread')">Unread <span class="tab-count">{{ unreadCount }}</span></button>
+    <button class="tab-btn replied-tab" [class.active]="activeTab==='replied'" (click)="setTab('replied')">Replied</button>
+    <button class="tab-btn read-tab" [class.active]="activeTab==='read'" (click)="setTab('read')">Read</button>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!filtered.length" class="empty-state">
+    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+    <p class="empty-title">No notifications here</p>
+    <p class="empty-sub">You're all caught up!</p>
+  </div>
+
+  <!-- Notification cards -->
+  <div *ngFor="let n of filtered" class="notif-card"
+       [ngClass]="{'unread-card': n.readStatus==='Unread', 'replied-card': n.reply && n.senderRole==='Manager', 'read-card': n.readStatus==='Read' && !n.reply}">
+    <div class="notif-card-inner">
+      <div class="notif-top">
+        <span class="notif-msg">{{ n.message }}</span>
+        <div class="notif-meta">
+          <span class="notif-time">{{ n.createdAt | date:'dd MMM, h:mm a' }}</span>
+          <span class="status-dot"
+                [ngStyle]="{background: n.readStatus==='Unread' ? 'var(--accent)' : (n.reply && n.senderRole==='Manager') ? 'var(--status-approved)' : 'var(--text-faint)'}">
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reply section (Employee only) -->
+    <div class="reply-section" *ngIf="isEmployee()">
+      <span class="reply-label">Reply</span>
+      <div *ngIf="n.reply" class="existing-reply"><i class="bi bi-chat-right-text me-2"></i>{{ n.reply }}</div>
+      <textarea *ngIf="!n.reply" class="reply-input" [(ngModel)]="replyTexts[n.notificationId]" placeholder="Type your reply..." rows="2"></textarea>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
+        <button *ngIf="!n.reply" class="btn-reply"
+                [disabled]="!replyTexts[n.notificationId]"
+                (click)="replyToNotification(n)">
+          <i class="bi bi-reply"></i>Send Reply
+        </button>
+        <button *ngIf="n.readStatus==='Unread'" class="btn-mark-read" (click)="markRead(n)">
+          <i class="bi bi-check2"></i>Mark Read
+        </button>
+      </div>
+    </div>
+
+    <!-- Mark read (non-employee) -->
+    <div class="reply-section" *ngIf="!isEmployee() && n.readStatus==='Unread'" style="padding-top:10px">
+      <button class="btn-mark-read" (click)="markRead(n)"><i class="bi bi-check2"></i>Mark Read</button>
+    </div>
+  </div>
+
+</div>

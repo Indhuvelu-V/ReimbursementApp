@@ -3,3 +3,5 @@ wwwroot\uploads\52764751-c690-474c-895e-d8cc54f0d107.webp
 wwwroot\uploads\5ddd8860-df06-4376-b8d6-2796c023b913.webp
 wwwroot\uploads\74ec8629-dae8-42f8-92bd-b0be6154eddb.webp
 wwwroot\uploads\911407ae-c583-4094-b499-28a16c0b636f.webp
+wwwroot\uploads\3ff34a5b-dd4f-4521-bdb7-e79d0f96b81a.png
+wwwroot\uploads\a2cdd183-ddd0-437b-8ec7-2e2524175253.png

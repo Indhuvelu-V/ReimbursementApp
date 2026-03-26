@@ -1,0 +1,155 @@
+.logs-wrapper { max-width: 900px; margin: 0 auto; }
+
+/* ── Shared filter/chip classes (also in global approvals/payments CSS) ─── */
+.stat-chip { display: flex; flex-direction: column; align-items: center; border: 1px solid; border-radius: var(--r-lg); padding: 10px 18px; }
+.stat-chip-num { font-size: 22px; font-weight: 800; line-height: 1; }
+.stat-chip-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ── Filter row ───────────────────────────────────────── */
+.admin-filter-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 130px; }
+.filter-select { min-width: 130px; }
+.filter-actions-group { flex-direction: row; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+
+/* ── Timeline layout ──────────────────────────────────── */
+.log-timeline { position: relative; display: flex; flex-direction: column; gap: 0; }
+.log-timeline::before {
+  content: '';
+  position: absolute;
+  left: 20px; top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--border), transparent);
+}
+
+.log-entry {
+  display: flex;
+  gap: 16px;
+  padding-bottom: 16px;
+  position: relative;
+}
+
+/* ── Timeline dot ────────────────────────────────────── */
+.timeline-dot {
+  flex-shrink: 0;
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  z-index: 1;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 3px var(--surface);
+}
+.dot-create  { background: rgba(34,197,94,0.18);  color: var(--status-approved); border-color: rgba(34,197,94,0.35); }
+.dot-update  { background: rgba(79,142,247,0.18); color: var(--accent);          border-color: rgba(79,142,247,0.35); }
+.dot-delete  { background: rgba(244,63,94,0.18);  color: var(--status-rejected); border-color: rgba(244,63,94,0.35); }
+.dot-submit  { background: rgba(56,189,248,0.18); color: var(--sky);             border-color: rgba(56,189,248,0.35); }
+.dot-approve { background: rgba(34,197,94,0.18);  color: var(--status-approved); border-color: rgba(34,197,94,0.35); }
+.dot-reject  { background: rgba(244,63,94,0.18);  color: var(--status-rejected); border-color: rgba(244,63,94,0.35); }
+.dot-payment { background: rgba(167,139,250,0.18);color: var(--violet);          border-color: rgba(167,139,250,0.35); }
+.dot-view    { background: rgba(245,158,11,0.18); color: var(--gold);            border-color: rgba(245,158,11,0.35); }
+.dot-default { background: var(--surface2);       color: var(--text-faint);      border-color: var(--border); }
+
+/* ── Log card ────────────────────────────────────────── */
+.log-card {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.18s, border-color 0.18s;
+}
+.log-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-soft);
+}
+
+.log-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  gap: 10px; flex-wrap: wrap;
+}
+.log-card-left  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.log-card-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.log-action-text {
+  font-size: 13px; color: var(--text); font-weight: 500;
+  max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.log-date {
+  font-size: 11px; color: var(--text-faint);
+  display: flex; align-items: center;
+}
+
+.btn-delete-log {
+  width: 28px; height: 28px;
+  background: transparent; border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  color: var(--text-faint); font-size: 13px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.btn-delete-log:hover {
+  background: rgba(244,63,94,0.1);
+  border-color: rgba(244,63,94,0.3);
+  color: var(--status-rejected);
+}
+
+/* ── Log card body ───────────────────────────────────── */
+.log-card-body { padding: 12px 16px; }
+
+.log-meta-grid {
+  display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+}
+.log-meta-item { display: flex; align-items: center; gap: 6px; }
+.log-meta-label {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  display: flex; align-items: center;
+}
+.log-meta-val  { font-size: 13px; color: var(--text); font-weight: 500; }
+.log-amount    { font-size: 13px; color: var(--gold); font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.log-old-amount { font-size: 12px; color: var(--text-faint); text-decoration: line-through; font-family: 'JetBrains Mono', monospace; }
+
+/* ── Action badges ───────────────────────────────────── */
+.action-badge {
+  display: inline-flex; align-items: center; padding: 3px 8px;
+  border-radius: var(--r-xs); font-size: 10px; font-weight: 800;
+  letter-spacing: 0.6px; text-transform: uppercase; flex-shrink: 0;
+}
+.badge-action-create  { background: rgba(34,197,94,0.15);  color: var(--status-approved); border: 1px solid rgba(34,197,94,0.3); }
+.badge-action-update  { background: rgba(79,142,247,0.15); color: var(--accent);          border: 1px solid rgba(79,142,247,0.3); }
+.badge-action-delete  { background: rgba(244,63,94,0.15);  color: var(--status-rejected); border: 1px solid rgba(244,63,94,0.3); }
+.badge-action-submit  { background: rgba(56,189,248,0.15); color: var(--sky);             border: 1px solid rgba(56,189,248,0.3); }
+.badge-action-approve { background: rgba(34,197,94,0.15);  color: var(--status-approved); border: 1px solid rgba(34,197,94,0.3); }
+.badge-action-reject  { background: rgba(244,63,94,0.15);  color: var(--status-rejected); border: 1px solid rgba(244,63,94,0.3); }
+.badge-action-payment { background: rgba(167,139,250,0.15);color: var(--violet);          border: 1px solid rgba(167,139,250,0.3); }
+.badge-action-view    { background: rgba(245,158,11,0.15); color: var(--gold);            border: 1px solid rgba(245,158,11,0.3); }
+.badge-action-default { background: var(--surface2);       color: var(--text-muted);      border: 1px solid var(--border); }
+
+/* ── Role badges ─────────────────────────────────────── */
+.role-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
+.role-admin    { background: rgba(167,139,250,0.15); color: var(--violet);          border: 1px solid rgba(167,139,250,0.3); }
+.role-manager  { background: rgba(245,158,11,0.15);  color: var(--gold);            border: 1px solid rgba(245,158,11,0.3); }
+.role-employee { background: rgba(79,142,247,0.15);  color: var(--accent);          border: 1px solid rgba(79,142,247,0.3); }
+.role-finance  { background: rgba(45,212,191,0.15);  color: var(--teal);            border: 1px solid rgba(45,212,191,0.3); }
+
+/* ── Delete log preview in modal ────────────────────── */
+.delete-log-preview {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 14px 18px;
+  margin: 12px 0;
+  text-align: left;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  .log-timeline::before { left: 16px; }
+  .timeline-dot { width: 34px; height: 34px; font-size: 13px; }
+  .log-action-text { max-width: 200px; }
+  .log-meta-grid { gap: 12px; }
+}

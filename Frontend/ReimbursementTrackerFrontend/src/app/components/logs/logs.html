@@ -1,0 +1,173 @@
+<div class="logs-wrapper fade-in">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:rgba(167,139,250,0.12);border-color:rgba(167,139,250,0.25);">
+        <i class="bi bi-journal-text" style="color:var(--violet)"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Audit Logs</h1>
+        <p class="page-sub">Complete activity trail for all system actions</p>
+      </div>
+    </div>
+    <div *ngIf="isAdmin()" class="stat-chip" style="background:rgba(167,139,250,0.1);border-color:rgba(167,139,250,0.25);">
+      <span class="stat-chip-num" style="color:var(--violet)">{{ total }}</span>
+      <span class="stat-chip-label">Records</span>
+    </div>
+  </div>
+
+  <!-- Not authorized -->
+  <div *ngIf="isOtherUser()" class="alert-msg">
+    <i class="bi bi-lock"></i>Only Admins can view audit logs.
+  </div>
+
+  <div *ngIf="isAdmin()">
+
+    <!-- Filter Card -->
+    <div class="form-card" style="padding:18px 24px;margin-bottom:20px">
+      <div class="admin-filter-row">
+        <div class="filter-group">
+          <label class="field-label">From Date</label>
+          <input type="date" class="field-input filter-select" [(ngModel)]="fromDate" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">To Date</label>
+          <input type="date" class="field-input filter-select" [(ngModel)]="toDate" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Action Type</label>
+          <select class="field-input filter-select" [(ngModel)]="filterAction">
+            <option value="">All Actions</option>
+            <option value="created">Created</option>
+            <option value="updated">Updated</option>
+            <option value="deleted">Deleted</option>
+            <option value="submitted">Submitted</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+        <div class="filter-group filter-actions-group">
+          <button class="btn-primary" style="padding:8px 16px;font-size:12px" (click)="applyFilter()">
+            <i class="bi bi-funnel-fill"></i>Apply Filters
+          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilter()">
+            <i class="bi bi-x-circle"></i>Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!filteredLogs.length" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-journal-x"></i></div>
+      <h3 class="empty-title">No logs found</h3>
+      <p class="empty-sub">Try adjusting the date or action filters.</p>
+    </div>
+
+    <!-- Log Timeline -->
+    <div *ngIf="filteredLogs.length > 0" class="log-timeline">
+      <div class="log-entry" *ngFor="let log of pagedLogs; let i = index">
+
+        <!-- Timeline dot -->
+        <div class="timeline-dot" [ngClass]="actionDotClass(log.action)">
+          <i class="bi" [ngClass]="actionIcon(log.action)"></i>
+        </div>
+
+        <!-- Log Card -->
+        <div class="log-card">
+          <div class="log-card-header">
+            <div class="log-card-left">
+              <span class="action-badge" [ngClass]="actionBadgeClass(log.action)">
+                {{ actionLabel(log.action) }}
+              </span>
+              <span class="log-action-text">{{ log.action }}</span>
+            </div>
+            <div class="log-card-right">
+              <span class="log-date">
+                <i class="bi bi-clock me-1"></i>{{ formatDate(log.date) }}
+              </span>
+              <button class="btn-delete-log" (click)="confirmDelete(log)" title="Delete log">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="log-card-body">
+            <div class="log-meta-grid">
+              <div class="log-meta-item" *ngIf="log.userName">
+                <span class="log-meta-label"><i class="bi bi-person me-1"></i>User</span>
+                <span class="log-meta-val">{{ log.userName }}</span>
+              </div>
+              <div class="log-meta-item" *ngIf="log.role">
+                <span class="log-meta-label"><i class="bi bi-shield me-1"></i>Role</span>
+                <span class="role-badge"
+                  [ngClass]="{
+                    'role-admin':    log.role === 'Admin',
+                    'role-manager':  log.role === 'Manager',
+                    'role-employee': log.role === 'Employee',
+                    'role-finance':  log.role === 'Finance'
+                  }">{{ log.role }}</span>
+              </div>
+              <div class="log-meta-item" *ngIf="log.expenseId">
+                <span class="log-meta-label"><i class="bi bi-receipt me-1"></i>Expense ID</span>
+                <code>{{ log.expenseId }}</code>
+              </div>
+              <div class="log-meta-item" *ngIf="log.amount">
+                <span class="log-meta-label"><i class="bi bi-currency-rupee me-1"></i>Amount</span>
+                <span class="log-amount">{{ formatAmount(log.amount) }}</span>
+              </div>
+              <div class="log-meta-item" *ngIf="log.oldAmount && log.oldAmount !== log.amount">
+                <span class="log-meta-label"><i class="bi bi-arrow-left-right me-1"></i>Previous</span>
+                <span class="log-old-amount">{{ formatAmount(log.oldAmount) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="filteredLogs.length > 0" class="pagination-bar">
+      <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i>Prev
+      </button>
+      <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;·&nbsp; {{ total }} records</span>
+      <button class="pg-btn" (click)="nextPage()" [disabled]="page * size >= total">
+        Next <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-backdrop" *ngIf="showDeleteConfirm" (click)="cancelDelete()"></div>
+<div class="modal-box confirm-modal" *ngIf="showDeleteConfirm">
+  <div class="modal-head">
+    <h4><i class="bi bi-trash3 me-2" style="color:var(--status-rejected)"></i>Delete Audit Log?</h4>
+    <button class="modal-close-btn" (click)="cancelDelete()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" style="text-align:center;padding:24px">
+    <div class="confirm-icon-wrap" style="background:rgba(244,63,94,0.1);border-color:rgba(244,63,94,0.3);color:var(--status-rejected)">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">This cannot be undone.</p>
+    <div *ngIf="pendingDeleteLog" class="delete-log-preview">
+      <span class="action-badge" [ngClass]="actionBadgeClass(pendingDeleteLog.action)" style="margin-bottom:8px;display:inline-flex">
+        {{ actionLabel(pendingDeleteLog.action) }}
+      </span>
+      <p style="font-size:13px;color:var(--text-muted);margin:0">{{ pendingDeleteLog.action }}</p>
+      <p style="font-size:12px;color:var(--text-faint);margin-top:4px">{{ formatDate(pendingDeleteLog.date) }}</p>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:20px">
+      <button class="btn-ghost" (click)="cancelDelete()"><i class="bi bi-x-circle me-2"></i>Cancel</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#f43f5e,#e11d48)" (click)="executeDelete()">
+        <i class="bi bi-trash3 me-2"></i>Delete
+      </button>
+    </div>
+  </div>
+</div>

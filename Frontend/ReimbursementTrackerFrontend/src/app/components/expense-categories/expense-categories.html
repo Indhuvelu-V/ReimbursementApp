@@ -1,0 +1,66 @@
+<div class="category-container">
+
+  <h2><i class="bi bi-list-ul"></i>Expense Categories</h2>
+
+  <!-- Info banner for non-admin -->
+  <div *ngIf="!isAdmin()" class="info-banner">
+    <i class="bi bi-info-circle-fill"></i>
+    Viewing category limits. Only Admins can edit limits.
+  </div>
+
+  <!-- Edit Card (Admin only) -->
+  <div *ngIf="selectedCategory && isAdmin()" class="edit-card">
+    <h5><i class="bi bi-pencil-square"></i>Edit — {{ selectedCategory.categoryName }}</h5>
+
+    <div class="form-group">
+      <label>Category Name</label>
+      <input class="field-input" [value]="selectedCategory.categoryName" readonly />
+    </div>
+
+    <div class="form-group">
+      <label>Max Limit (₹)</label>
+      <input type="number" class="field-input" [(ngModel)]="newMaxLimit" min="1" placeholder="Enter new limit" />
+    </div>
+
+    <div>
+      <button class="btn-update" (click)="updateCategory()">
+        <i class="bi bi-save2"></i>Update Limit
+      </button>
+      <button class="btn-cancel" (click)="cancelEdit()">
+        <i class="bi bi-x-circle"></i>Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Categories Table -->
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Category ID</th>
+          <th>Category Name</th>
+          <th>Max Limit</th>
+          <th *ngIf="isAdmin()">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cat of categories; let i = index" (click)="selectCategory(cat)">
+          <td>{{ i + 1 }}</td>
+          <td><code style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent)">{{ cat.categoryId }}</code></td>
+          <td><span class="cat-badge"><i class="bi bi-tag-fill"></i>{{ cat.categoryName }}</span></td>
+          <td class="limit-cell">₹{{ cat.maxLimit | number }}</td>
+          <td *ngIf="isAdmin()">
+            <button class="btn-edit-row" (click)="selectCategory(cat); $event.stopPropagation()">
+              <i class="bi bi-pencil"></i>Edit
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!categories.length">
+          <td colspan="5" class="no-data"><i class="bi bi-inbox me-2"></i>No categories found.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

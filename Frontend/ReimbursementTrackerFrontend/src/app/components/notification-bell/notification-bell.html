@@ -1,0 +1,54 @@
+<div class="bell-wrapper">
+
+  <!-- Bell button -->
+  <div class="bell-container" (click)="toggleDropdown()" title="Notifications">
+    <i class="bi bi-bell-fill bell-icon"></i>
+    <span *ngIf="unreadCount > 0" class="badge-count">{{ unreadCount > 9 ? '9+' : unreadCount }}</span>
+  </div>
+
+  <!-- Dropdown -->
+  <div class="dropdown-box" *ngIf="showDropdown">
+
+    <div class="dropdown-header">
+      <i class="bi bi-bell"></i>Notifications
+      <span *ngIf="unreadCount > 0" class="header-badge">{{ unreadCount }} new</span>
+      <div class="header-actions" *ngIf="!loading">
+        <button class="btn-refresh" (click)="loadNotifications(); $event.stopPropagation()" title="Refresh">
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="notif-loading">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+    </div>
+
+    <div *ngIf="!loading && !notifications.length" class="empty">
+      <i class="bi bi-inbox me-1"></i>No notifications
+    </div>
+
+    <div *ngFor="let n of notifications"
+         class="dropdown-item"
+         [ngClass]="accentClass(n)"
+         (click)="markAsRead(n, $event)">
+      <div class="item-content">
+        <div class="msg">{{ n.message }}</div>
+        <div class="item-meta">
+          <small class="time">{{ n.createdAt | date:'dd MMM, h:mm a' }}</small>
+          <span class="read-dot"
+                [ngClass]="{
+                  'dot-blue':  n.readStatus?.toLowerCase() === 'unread',
+                  'dot-green': n.reply && n.senderRole === 'Manager',
+                  'dot-gray':  n.readStatus?.toLowerCase() === 'read' && !n.reply
+                }">
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="view-all" (click)="goToNotifications()">
+      <i class="bi bi-list-ul"></i>View All
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,114 @@
+.bell-wrapper { position: relative; display: inline-block; }
+
+.bell-container {
+  width: 34px; height: 34px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.18s; position: relative;
+}
+.bell-container:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+
+.bell-icon { font-size: 16px; }
+
+.badge-count {
+  position: absolute; top: -5px; right: -5px;
+  background: var(--status-rejected); color: #fff;
+  border-radius: 99px; min-width: 17px; height: 17px;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--navbar-bg);
+  padding: 0 3px;
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.5); } 50% { box-shadow: 0 0 0 5px rgba(244,63,94,0); } }
+
+.dropdown-box {
+  position: absolute; top: calc(100% + 10px); right: 0;
+  width: 340px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xl);
+  z-index: 1200; overflow: hidden;
+  animation: popIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(-8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+.dropdown-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700; color: var(--text);
+}
+.header-badge {
+  background: rgba(244,63,94,0.15); color: var(--status-rejected);
+  border: 1px solid rgba(244,63,94,0.3);
+  font-size: 10px; font-weight: 700;
+  padding: 2px 7px; border-radius: 99px;
+  margin-left: auto;
+}
+.header-actions { display: flex; align-items: center; gap: 6px; }
+.btn-refresh {
+  background: none; border: none; color: var(--text-faint);
+  cursor: pointer; font-size: 13px; padding: 3px 5px;
+  border-radius: var(--r-sm); transition: all 0.15s;
+  display: flex; align-items: center;
+}
+.btn-refresh:hover { background: var(--surface2); color: var(--accent); }
+
+/* Loading animation */
+.notif-loading { display: flex; justify-content: center; padding: 20px; }
+.loading-dots { display: flex; gap: 5px; }
+.loading-dots span {
+  width: 7px; height: 7px;
+  background: var(--accent); border-radius: 50%;
+  animation: dots 1.2s infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dots { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+
+.empty { padding: 24px; text-align: center; color: var(--text-faint); font-size: 13px; }
+
+.dropdown-item {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border-soft);
+  transition: background 0.15s; cursor: pointer;
+}
+.dropdown-item:last-of-type { border-bottom: none; }
+.dropdown-item:hover { background: var(--surface2); }
+
+.item-unread {
+  background: var(--accent-dim);
+  border-left: 3px solid var(--accent);
+}
+.item-replied {
+  background: rgba(34,197,94,0.07);
+  border-left: 3px solid var(--status-approved);
+}
+.item-read { border-left: 3px solid transparent; }
+
+.item-content { display: flex; flex-direction: column; gap: 4px; }
+.msg { font-size: 12.5px; color: var(--text); line-height: 1.4; }
+
+.item-meta { display: flex; align-items: center; justify-content: space-between; }
+.time { font-size: 10.5px; color: var(--text-faint); }
+
+.read-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.dot-blue  { background: var(--accent); }
+.dot-green { background: var(--status-approved); }
+.dot-gray  { background: var(--text-faint); }
+
+.view-all {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 16px;
+  font-size: 12px; font-weight: 700; color: var(--accent);
+  cursor: pointer; border-top: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.view-all:hover { background: var(--accent-dim); }

@@ -1,0 +1,78 @@
+<!-- ============================================================
+   MANAGER DASHBOARD — Sticky Navbar + Theme Toggle
+   ============================================================ -->
+<div class="nav-sticky-wrap nav-manager">
+  <nav class="rt-navbar">
+
+    <!-- Brand -->
+    <a class="nav-brand" href="#">
+      <div class="nav-brand-icon"><i class="bi bi-person-badge-fill"></i></div>
+      <div class="nav-brand-text">
+        <span class="nav-brand-title">Reimbursement</span>
+        <span class="nav-brand-role">Manager Portal</span>
+      </div>
+    </a>
+
+    <!-- Hamburger -->
+    <button class="nav-toggler" (click)="toggleNav()" aria-label="Toggle navigation">
+      <i class="bi" [ngClass]="navOpen ? 'bi-x-lg' : 'bi-list'"></i>
+    </button>
+
+    <!-- Nav Links -->
+    <div class="nav-links" [class.open]="navOpen">
+      <a class="nav-link-item" routerLink="expense"              routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-wallet2"></i>Expenses</a>
+      <a class="nav-link-item" routerLink="approvals"            routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-check2-square"></i>Approvals</a>
+      <a class="nav-link-item" routerLink="policy"               routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-file-earmark-text"></i>Policies</a>
+      <a class="nav-link-item" routerLink="expense-categories"   routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-list-ul"></i>Categories</a>
+      <a class="nav-link-item" routerLink="payment"              routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-cash-stack"></i>Payment</a>
+      <a class="nav-link-item" routerLink="employee-data"        routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-people"></i>Employees</a>
+      <a class="nav-link-item" routerLink="notifications"        routerLinkActive="active-link" (click)="navOpen=false"><i class="bi bi-bell"></i>Notifications</a>
+    </div>
+
+    <!-- Right controls -->
+    <div class="nav-right">
+      <app-notification-bell></app-notification-bell>
+
+      <button class="theme-toggle-btn" (click)="toggleTheme()" [title]="themeService.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+        <i class="bi" [ngClass]="themeService.isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+      </button>
+
+      <div class="user-chip" *ngIf="uname()">
+        <div class="user-avatar">{{ uname()!.charAt(0).toUpperCase() }}</div>
+        <span class="user-name">{{ uname() }}</span>
+      </div>
+
+      <a class="logout-btn" href="#" (click)="logout($event)" *ngIf="uname()">
+        <i class="bi bi-box-arrow-right"></i>
+        <span class="d-none d-lg-inline">Logout</span>
+      </a>
+    </div>
+
+  </nav>
+</div>
+
+<div class="main-content">
+  <router-outlet></router-outlet>
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal-backdrop" *ngIf="showLogoutConfirm" (click)="cancelLogout()"></div>
+<div class="modal-box confirm-modal" *ngIf="showLogoutConfirm">
+  <div class="modal-head">
+    <h4><i class="bi bi-box-arrow-right me-2" style="color:var(--status-rejected)"></i>Confirm Logout</h4>
+    <button class="modal-close-btn" (click)="cancelLogout()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" style="text-align:center;padding:28px 24px">
+    <div class="confirm-icon-wrap">
+      <i class="bi bi-question-circle-fill"></i>
+    </div>
+    <p style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px">Are you sure you want to logout?</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:24px">You will be redirected to the login page.</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn-ghost" (click)="cancelLogout()"><i class="bi bi-x-circle me-2"></i>Cancel</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#f43f5e,#e11d48)" (click)="confirmLogout()">
+        <i class="bi bi-box-arrow-right me-2"></i>Yes, Logout
+      </button>
+    </div>
+  </div>
+</div>

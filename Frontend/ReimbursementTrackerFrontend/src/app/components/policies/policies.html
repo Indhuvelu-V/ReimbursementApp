@@ -1,0 +1,22 @@
+<div class="policies-container">
+  <h2><i class="bi bi-file-earmark-text"></i>Reimbursement Policies</h2>
+
+  <div *ngIf="!policies.length" class="empty-state">
+    <div class="empty-icon"><i class="bi bi-file-earmark-x"></i></div>
+    <h3 class="empty-title">No policies found</h3>
+    <p class="empty-sub">Policies will appear here once they are added by an administrator.</p>
+  </div>
+
+  <div class="policy-grid" *ngIf="policies.length">
+    <div class="policy-card" *ngFor="let p of policies">
+      <div class="policy-card-header">
+        <div class="policy-icon"><i class="bi bi-shield-check"></i></div>
+        <div>
+          <div class="policy-category">{{ p.categoryName }}</div>
+          <div class="policy-id">ID: {{ p.policyId }}</div>
+        </div>
+      </div>
+      <div class="policy-description">{{ p.description }}</div>
+    </div>
+  </div>
+</div>

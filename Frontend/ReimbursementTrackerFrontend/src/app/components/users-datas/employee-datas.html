@@ -1,0 +1,148 @@
+<div class="employee-container fade-in">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Employee Data</h1>
+        <p class="page-sub">{{ isAdmin() ? 'View and search all registered users' : 'Search for a user by ID' }}</p>
+      </div>
+    </div>
+    <div *ngIf="isAdmin() && totalRecords > 0" class="stat-chip">
+      <span class="stat-num">{{ totalRecords }}</span>
+      <span class="stat-label">Users</span>
+    </div>
+  </div>
+
+  <!-- Search Card -->
+  <div class="search-card">
+    <div class="search-card-title">
+      <div class="search-card-icon"><i class="bi bi-search"></i></div>
+      Search User by ID
+    </div>
+    <div class="search-row">
+      <div class="search-input-wrap">
+        <i class="bi bi-person-badge search-icon"></i>
+        <input type="text"
+               [(ngModel)]="searchUserId"
+               class="dark-input"
+               placeholder="Enter User ID..."
+               (keyup.enter)="searchUser()" />
+      </div>
+      <button class="btn-search" (click)="searchUser()">
+        <i class="bi bi-search"></i>Search
+      </button>
+      <button *ngIf="selectedUser" class="btn-clear" (click)="clearSearch()">
+        <i class="bi bi-x-circle"></i>Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- User Result Card -->
+  <div *ngIf="selectedUser" class="user-result-card">
+    <div class="user-result-header">
+      <div class="user-avatar-lg">{{ selectedUser.userName?.charAt(0)?.toUpperCase() }}</div>
+      <div>
+        <p class="user-result-name">{{ selectedUser.userName }}</p>
+        <p class="user-result-id">ID: {{ selectedUser.userId }}</p>
+      </div>
+    </div>
+    <div class="user-detail-grid">
+      <div class="user-detail-item">
+        <span class="detail-label">Role</span>
+        <span><span class="role-badge"><i class="bi bi-shield me-1"></i>{{ selectedUser.role }}</span></span>
+      </div>
+      <div class="user-detail-item">
+        <span class="detail-label">Department</span>
+        <span class="detail-val">{{ selectedUser.department || '—' }}</span>
+      </div>
+      <div class="user-detail-item">
+        <span class="detail-label">Status</span>
+        <span>
+          <span *ngIf="selectedUser.status === 'Active'" class="status-active">
+            <i class="bi bi-circle-fill" style="font-size:7px"></i>Active
+          </span>
+          <span *ngIf="selectedUser.status !== 'Active'" class="status-inactive">
+            <i class="bi bi-circle-fill" style="font-size:7px"></i>{{ selectedUser.status }}
+          </span>
+        </span>
+      </div>
+      <div class="user-detail-item">
+        <span class="detail-label">Approval Level</span>
+        <span class="detail-val">{{ selectedUser.approvalLevel || '—' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Table -->
+  <div *ngIf="isAdmin()">
+    <p class="section-heading">
+      <i class="bi bi-table" style="color:var(--accent)"></i>All Users
+    </p>
+
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Name</th>
+            <th>Role</th>
+            <th>Department</th>
+            <th>Status</th>
+            <th>Approval Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of users">
+            <td><span class="user-id-cell">{{ user.userId }}</span></td>
+            <td>
+              <div class="user-name-cell">
+                <div class="user-avatar-sm">{{ user.userName?.charAt(0)?.toUpperCase() }}</div>
+                <span>{{ user.userName }}</span>
+              </div>
+            </td>
+            <td><span class="role-badge">{{ user.role }}</span></td>
+            <td>{{ user.department || '—' }}</td>
+            <td>
+              <span *ngIf="user.status === 'Active'" class="status-active">
+                <i class="bi bi-circle-fill" style="font-size:7px"></i>Active
+              </span>
+              <span *ngIf="user.status !== 'Active'" class="status-inactive">
+                <i class="bi bi-circle-fill" style="font-size:7px"></i>{{ user.status }}
+              </span>
+            </td>
+            <td>{{ user.approvalLevel || '—' }}</td>
+          </tr>
+          <tr *ngIf="!users.length" class="no-data-row">
+            <td colspan="6"><i class="bi bi-inbox me-2"></i>No users found.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination-bar">
+        <span class="pg-info">
+          Page <strong>{{ page }}</strong> &nbsp;·&nbsp; <strong>{{ totalRecords }}</strong> total users
+        </span>
+        <div class="pg-buttons">
+          <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
+            <i class="bi bi-chevron-left"></i>Prev
+          </button>
+          <button class="pg-btn" (click)="nextPage()" [disabled]="page * size >= totalRecords">
+            Next<i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Non-admin notice -->
+  <div *ngIf="!isAdmin()" class="access-notice">
+    <i class="bi bi-info-circle-fill"></i>
+    Use the search above to look up a user by their ID.
+  </div>
+
+</div>

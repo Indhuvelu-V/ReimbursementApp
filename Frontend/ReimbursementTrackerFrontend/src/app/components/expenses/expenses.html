@@ -1,0 +1,347 @@
+<div class="expenses-wrapper fade-in">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="bi bi-receipt-cutoff"></i></div>
+      <div>
+        <h1 class="page-title">My Expenses</h1>
+        <p class="page-sub">Track, submit and manage your reimbursements</p>
+      </div>
+    </div>
+    <div class="stat-chip">
+      <span class="stat-chip-num">{{ total }}</span>
+      <span class="stat-chip-label">{{ hasActiveFilters ? 'Filtered' : 'Total' }}</span>
+    </div>
+  </div>
+
+  <!-- SUCCESS BANNER -->
+  <div *ngIf="lastCreatedExpenseId" class="id-banner">
+    <div class="id-banner-inner">
+      <i class="bi bi-check-circle-fill id-banner-icon"></i>
+      <div>
+        <span class="id-banner-label">Expense Created Successfully</span>
+        <span class="id-banner-id">ID: {{ lastCreatedExpenseId }}</span>
+      </div>
+    </div>
+    <button class="btn-dismiss" (click)="dismissExpenseId()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- CREATE / EDIT FORM -->
+  <div class="form-card">
+    <div class="form-card-header">
+      <div class="form-card-title">
+        <div class="form-card-icon" [class.edit-mode]="isEditMode">
+          <i class="bi" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-lg'"></i>
+        </div>
+        <span>{{ isEditMode ? 'Update Expense' : 'New Expense' }}</span>
+      </div>
+      <div *ngIf="isEditMode" class="editing-badge">
+        <i class="bi bi-pencil me-1"></i>Editing <code>{{ editExpenseId }}</code>
+      </div>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-row">
+
+        <div class="field">
+          <label class="field-label"><i class="bi bi-tag me-1"></i>Category ID</label>
+          <input formControlName="categoryId" placeholder="e.g. C1" class="field-input"
+                 [class.is-error]="categoryId.invalid && categoryId.touched"
+                 [class.is-valid]="categoryId.valid && categoryId.touched" />
+          <span class="field-error" *ngIf="categoryId.invalid && categoryId.touched">
+            <i class="bi bi-exclamation-circle me-1"></i>Category ID is required
+          </span>
+        </div>
+
+        <div class="field">
+          <label class="field-label">
+            <i class="bi bi-currency-rupee me-1"></i>Amount
+            <span *ngIf="categoryMaxLimit !== null" class="field-optional">
+              — max {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
+            </span>
+            <span *ngIf="loadingCategoryLimit" class="field-optional">
+              <i class="bi bi-hourglass-split me-1"></i>Loading limit…
+            </span>
+          </label>
+          <div class="input-with-prefix">
+            <span class="input-prefix">₹</span>
+            <input type="number" formControlName="amount" placeholder="0.00" class="field-input has-prefix"
+                   [class.is-error]="(amount.invalid && amount.touched) || (categoryMaxLimit !== null && amount.value > categoryMaxLimit)"
+                   [class.is-valid]="amount.valid && amount.touched && !(categoryMaxLimit !== null && amount.value > categoryMaxLimit)" />
+          </div>
+          <span class="field-error" *ngIf="amount.invalid && amount.touched">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            <span *ngIf="amount.errors?.['required']">Amount is required</span>
+            <span *ngIf="amount.errors?.['min']">Amount must be greater than 0</span>
+          </span>
+          <span class="field-error" *ngIf="categoryMaxLimit !== null && amount.value > categoryMaxLimit && amount.touched">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+            Exceeds max limit of {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
+          </span>
+        </div>
+
+        <div class="field">
+          <label class="field-label">
+            <i class="bi bi-calendar3 me-1"></i>Expense Date
+            <span class="field-optional">({{ currentMonthLabel }} only)</span>
+          </label>
+          <input type="date" formControlName="expenseDate" class="field-input"
+                 [min]="minDate" [max]="maxDate"
+                 [class.is-error]="expenseDate.invalid && expenseDate.touched"
+                 [class.is-valid]="expenseDate.valid && expenseDate.touched" />
+          <span class="field-error" *ngIf="expenseDate.errors?.['required'] && expenseDate.touched">
+            <i class="bi bi-exclamation-circle me-1"></i>Date is required
+          </span>
+          <span class="field-error" *ngIf="expenseDate.errors?.['notCurrentMonth'] && expenseDate.touched">
+            <i class="bi bi-exclamation-circle me-1"></i>Date must be within {{ currentMonthLabel }}
+          </span>
+        </div>
+
+        <div class="field file-field">
+          <label class="field-label">
+            <i class="bi bi-paperclip me-1"></i>Documents<span class="field-optional">(optional)</span>
+          </label>
+          <label class="file-drop" [class.has-files]="files.length > 0">
+            <input type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.xlsx,.xls,.doc,.docx"
+                   (change)="onFileChange($event)" class="file-hidden" />
+            <i class="bi bi-cloud-arrow-up file-drop-icon"></i>
+            <span class="file-drop-text">
+              {{ files.length ? files.length + ' file(s) selected' : 'Click or drag to upload' }}
+            </span>
+            <span class="file-drop-hint">PNG, JPG, PDF, XLSX, DOC — max 10MB each</span>
+          </label>
+          <div *ngIf="filePreviews.length > 0" class="selected-files-grid">
+            <div *ngFor="let fp of filePreviews; let i = index" class="selected-file-item">
+              <img *ngIf="fp.isImage" [src]="fp.url" alt="preview" class="selected-file-img" />
+              <div *ngIf="!fp.isImage" class="selected-file-doc">
+                <i class="bi" [ngClass]="apiSvc.fileIcon(fp.name)"></i>
+              </div>
+              <span class="selected-file-name">{{ fp.name }}</span>
+              <button type="button" class="selected-file-remove" (click)="removeFile(i)">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">
+          <i class="bi" [ngClass]="isEditMode ? 'bi-save2' : 'bi-plus-circle'"></i>
+          {{ isEditMode ? 'Update Expense' : 'Create Expense' }}
+        </button>
+        <button *ngIf="isEditMode" type="button" (click)="resetForm()" class="btn-ghost">
+          <i class="bi bi-x-circle"></i>Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- STATUS QUICK PILLS -->
+  <div class="filter-section">
+    <div class="filter-bar">
+      <button class="filter-pill" [class.active]="filterStatus === ''" (click)="applyFilter('')">
+        All <span class="filter-count" *ngIf="!filterStatus">{{ total }}</span>
+      </button>
+      <button class="filter-pill draft"     [class.active]="filterStatus === 'Draft'"     (click)="applyFilter('Draft')"><span class="filter-dot"></span>Draft</button>
+      <button class="filter-pill submitted" [class.active]="filterStatus === 'Submitted'" (click)="applyFilter('Submitted')"><span class="filter-dot"></span>Submitted</button>
+      <button class="filter-pill approved"  [class.active]="filterStatus === 'Approved'"  (click)="applyFilter('Approved')"><span class="filter-dot"></span>Approved</button>
+      <button class="filter-pill paid"      [class.active]="filterStatus === 'Paid'"      (click)="applyFilter('Paid')"><span class="filter-dot"></span>Paid</button>
+      <button class="filter-pill rejected"  [class.active]="filterStatus === 'Rejected'"  (click)="applyFilter('Rejected')"><span class="filter-dot"></span>Rejected</button>
+    </div>
+  </div>
+
+  <!-- ADVANCED FILTER BAR — same layout as Payments -->
+  <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
+    <div class="admin-filter-row">
+
+      <div class="filter-group">
+        <label class="field-label">Status</label>
+        <select [(ngModel)]="filterStatus" class="field-input filter-select">
+          <option value="">All Statuses</option>
+          <option value="Draft">Draft</option>
+          <option value="Submitted">Submitted</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+          <option value="Paid">Paid</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label">Category</label>
+        <select [(ngModel)]="filterCategory" class="field-input filter-select">
+          <option value="">All Categories</option>
+          <option *ngFor="let cat of categories" [value]="cat.categoryName">
+            {{ cat.categoryName }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label">Min Amount (₹)</label>
+        <input type="number" [(ngModel)]="filterMinAmount" placeholder="0"
+               class="field-input filter-select" min="0" />
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label">Max Amount (₹)</label>
+        <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any"
+               class="field-input filter-select" min="0" />
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label">From Date</label>
+        <input type="date" [(ngModel)]="filterDateFrom" class="field-input filter-select" />
+      </div>
+
+      <div class="filter-group">
+        <label class="field-label">To Date</label>
+        <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
+      </div>
+
+      <div class="filter-group filter-actions-group">
+        <button class="btn-primary" style="padding:8px 14px;font-size:12px"
+                (click)="applyAdvancedFilters()">
+          <i class="bi bi-funnel-fill"></i>Apply
+        </button>
+        <button class="btn-sort" [class.active]="sortBy === 'amount'"
+                (click)="toggleSort('amount')" title="Sort by Amount">
+          <i class="bi bi-currency-rupee"></i>
+          <i class="bi" [ngClass]="sortBy === 'amount'
+            ? (sortDir === 'asc' ? 'bi-sort-up' : 'bi-sort-down')
+            : 'bi-arrow-down-up'"></i>
+        </button>
+        <button class="btn-sort" [class.active]="sortBy === 'date'"
+                (click)="toggleSort('date')" title="Sort by Date">
+          <i class="bi bi-calendar3"></i>
+          <i class="bi" [ngClass]="sortBy === 'date'
+            ? (sortDir === 'asc' ? 'bi-sort-up' : 'bi-sort-down')
+            : 'bi-arrow-down-up'"></i>
+        </button>
+        <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()">
+          <i class="bi bi-x-circle"></i>Reset
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EMPTY STATE -->
+  <div *ngIf="expenses.length === 0" class="empty-state">
+    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+    <h3 class="empty-title">No expenses found</h3>
+    <p class="empty-sub">
+      {{ hasActiveFilters
+          ? 'No expenses match your current filters. Try adjusting them.'
+          : 'Create your first expense using the form above.' }}
+    </p>
+    <button *ngIf="hasActiveFilters" class="btn-ghost" style="margin-top:14px" (click)="clearFilters()">
+      <i class="bi bi-x-circle me-2"></i>Clear Filters
+    </button>
+  </div>
+
+  <!-- EXPENSE CARDS GRID -->
+  <div *ngIf="expenses.length > 0">
+    <div class="cards-grid">
+      <div class="expense-card" *ngFor="let e of expenses">
+
+        <!-- Header -->
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
+            <div>
+              <p class="card-category">{{ e.categoryName }}</p>
+              <span class="card-expid">{{ e.expenseId }}</span>
+            </div>
+          </div>
+          <span class="status-badge" [ngClass]="'badge-' + e.status">{{ e.status }}</span>
+        </div>
+
+        <!-- Status tracker -->
+        <app-expense-status-tracker [status]="e.status"></app-expense-status-tracker>
+
+        <!-- Body — Payments-style meta grid -->
+        <div class="card-body">
+          <div class="payment-meta-grid">
+            <div class="pmc-item">
+              <span class="meta-label">Amount</span>
+              <span class="amount-value">
+                {{ e.amount | currency:'INR':'symbol':'1.0-0':'en-IN' }}
+              </span>
+            </div>
+            <div class="pmc-item">
+              <span class="meta-label">Date</span>
+              <span class="meta-value">{{ e.expenseDate }}</span>
+            </div>
+            <div class="pmc-item">
+              <span class="meta-label">Category</span>
+              <span class="meta-value">{{ e.categoryName || '—' }}</span>
+            </div>
+            <div class="pmc-item">
+              <span class="meta-label">Status</span>
+              <span class="meta-value">{{ e.status }}</span>
+            </div>
+          </div>
+
+          <!-- Documents -->
+          <div class="docs-row" *ngIf="e.documentUrls?.length">
+            <button class="btn-view-docs" (click)="openFileModal(e.documentUrls)">
+              <i class="bi bi-paperclip me-1"></i>
+              View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Footer actions -->
+        <div class="card-footer">
+          <div class="card-actions">
+            <button *ngIf="e.canEdit" (click)="edit(e)" class="action-btn btn-edit">
+              <i class="bi bi-pencil"></i>Edit
+            </button>
+            <button *ngIf="e.canEdit" (click)="delete(e.expenseId)" class="action-btn btn-delete">
+              <i class="bi bi-trash3"></i>Delete
+            </button>
+            <button *ngIf="e.status === 'Draft'" (click)="submitExpense(e.expenseId)"
+                    class="action-btn btn-submit">
+              <i class="bi bi-send"></i>Submit
+            </button>
+            <button *ngIf="e.status === 'Rejected'" (click)="resubmit(e.expenseId)"
+                    class="action-btn btn-resubmit">
+              <i class="bi bi-arrow-repeat"></i>Resubmit
+            </button>
+          </div>
+          <span *ngIf="!e.canEdit && e.status !== 'Draft' && e.status !== 'Rejected'"
+                class="locked-label">
+            <i class="bi bi-lock me-1"></i>Locked
+          </span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGINATION — identical to Payments -->
+    <div class="pagination-bar">
+      <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i>Prev
+      </button>
+      <span class="pg-info">
+        Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong>
+        &nbsp;·&nbsp; {{ total }} records
+      </span>
+      <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
+        Next <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- File View Modal -->
+<app-file-view-modal
+  [visible]="showFileModal"
+  [urls]="modalFileUrls"
+  (closed)="closeFileModal()">
+</app-file-view-modal>

@@ -1,0 +1,91 @@
+<!-- Theme toggle -->
+<button class="reg-theme-toggle" (click)="toggleTheme()" [title]="themeService.isDark ? 'Light Mode' : 'Dark Mode'">
+  <i class="bi" [ngClass]="themeService.isDark ? 'bi-sun-fill' : 'bi-moon-stars-fill'"></i>
+</button>
+
+<section class="register-section">
+  <div class="dark-card">
+
+    <div class="register-logo"><i class="bi bi-person-plus-fill"></i></div>
+    <h2>Create Account</h2>
+    <p class="reg-sub">Fill in your details to register</p>
+
+    <form #registerForm="ngForm" (ngSubmit)="register(registerForm)">
+
+      <div class="mb-3">
+        <label for="userId" class="form-label">User ID</label>
+        <input type="text" id="userId" name="userId"
+               [(ngModel)]="registrationModel.userId" #userId="ngModel"
+               required placeholder="Enter user ID" class="form-control">
+        <div *ngIf="userId.invalid && userId.touched" class="error-text">User ID is required</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="userName" class="form-label">Full Name</label>
+        <input type="text" id="userName" name="userName"
+               [(ngModel)]="registrationModel.userName" #userName="ngModel"
+               required placeholder="Enter full name" class="form-control">
+        <div *ngIf="userName.invalid && userName.touched" class="error-text">User Name is required</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" id="email" name="email"
+               [(ngModel)]="registrationModel.email" #email="ngModel"
+               required placeholder="Enter email" class="form-control">
+        <div *ngIf="email.invalid && email.touched" class="error-text">Valid email is required</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="phone" class="form-label">Phone</label>
+        <input type="text" id="phone" name="phone"
+               [(ngModel)]="registrationModel.phone" #phone="ngModel"
+               pattern="^(?:\+91|0)?[6-9]\d{9}$" required
+               placeholder="Enter phone number" class="form-control">
+        <div *ngIf="phone.invalid && phone.touched" class="error-text">Enter a valid 10-digit phone number</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" id="password" name="password"
+               [(ngModel)]="registrationModel.password" #password="ngModel"
+               minlength="6" required placeholder="Min 6 characters" class="form-control">
+        <div *ngIf="password.invalid && password.touched" class="error-text">Password must be at least 6 characters</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Department</label>
+        <select name="department" [(ngModel)]="registrationModel.department"
+                #department="ngModel" required class="form-control">
+          <option [ngValue]="null" disabled>Select Department</option>
+          <option *ngFor="let dept of departments" [ngValue]="dept">{{ dept }}</option>
+        </select>
+        <div *ngIf="department.invalid && department.touched" class="error-text">Department is required</div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Role</label>
+        <select name="role" [(ngModel)]="registrationModel.role"
+                #role="ngModel" required class="form-control">
+          <option [ngValue]="null" disabled>Select Role</option>
+          <option *ngFor="let r of roles" [ngValue]="r">{{ r }}</option>
+        </select>
+        <div *ngIf="role.invalid && role.touched" class="error-text">Role is required</div>
+      </div>
+
+      <div class="d-flex button-group gap-2 mb-2">
+        <button type="submit" class="btn-register flex-fill" [disabled]="registerForm.invalid || loader.isLoading()">
+          <ng-container *ngIf="!loader.isLoading()"><i class="bi bi-person-check"></i>Register</ng-container>
+          <ng-container *ngIf="loader.isLoading()"><span class="spinner-border spinner-border-sm"></span>Registering...</ng-container>
+        </button>
+        <button type="button" class="btn-reset-reg flex-fill" (click)="reset(registerForm)" [disabled]="loader.isLoading()">Reset</button>
+      </div>
+
+    </form>
+
+    <p class="login-link">
+      Already have an account? <a routerLink="/login">Sign in</a>
+    </p>
+
+  </div>
+</section>

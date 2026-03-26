@@ -1,0 +1,42 @@
+<!-- ============================================================
+   APP SHELL — Loader + Toast + Theme Toggle + Router
+   ============================================================ -->
+
+<!-- Global Spinner Overlay -->
+@if (loader.isLoading()) {
+  <div class="loader-overlay">
+    <div class="spinner-ring">
+      <div class="spinner-border" role="status"
+           style="width:3rem;height:3rem;color:var(--accent);">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Global Toast -->
+@if (toast.showToast()) {
+  <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1080;">
+    <div class="toast show toast-typed"
+         [ngClass]="{
+           'toast-success': toast.type() === 'success',
+           'toast-error':   toast.type() === 'error',
+           'toast-warning': toast.type() === 'warning',
+           'toast-info':    toast.type() === 'info'
+         }">
+      <div class="toast-body">
+        <i class="bi toast-icon"
+           [ngClass]="{
+             'bi-check-circle-fill':          toast.type() === 'success',
+             'bi-x-circle-fill':              toast.type() === 'error',
+             'bi-exclamation-triangle-fill':  toast.type() === 'warning',
+             'bi-info-circle-fill':           toast.type() === 'info'
+           }"></i>
+        <span>{{ toast.message() }}</span>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Router outlet -->
+<router-outlet></router-outlet>
