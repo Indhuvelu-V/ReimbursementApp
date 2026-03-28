@@ -12,8 +12,11 @@ namespace ReimbursementTrackerApp.Models
         public string ExpenseId { get; set; } = string.Empty;
         public Expense? Expense { get; set; }
 
-        public string? UserId { get; set; } // Recipient of payment
+        public string? UserId { get; set; } // Recipient of payment (expense owner)
         public User? User { get; set; }
+
+        public string? ProcessedByUserId { get; set; } // Finance user who completed payment
+        public string? ProcessedByName { get; set; }   // Stored at completion time
 
         public decimal AmountPaid { get; set; }
         public PaymentStatusEnum PaymentStatus { get; set; } = PaymentStatusEnum.Pending;

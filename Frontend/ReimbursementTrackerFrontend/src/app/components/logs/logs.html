@@ -36,6 +36,10 @@
           <input type="date" class="field-input filter-select" [(ngModel)]="toDate" />
         </div>
         <div class="filter-group">
+          <label class="field-label">User Name</label>
+          <input type="text" class="field-input filter-select" [(ngModel)]="filterUserName" placeholder="Search by user..." />
+        </div>
+        <div class="filter-group">
           <label class="field-label">Action Type</label>
           <select class="field-input filter-select" [(ngModel)]="filterAction">
             <option value="">All Actions</option>

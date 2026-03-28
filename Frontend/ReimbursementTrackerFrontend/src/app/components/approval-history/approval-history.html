@@ -1,0 +1,140 @@
+<div class="ah-wrapper fade-in">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:var(--accent-dim);border-color:var(--accent-glow);">
+        <i class="bi bi-clock-history" style="color:var(--accent)"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Approval History</h1>
+        <p class="page-sub">All decisions you have made on expense requests</p>
+      </div>
+    </div>
+    <div class="stat-chip" style="background:var(--accent-dim);border-color:var(--accent-glow);">
+      <span class="stat-chip-num" style="color:var(--accent)">{{ filtered.length }}</span>
+      <span class="stat-chip-label">Records</span>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+    <div class="admin-filter-row">
+      <div class="filter-group">
+        <label class="field-label">Status</label>
+        <select [(ngModel)]="filterStatus" class="field-input filter-select">
+          <option value="">All</option>
+          <option value="Approved">Approved</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="field-label">User Name</label>
+        <input type="text" [(ngModel)]="filterUserName" placeholder="Search by user..." class="field-input filter-select" />
+      </div>
+      <div class="filter-group">
+        <label class="field-label">Approver Name</label>
+        <input type="text" [(ngModel)]="filterApproverName" placeholder="Search approver..." class="field-input filter-select" />
+      </div>
+      <div class="filter-group">
+        <label class="field-label">Min Amount (&#8377;)</label>
+        <input type="number" [(ngModel)]="filterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+      </div>
+      <div class="filter-group">
+        <label class="field-label">Max Amount (&#8377;)</label>
+        <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+      </div>
+      <div class="filter-group">
+        <label class="field-label">From Date</label>
+        <input type="date" [(ngModel)]="filterDateFrom" class="field-input filter-select" />
+      </div>
+      <div class="filter-group">
+        <label class="field-label">To Date</label>
+        <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
+      </div>
+      <div class="filter-group filter-actions-group">
+        <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()">
+          <i class="bi bi-funnel-fill"></i>Apply
+        </button>
+        <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')">
+          <i class="bi bi-currency-rupee"></i>
+          <i class="bi" [ngClass]="sortBy==='amount' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+        </button>
+        <button class="btn-sort" [class.active]="sortBy==='date'" (click)="toggleSort('date')">
+          <i class="bi bi-calendar3"></i>
+          <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+        </button>
+        <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()">
+          <i class="bi bi-x-circle"></i>Reset
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty -->
+  <div *ngIf="!loading && filtered.length === 0" class="empty-state">
+    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+    <h3 class="empty-title">No records found</h3>
+    <p class="empty-sub">No approval decisions match your filters.</p>
+  </div>
+
+  <!-- Cards -->
+  <div *ngIf="filtered.length > 0">
+    <div class="cards-grid">
+      <div class="approval-record-card" *ngFor="let a of paged">
+        <div class="arc-header">
+          <div>
+            <p class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</p>
+            <p class="arc-approver"><i class="bi bi-person-check me-1"></i>Approver: {{ a.approverName || '&mdash;' }}</p>
+            <p class="arc-approver" *ngIf="a.employeeName"><i class="bi bi-person me-1"></i>User: {{ a.employeeName }}</p>
+          </div>
+          <span class="status-badge" [ngClass]="{
+            'badge-Approved': a.status === 'Approved',
+            'badge-Rejected': a.status === 'Rejected',
+            'badge-Submitted': a.status === 'Pending'
+          }">{{ a.status }}</span>
+        </div>
+        <div class="arc-body">
+          <div class="arc-meta">
+            <div class="arc-meta-item" *ngIf="a.expenseAmount">
+              <span class="meta-label">Amount</span>
+              <span class="amount-value" style="font-size:16px">{{ a.amountInRupees || ('&#8377;' + a.expenseAmount) }}</span>
+            </div>
+            <div class="arc-meta-item">
+              <span class="meta-label">Level</span>
+              <span class="level-badge">{{ a.level || '&mdash;' }}</span>
+            </div>
+            <div class="arc-meta-item">
+              <span class="meta-label">Date</span>
+              <span class="meta-value">{{ a.approvedAt | date:'dd MMM yyyy' }}</span>
+            </div>
+          </div>
+          <div *ngIf="a.comments" class="arc-comments">
+            <i class="bi bi-chat-quote me-1" style="color:var(--text-faint)"></i>{{ a.comments }}
+          </div>
+          <div *ngIf="a.documentUrls?.length" class="docs-row">
+            <button class="btn-view-docs" (click)="openFileModal(a.documentUrls)">
+              <i class="bi bi-paperclip me-1"></i>
+              View {{ a.documentUrls.length }} File{{ a.documentUrls.length !== 1 ? 's' : '' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pagination-bar">
+      <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
+        <i class="bi bi-chevron-left"></i>Prev
+      </button>
+      <span class="pg-info">
+        Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong>
+        &nbsp;&middot;&nbsp; {{ filtered.length }} records
+      </span>
+      <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
+        Next <i class="bi bi-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<app-file-view-modal [visible]="showFileModal" [urls]="modalFileUrls" (closed)="closeFileModal()"></app-file-view-modal>

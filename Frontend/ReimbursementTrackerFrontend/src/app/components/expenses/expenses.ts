@@ -34,8 +34,15 @@ export class Expenses implements OnInit {
   private loader       = inject(LoaderService);
   private tokenService = inject(TokenService);
 
+  // ── Tab state ──────────────────────────────────────────────────────────────
+  activeTab: 'create' | 'list' = 'create';
+  switchTab(tab: 'create' | 'list') {
+    this.activeTab = tab;
+    if (tab === 'list' && !this.allExpenses.length) this.loadExpenses();
+  }
+
   // ── Data ───────────────────────────────────────────────────────────────────
-  private allExpenses: any[] = [];
+  allExpenses: any[] = [];
   expenses:    any[] = [];      // current page slice
   pagedExpenses: any[] = [];    // alias used in template
   categories:  CreateExpenseCategoryResponseDto[] = [];
@@ -422,6 +429,11 @@ export class Expenses implements OnInit {
   dismissExpenseId() { this.lastCreatedExpenseId = null; }
 
   // ── Computed helpers for template ──────────────────────────────────────────
+
+  /** Count expenses by status from the full unfiltered list */
+  countByStatus(status: string): number {
+    return this.allExpenses.filter(e => e.status === status).length;
+  }
 
   /** True when any filter / sort is active */
   get hasActiveFilters(): boolean {

@@ -9,13 +9,13 @@ export interface CreateApprovalRequestDto {
 }
 export interface CreateApprovalResponseDto {
   approvalId: string; expenseId: string; status: string;
-  approvedAt?: string; approverName: string; comments?: string; level?: string;
+  approvedAt?: string; approverName: string; employeeName?: string; comments?: string; level?: string;
   notificationMessage?: string;
   documentUrls?: string[];
   expenseAmount?: number;
   amountInRupees?: string;
 }
-export interface PaginationParams { pageNumber: number; pageSize: number; }
+export interface PaginationParams { pageNumber: number; pageSize: number; userName?: string; }
 export interface PagedResponse<T> { data: T[]; totalRecords: number; pageNumber: number; pageSize: number; totalPages: number; }
 export interface CreatePaymentResponseDto {
   paymentId: string; userId: string; userName: string; amountPaid: number;

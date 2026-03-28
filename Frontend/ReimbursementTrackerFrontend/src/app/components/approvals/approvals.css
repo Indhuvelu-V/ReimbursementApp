@@ -12,11 +12,11 @@
 
 /* Submitted Expense Card (Manager) */
 .approval-expense-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); overflow: hidden; display: flex; flex-direction: column; transition: all 0.2s; }
-.approval-expense-card:hover { border-color: rgba(245,158,11,0.4); box-shadow: 0 8px 28px rgba(0,0,0,0.4); transform: translateY(-2px); }
+.approval-expense-card:hover { border-color: var(--coral-glow); box-shadow: 0 8px 28px rgba(0,0,0,0.4); transform: translateY(-2px); }
 
 .card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px 12px; border-bottom: 1px solid var(--border); }
 .card-header-left { display: flex; align-items: center; gap: 10px; }
-.category-icon { width: 34px; height: 34px; background: rgba(245,158,11,0.12); border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--gold); }
+.category-icon { width: 34px; height: 34px; background: var(--coral-dim); border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--coral); }
 .card-category { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
 .card-expid { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-faint); }
 
@@ -74,3 +74,38 @@
 /* Inline comment input on approval cards */
 .inline-comment { margin-top: 12px; }
 .comment-input { font-size: 12px !important; padding: 7px 10px !important; }
+
+/* ── View Tabs ─────────────────────────────────────────── */
+.view-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.view-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: transparent;
+  border: none; cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+}
+.view-tab:hover { color: var(--text); background: var(--surface3); }
+.view-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+.tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 99px; font-size: 11px; font-weight: 800;
+  color: inherit;
+}
+.view-tab:not(.active) .tab-badge { background: var(--accent-dim); color: var(--accent); }
+.view-tab:not(.active) .history-badge { background: var(--violet-dim); color: var(--violet); }

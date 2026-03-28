@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ReimbursementTrackerApp.Contexts;
 
@@ -11,9 +12,11 @@ using ReimbursementTrackerApp.Contexts;
 namespace ReimbursementTrackerApp.Migrations
 {
     [DbContext(typeof(ReimbursementContext))]
-    partial class ReimbursementContextModelSnapshot : ModelSnapshot
+    [Migration("20260328051331_AddPaymentProcessedBy")]
+    partial class AddPaymentProcessedBy
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

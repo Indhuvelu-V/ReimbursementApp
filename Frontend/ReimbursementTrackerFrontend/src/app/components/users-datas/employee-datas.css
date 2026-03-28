@@ -109,3 +109,35 @@
 .filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 140px; flex: 1; }
 .filter-label { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.5px; }
 .filter-actions-group { display: flex; gap: 8px; flex-direction: row; align-items: flex-end; flex: 0; min-width: auto; }
+
+/* ── View Tabs ─────────────────────────────────────────── */
+.view-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.view-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: transparent;
+  border: none; cursor: pointer;
+  transition: all 0.18s ease;
+}
+.view-tab:hover { color: var(--text); background: var(--surface3); }
+.view-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+.tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 99px; font-size: 11px; font-weight: 800;
+  background: rgba(255,255,255,0.25); color: inherit;
+}
+.view-tab:not(.active) .tab-badge { background: var(--accent-dim); color: var(--accent); }

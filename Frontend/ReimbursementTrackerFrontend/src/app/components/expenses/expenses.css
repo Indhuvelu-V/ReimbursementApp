@@ -9,7 +9,7 @@
 .stat-chip-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* ID Banner */
-.id-banner { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(45,212,191,0.08)); border: 1px solid rgba(34,197,94,0.3); border-radius: var(--r-lg); padding: 14px 20px; margin-bottom: 20px; gap: 12px; }
+.id-banner { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, var(--mint-dim), var(--teal-dim)); border: 1px solid var(--mint-glow); border-radius: var(--r-lg); padding: 14px 20px; margin-bottom: 20px; gap: 12px; }
 .id-banner-inner { display: flex; align-items: center; gap: 12px; }
 .id-banner-icon { font-size: 22px; color: var(--status-approved); }
 .id-banner-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
@@ -114,3 +114,103 @@
 
 /* Pagination — matches Payments pg-info with record count */
 .pg-info strong { color: var(--text); }
+
+/* ── View Tabs ─────────────────────────────────────────── */
+.view-tabs {
+  display: flex; gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  margin-bottom: 20px;
+  width: fit-content;
+}
+.view-tab {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px; border-radius: var(--r-md);
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted); background: transparent;
+  border: none; cursor: pointer;
+  transition: all 0.18s ease;
+}
+.view-tab:hover { color: var(--text); background: var(--surface3); }
+.view-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+.tab-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 99px; font-size: 11px; font-weight: 800;
+  background: rgba(255,255,255,0.25); color: inherit;
+}
+.view-tab:not(.active) .tab-badge { background: var(--accent-dim); color: var(--accent); }
+
+/* ── Status Stat Cards ─────────────────────────────────── */
+.status-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.status-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; padding: 14px 10px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--r-lg); cursor: pointer;
+  transition: all 0.18s ease; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.status-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.status-card-num {
+  font-size: 22px; font-weight: 800; line-height: 1;
+  color: var(--text-muted);
+}
+.status-card-label {
+  font-size: 11px; font-weight: 600; color: var(--text-faint);
+  text-transform: uppercase; letter-spacing: 0.4px;
+  display: flex; align-items: center;
+}
+
+/* Per-status colors */
+.status-card.draft     { border-color: rgba(245,158,11,0.3); }
+.status-card.draft     .status-card-num   { color: var(--status-draft); }
+.status-card.draft     .status-card-label { color: var(--status-draft); }
+
+.status-card.submitted { border-color: rgba(56,189,248,0.3); }
+.status-card.submitted .status-card-num   { color: var(--status-submitted); }
+.status-card.submitted .status-card-label { color: var(--status-submitted); }
+
+.status-card.approved  { border-color: rgba(16,185,129,0.3); }
+.status-card.approved  .status-card-num   { color: var(--status-approved); }
+.status-card.approved  .status-card-label { color: var(--status-approved); }
+
+.status-card.paid      { border-color: rgba(167,139,250,0.3); }
+.status-card.paid      .status-card-num   { color: var(--status-paid); }
+.status-card.paid      .status-card-label { color: var(--status-paid); }
+
+.status-card.rejected  { border-color: rgba(244,63,94,0.3); }
+.status-card.rejected  .status-card-num   { color: var(--status-rejected); }
+.status-card.rejected  .status-card-label { color: var(--status-rejected); }
+
+/* Active state — soft pastel fill */
+.status-card.active { box-shadow: var(--shadow-md); }
+.status-card.active .status-card-num   { color: inherit; }
+.status-card.active .status-card-label { color: inherit; opacity: 0.85; }
+
+.status-card.draft.active     { background: rgba(245,158,11,0.15);  border-color: rgba(245,158,11,0.5); }
+.status-card.submitted.active { background: rgba(56,189,248,0.15);  border-color: rgba(56,189,248,0.5); }
+.status-card.approved.active  { background: rgba(16,185,129,0.15);  border-color: rgba(16,185,129,0.5); }
+.status-card.paid.active      { background: rgba(167,139,250,0.15); border-color: rgba(167,139,250,0.5); }
+.status-card.rejected.active  { background: rgba(244,63,94,0.15);   border-color: rgba(244,63,94,0.5); }
+.status-card:not([class*='draft']):not([class*='submitted']):not([class*='approved']):not([class*='paid']):not([class*='rejected']).active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .status-cards-row { grid-template-columns: repeat(3, 1fr); }
+}

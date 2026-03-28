@@ -71,7 +71,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 2️⃣ Admin View All Approvals
         // ======================================================
         [HttpGet("all")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> GetAllApprovals([FromQuery] PaginationParams paginationParams)
         {
             _logger.LogInformation("Request to fetch all approvals. Page {Page}, Size {Size}",

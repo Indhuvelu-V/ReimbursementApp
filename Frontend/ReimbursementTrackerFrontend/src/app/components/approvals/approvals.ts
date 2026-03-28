@@ -40,6 +40,8 @@ export class Approvals implements OnInit {
   filterDateTo = '';
   filterMinAmount: number | null = null;
   filterMaxAmount: number | null = null;
+  filterUserName = '';       // expense submitter (employee)
+  filterApproverName = '';   // manager who approved
   sortBy: 'amount' | 'date' | '' = '';
   sortDir: 'asc' | 'desc' = 'desc';
 
@@ -48,11 +50,16 @@ export class Approvals implements OnInit {
   mgrFilterDateTo = '';
   mgrFilterMinAmount: number | null = null;
   mgrFilterMaxAmount: number | null = null;
+  mgrFilterUserName = '';
   mgrSortBy: 'amount' | 'date' | '' = '';
   mgrSortDir: 'asc' | 'desc' = 'desc';
 
   page = 1; pageSize = 6;
   mgrPage = 1; mgrPageSize = 6;
+
+  // Tab for manager view
+  mgrTab: 'pending' | 'history' = 'pending';
+  switchMgrTab(tab: 'pending' | 'history') { this.mgrTab = tab; }
 
   showFileModal = false; modalFileUrls: string[] = [];
 
@@ -66,20 +73,49 @@ export class Approvals implements OnInit {
 
   loadApprovals(): void {
     this.loading = true;
-    if (this.role.toLowerCase() === 'admin') {
+    const r = this.role.toLowerCase();
+    if (r === 'admin' || r === 'manager') {
       this.loader.show();
       this.api.getAllApprovals({ pageNumber: 1, pageSize: 200 }).subscribe({
-        next: (res) => { this.approvals = res.data ?? []; this.applyFilters(); this.loading = false; this.loader.hide(); },
+        next: (res) => {
+          let data = res.data ?? [];
+          // Separate filters for user (employee) and approver
+          if (this.filterUserName.trim()) {
+            const q = this.filterUserName.trim().toLowerCase();
+            data = data.filter((a: any) =>
+              (a.employeeName ?? '').toLowerCase().includes(q) ||
+              (a.expenseId ?? '').toLowerCase().includes(q)
+            );
+          }
+          if (this.filterApproverName.trim()) {
+            const q = this.filterApproverName.trim().toLowerCase();
+            data = data.filter((a: any) =>
+              (a.approverName ?? '').toLowerCase().includes(q)
+            );
+          }
+          if (this.filterStatus) data = data.filter((a: any) => a.status === this.filterStatus);
+          if (this.filterMinAmount !== null) data = data.filter((a: any) => Number(a.expenseAmount) >= Number(this.filterMinAmount));
+          if (this.filterMaxAmount !== null) data = data.filter((a: any) => Number(a.expenseAmount) <= Number(this.filterMaxAmount));
+          if (this.filterDateFrom) data = data.filter((a: any) => new Date(a.approvedAt) >= new Date(this.filterDateFrom));
+          if (this.filterDateTo)   data = data.filter((a: any) => new Date(a.approvedAt) <= new Date(this.filterDateTo + 'T23:59:59'));
+          if (this.sortBy === 'amount') data.sort((a: any, b: any) => this.sortDir === 'asc' ? Number(a.expenseAmount) - Number(b.expenseAmount) : Number(b.expenseAmount) - Number(a.expenseAmount));
+          if (this.sortBy === 'date')   data.sort((a: any, b: any) => this.sortDir === 'asc' ? new Date(a.approvedAt).getTime() - new Date(b.approvedAt).getTime() : new Date(b.approvedAt).getTime() - new Date(a.approvedAt).getTime());
+          this.approvals = res.data ?? [];
+          this.filteredApprovals = data;
+          this.page = 1;
+          this.updatePage();
+          this.loading = false; this.loader.hide();
+        },
         error: () => { this.toast.showError('Failed to load approvals.'); this.loading = false; this.loader.hide(); }
       });
     } else {
-      this.approvals = []; this.loading = false;
+      this.approvals = []; this.filteredApprovals = []; this.loading = false;
     }
   }
 
   loadSubmittedExpenses(): void {
     const managerId = this.token.getUserIdFromToken();
-    this.api.getAllExpenses(1, 200).subscribe({
+    this.api.getAllExpenses(1, 200, 'Submitted', undefined, undefined, undefined, undefined, this.mgrFilterUserName || undefined).subscribe({
       next: (res) => {
         const all = res.data ?? res ?? [];
         this.submittedExpenses = all.filter((e: any) =>
@@ -150,6 +186,7 @@ export class Approvals implements OnInit {
   clearMgrFilters() {
     this.mgrFilterDateFrom = ''; this.mgrFilterDateTo = '';
     this.mgrFilterMinAmount = null; this.mgrFilterMaxAmount = null;
+    this.mgrFilterUserName = '';
     this.mgrSortBy = ''; this.mgrSortDir = 'desc';
     this.applyManagerFilters();
   }
@@ -184,17 +221,7 @@ export class Approvals implements OnInit {
   }
 
   applyFilters() {
-    let data = [...this.approvals];
-    if (this.filterStatus) data = data.filter(a => a.status === this.filterStatus);
-    if (this.filterMinAmount !== null) data = data.filter(a => a.expenseAmount >= this.filterMinAmount!);
-    if (this.filterMaxAmount !== null) data = data.filter(a => a.expenseAmount <= this.filterMaxAmount!);
-    if (this.filterDateFrom) data = data.filter(a => new Date(a.approvedAt) >= new Date(this.filterDateFrom));
-    if (this.filterDateTo)   data = data.filter(a => new Date(a.approvedAt) <= new Date(this.filterDateTo + 'T23:59:59'));
-    if (this.sortBy === 'amount') data.sort((a, b) => this.sortDir === 'asc' ? (a.expenseAmount - b.expenseAmount) : (b.expenseAmount - a.expenseAmount));
-    if (this.sortBy === 'date')   data.sort((a, b) => this.sortDir === 'asc' ? new Date(a.approvedAt).getTime() - new Date(b.approvedAt).getTime() : new Date(b.approvedAt).getTime() - new Date(a.approvedAt).getTime());
-    this.filteredApprovals = data;
-    this.page = 1;
-    this.updatePage();
+    this.loadApprovals();
   }
 
   updatePage() { const s = (this.page - 1) * this.pageSize; this.pagedApprovals = this.filteredApprovals.slice(s, s + this.pageSize); }
@@ -205,10 +232,10 @@ export class Approvals implements OnInit {
   toggleSort(field: 'amount' | 'date') {
     if (this.sortBy === field) { this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'; }
     else { this.sortBy = field; this.sortDir = 'desc'; }
-    this.applyFilters();
+    this.loadApprovals();
   }
 
-  clearFilters() { this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = ''; this.filterMinAmount = null; this.filterMaxAmount = null; this.sortBy = ''; this.sortDir = 'desc'; this.applyFilters(); }
+  clearFilters() { this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = ''; this.filterMinAmount = null; this.filterMaxAmount = null; this.filterUserName = ''; this.filterApproverName = ''; this.sortBy = ''; this.sortDir = 'desc'; this.applyFilters(); }
 
   openFileModal(urls: string[]) { this.modalFileUrls = urls || []; this.showFileModal = true; }
   closeFileModal() { this.showFileModal = false; this.modalFileUrls = []; }

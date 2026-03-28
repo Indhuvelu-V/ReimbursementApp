@@ -30,13 +30,14 @@ export class APIService {
   resubmitExpense(expenseId: string): Observable<any> { return this.http.post(`${this.baseUrl}/Expense/Resubmit/${expenseId}`, {}); }
   deleteExpense(expenseId: string): Observable<any> { return this.http.delete(`${this.baseUrl}/Expense/${expenseId}`); }
   getMyExpenses(): Observable<any> { return this.http.get(`${this.baseUrl}/Expense/userexpenses`); }
-  getAllExpenses(pageNumber: number = 1, pageSize: number = 10, status?: string, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null): Observable<{ data: any[], totalRecords: number }> {
+  getAllExpenses(pageNumber: number = 1, pageSize: number = 10, status?: string, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null, userName?: string): Observable<{ data: any[], totalRecords: number }> {
     let params = new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize);
     if (status)    params = params.set('Status', status);
     if (fromDate)  params = params.set('FromDate', fromDate);
     if (toDate)    params = params.set('ToDate', toDate);
     if (minAmount != null) params = params.set('MinAmount', minAmount);
     if (maxAmount != null) params = params.set('MaxAmount', maxAmount);
+    if (userName)  params = params.set('UserName', userName);
     return this.http.post<{ data: any[], totalRecords: number }>(`${this.baseUrl}/Expense/all`, {}, { params });
   }
   uploadFiles(formData: FormData): Observable<any> { return this.http.post(`${this.baseUrl}/FileUpload`, formData); }
@@ -49,13 +50,14 @@ export class APIService {
   apiUpdateCategory(request: CreateExpenseCategoryRequestDto): Observable<CreateExpenseCategoryResponseDto> { return this.http.put<CreateExpenseCategoryResponseDto>(`${this.baseUrl}/ExpenseCategory`, request); }
   completePayment(expenseId: string, request: { referenceNo: string; paymentMode: string }): Observable<any> { return this.http.post(`${this.baseUrl}/Payment/CompletePayment/${expenseId}`, request); }
   getPaymentByExpenseId(expenseId: string): Observable<CreatePaymentResponseDto> { return this.http.get<CreatePaymentResponseDto>(`${this.baseUrl}/Payment/${expenseId}`); }
-  getAllPayments(page: number = 1, pageSize: number = 10, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null, status?: string): Observable<any> {
+  getAllPayments(page: number = 1, pageSize: number = 10, fromDate?: string, toDate?: string, minAmount?: number | null, maxAmount?: number | null, status?: string, userName?: string): Observable<any> {
     let params = new HttpParams().set('PageNumber', page).set('PageSize', pageSize);
     if (fromDate)   params = params.set('FromDate', fromDate);
     if (toDate)     params = params.set('ToDate', toDate);
     if (minAmount != null) params = params.set('MinAmount', minAmount);
     if (maxAmount != null) params = params.set('MaxAmount', maxAmount);
     if (status)     params = params.set('Status', status);
+    if (userName)   params = params.set('UserName', userName);
     return this.http.post(`${this.baseUrl}/Payment`, {}, { params });
   }
   getAllUsers(page: number = 1, size: number = 10, role?: string, name?: string): Observable<any> {
@@ -67,7 +69,8 @@ export class APIService {
   getUserById(userId: string): Observable<User> { return this.http.get<User>(`${this.baseUrl}/Users/${userId}`); }
   managerApproval(request: CreateApprovalRequestDto): Observable<CreateApprovalResponseDto> { return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/manager`, request); }
   getAllApprovals(pagination: PaginationParams): Observable<PagedResponse<CreateApprovalResponseDto>> {
-    const params = new HttpParams().set('pageNumber', pagination.pageNumber).set('pageSize', pagination.pageSize);
+    let params = new HttpParams().set('pageNumber', pagination.pageNumber).set('pageSize', pagination.pageSize);
+    if (pagination.userName) params = params.set('UserName', pagination.userName);
     return this.http.get<PagedResponse<CreateApprovalResponseDto>>(`${this.baseUrl}/Approval/all`, { params });
   }
   getPagedLogs(pageNumber: number, pageSize: number, fromDate?: string, toDate?: string): Observable<PagedResponse<CreateAuditLogsResponseDto>> {

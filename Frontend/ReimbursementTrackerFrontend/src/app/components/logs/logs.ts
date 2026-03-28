@@ -32,6 +32,7 @@ export class Logs implements OnInit {
   fromDate:     string = '';
   toDate:       string = '';
   filterAction: string = '';
+  filterUserName: string = '';
 
   constructor(
     private api:          APIService,
@@ -66,6 +67,13 @@ export class Logs implements OnInit {
     if (this.filterAction) {
       data = data.filter(l => l.action?.toLowerCase().includes(this.filterAction.toLowerCase()));
     }
+    if (this.filterUserName.trim()) {
+      const q = this.filterUserName.trim().toLowerCase();
+      data = data.filter(l =>
+        (l.userName ?? '').toLowerCase().includes(q) ||
+        (l.userId ?? '').toLowerCase().includes(q)
+      );
+    }
     this.filteredLogs = data;
     this.total = data.length;
     this.page = 1;
@@ -78,7 +86,7 @@ export class Logs implements OnInit {
   }
 
   applyFilter() { this.page = 1; this.loadLogs(); }
-  clearFilter()  { this.fromDate = ''; this.toDate = ''; this.filterAction = ''; this.page = 1; this.loadLogs(); }
+  clearFilter()  { this.fromDate = ''; this.toDate = ''; this.filterAction = ''; this.filterUserName = ''; this.page = 1; this.loadLogs(); }
 
   confirmDelete(log: any) {
     this.pendingDeleteId  = log.logId;

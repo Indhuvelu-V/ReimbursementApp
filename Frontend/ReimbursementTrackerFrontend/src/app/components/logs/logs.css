@@ -46,7 +46,7 @@
 .dot-approve { background: rgba(34,197,94,0.18);  color: var(--status-approved); border-color: rgba(34,197,94,0.35); }
 .dot-reject  { background: rgba(244,63,94,0.18);  color: var(--status-rejected); border-color: rgba(244,63,94,0.35); }
 .dot-payment { background: rgba(167,139,250,0.18);color: var(--violet);          border-color: rgba(167,139,250,0.35); }
-.dot-view    { background: rgba(245,158,11,0.18); color: var(--gold);            border-color: rgba(245,158,11,0.35); }
+.dot-view    { background: var(--gold-dim); color: var(--gold); border-color: var(--gold-glow); }
 .dot-default { background: var(--surface2);       color: var(--text-faint);      border-color: var(--border); }
 
 /* ── Log card ────────────────────────────────────────── */
@@ -126,15 +126,15 @@
 .badge-action-approve { background: rgba(34,197,94,0.15);  color: var(--status-approved); border: 1px solid rgba(34,197,94,0.3); }
 .badge-action-reject  { background: rgba(244,63,94,0.15);  color: var(--status-rejected); border: 1px solid rgba(244,63,94,0.3); }
 .badge-action-payment { background: rgba(167,139,250,0.15);color: var(--violet);          border: 1px solid rgba(167,139,250,0.3); }
-.badge-action-view    { background: rgba(245,158,11,0.15); color: var(--gold);            border: 1px solid rgba(245,158,11,0.3); }
+.badge-action-view    { background: var(--gold-dim); color: var(--gold); border: 1px solid var(--gold-glow); }
 .badge-action-default { background: var(--surface2);       color: var(--text-muted);      border: 1px solid var(--border); }
 
 /* ── Role badges ─────────────────────────────────────── */
 .role-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; }
 .role-admin    { background: rgba(167,139,250,0.15); color: var(--violet);          border: 1px solid rgba(167,139,250,0.3); }
-.role-manager  { background: rgba(245,158,11,0.15);  color: var(--gold);            border: 1px solid rgba(245,158,11,0.3); }
-.role-employee { background: rgba(79,142,247,0.15);  color: var(--accent);          border: 1px solid rgba(79,142,247,0.3); }
-.role-finance  { background: rgba(45,212,191,0.15);  color: var(--teal);            border: 1px solid rgba(45,212,191,0.3); }
+.role-manager  { background: var(--gold-dim);  color: var(--gold);  border: 1px solid var(--gold-glow); }
+.role-employee { background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-glow); }
+.role-finance  { background: var(--teal-dim);   color: var(--teal);   border: 1px solid rgba(20,184,166,0.3); }
 
 /* ── Delete log preview in modal ────────────────────── */
 .delete-log-preview {

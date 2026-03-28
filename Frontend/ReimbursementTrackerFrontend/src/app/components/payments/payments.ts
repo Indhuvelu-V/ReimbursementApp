@@ -32,6 +32,7 @@ export class Payments implements OnInit {
   awaitingFilterDateTo = '';
   awaitingFilterMinAmount: number | null = null;
   awaitingFilterMaxAmount: number | null = null;
+  awaitingFilterUserName = '';
 
   role: string = ''; loading = false;
   searchExpenseId = ''; searchResults: any[] = []; searching = false;
@@ -42,6 +43,8 @@ export class Payments implements OnInit {
   filterDateTo = '';
   filterMinAmount: number | null = null;
   filterMaxAmount: number | null = null;
+  filterUserName = '';
+  filterProcessedBy = '';   // Finance user who processed the payment
   sortBy: 'amount' | 'date' | '' = '';
   sortDir: 'asc' | 'desc' = 'desc';
 
@@ -65,6 +68,10 @@ export class Payments implements OnInit {
   // File View Modal
   showFileModal = false; modalFileUrls: string[] = [];
 
+  // Tab for finance view
+  financeTab: 'complete' | 'history' = 'complete';
+  switchFinanceTab(tab: 'complete' | 'history') { this.financeTab = tab; }
+
   constructor(public apiSvc: APIService) {}
 
   ngOnInit(): void {
@@ -84,11 +91,21 @@ export class Payments implements OnInit {
       this.awaitingFilterDateFrom || undefined,
       this.awaitingFilterDateTo || undefined,
       this.awaitingFilterMinAmount,
-      this.awaitingFilterMaxAmount
+      this.awaitingFilterMaxAmount,
+      this.awaitingFilterUserName || undefined
     ).subscribe({
       next: (res) => {
-        this.approvedExpenses = res.data ?? res ?? [];
-        this.approvedTotal = res.totalRecords ?? this.approvedExpenses.length;
+        let all: any[] = res.data ?? res ?? [];
+        // Client-side username filter as fallback
+        if (this.awaitingFilterUserName.trim()) {
+          const q = this.awaitingFilterUserName.trim().toLowerCase();
+          all = all.filter(e =>
+            (e.userName ?? '').toLowerCase().includes(q) ||
+            (e.expenseId ?? '').toLowerCase().includes(q)
+          );
+        }
+        this.approvedExpenses = all;
+        this.approvedTotal = res.totalRecords ?? all.length;
       },
       error: () => {}
     });
@@ -98,6 +115,7 @@ export class Payments implements OnInit {
   clearAwaitingFilters() {
     this.awaitingFilterDateFrom = ''; this.awaitingFilterDateTo = '';
     this.awaitingFilterMinAmount = null; this.awaitingFilterMaxAmount = null;
+    this.awaitingFilterUserName = '';
     this.approvedPage = 1; this.loadApprovedExpenses();
   }
   approvedTotalPages() { return Math.ceil(this.approvedTotal / this.approvedPageSize); }
@@ -142,11 +160,24 @@ export class Payments implements OnInit {
       this.filterMinAmount,
       this.filterMaxAmount,
       this.filterStatus || undefined
+      // userName sent separately — filtered client-side after load for reliability
     ).subscribe({
       next: (res: any) => {
         const raw: any[] = res.data ?? res ?? [];
         this.totalRecords = res.totalRecords ?? raw.length;
         let data = [...raw];
+        // Client-side username filter (case-insensitive contains)
+        if (this.filterUserName.trim()) {
+          const q = this.filterUserName.trim().toLowerCase();
+          data = data.filter(p =>
+            (p.userName ?? '').toLowerCase().includes(q) ||
+            (p.expenseId ?? '').toLowerCase().includes(q)
+          );
+        }
+        if (this.filterProcessedBy.trim()) {
+          const q = this.filterProcessedBy.trim().toLowerCase();
+          data = data.filter(p => (p.processedByName ?? '').toLowerCase().includes(q));
+        }
         if (this.sortBy === 'amount') data.sort((a, b) => this.sortDir === 'asc' ? a.amountPaid - b.amountPaid : b.amountPaid - a.amountPaid);
         if (this.sortBy === 'date')   data.sort((a, b) => this.sortDir === 'asc' ? new Date(a.paymentDate).getTime() - new Date(b.paymentDate).getTime() : new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
         this.filteredPayments = data;
@@ -172,6 +203,7 @@ export class Payments implements OnInit {
   clearFilters() {
     this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = '';
     this.filterMinAmount = null; this.filterMaxAmount = null;
+    this.filterUserName = ''; this.filterProcessedBy = '';
     this.sortBy = ''; this.sortDir = 'desc'; this.page = 1;
     this.loadPayments();
   }

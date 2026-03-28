@@ -22,7 +22,8 @@
         public string? Role { get; set; }
         public string? Name { get; set; }
 
-        // Expense filters
+        // Expense/Payment/Approval filters
         public string? Status { get; set; }
+        public string? UserName { get; set; }
     }
 }

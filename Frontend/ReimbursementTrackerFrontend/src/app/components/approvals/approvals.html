@@ -2,157 +2,249 @@
 
   <div class="page-header">
     <div class="page-header-left">
-      <div class="page-icon" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.25);">
+      <div class="page-icon" style="background:var(--gold-dim);border-color:var(--gold-glow);">
         <i class="bi bi-check2-square" style="color:var(--gold)"></i>
       </div>
       <div>
         <h1 class="page-title">Approvals</h1>
-        <p class="page-sub">{{ role === 'Manager' ? 'Review and approve submitted expenses' : 'All approval records' }}</p>
+        <p class="page-sub">{{ role === 'Manager' ? 'Review and track expense approvals' : 'All approval records' }}</p>
       </div>
     </div>
-    <div *ngIf="role === 'Admin'" class="stat-chip" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);">
+    <div *ngIf="role === 'Admin'" class="stat-chip" style="background:var(--gold-dim);border-color:var(--gold-glow);">
       <span class="stat-chip-num" style="color:var(--gold)">{{ filteredApprovals.length }}</span>
       <span class="stat-chip-label">Records</span>
     </div>
-    <div *ngIf="role === 'Manager'" class="stat-chip" style="background:rgba(56,189,248,0.1);border-color:rgba(56,189,248,0.25);">
-      <span class="stat-chip-num" style="color:var(--sky)">{{ filteredSubmitted.length }}</span>
-      <span class="stat-chip-label">Pending</span>
+    <div *ngIf="role === 'Manager'" class="stat-chip" style="background:var(--accent-dim);border-color:var(--accent-glow);">
+      <span class="stat-chip-num" style="color:var(--accent)">{{ mgrTab === 'pending' ? filteredSubmitted.length : filteredApprovals.length }}</span>
+      <span class="stat-chip-label">{{ mgrTab === 'pending' ? 'Pending' : 'Records' }}</span>
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════
-       MANAGER VIEW
-  ════════════════════════════════════════════════════════ -->
+  <!-- MANAGER -->
   <ng-container *ngIf="role === 'Manager'">
-
-    <!-- Filter bar -->
-    <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
-      <div class="admin-filter-row">
-        <div class="filter-group">
-          <label class="field-label">Min Amount (&#8377;)</label>
-          <input type="number" [(ngModel)]="mgrFilterMinAmount" placeholder="0"
-            class="field-input filter-select" min="0" />
-        </div>
-        <div class="filter-group">
-          <label class="field-label">Max Amount (&#8377;)</label>
-          <input type="number" [(ngModel)]="mgrFilterMaxAmount" placeholder="Any"
-            class="field-input filter-select" min="0" />
-        </div>
-        <div class="filter-group">
-          <label class="field-label">From Date</label>
-          <input type="date" [(ngModel)]="mgrFilterDateFrom" class="field-input filter-select" />
-        </div>
-        <div class="filter-group">
-          <label class="field-label">To Date</label>
-          <input type="date" [(ngModel)]="mgrFilterDateTo" class="field-input filter-select" />
-        </div>
-        <div class="filter-group filter-actions-group">
-          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyManagerFilters()">
-            <i class="bi bi-funnel-fill"></i>Apply
-          </button>
-          <button class="btn-sort" [class.active]="mgrSortBy==='amount'" (click)="toggleMgrSort('amount')">
-            <i class="bi bi-currency-rupee"></i>
-            <i class="bi" [ngClass]="mgrSortBy==='amount' ? (mgrSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
-          </button>
-          <button class="btn-sort" [class.active]="mgrSortBy==='date'" (click)="toggleMgrSort('date')">
-            <i class="bi bi-calendar3"></i>
-            <i class="bi" [ngClass]="mgrSortBy==='date' ? (mgrSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
-          </button>
-          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearMgrFilters()">
-            <i class="bi bi-x-circle"></i>Reset
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- No data -->
-    <div *ngIf="submittedExpenses.length === 0" class="empty-state">
-      <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
-      <h3 class="empty-title">All caught up!</h3>
-      <p class="empty-sub">No pending submissions awaiting approval.</p>
-    </div>
-
-    <!-- Filters returned nothing -->
-    <div *ngIf="submittedExpenses.length > 0 && filteredSubmitted.length === 0" class="empty-state">
-      <div class="empty-icon"><i class="bi bi-funnel"></i></div>
-      <p class="empty-sub">No expenses match your filters.</p>
-      <button class="btn-ghost" style="margin-top:12px;font-size:12px" (click)="clearMgrFilters()">
-        <i class="bi bi-x-circle me-1"></i>Clear Filters
+    <div class="view-tabs">
+      <button class="view-tab" [class.active]="mgrTab === 'pending'" (click)="switchMgrTab('pending')">
+        <i class="bi bi-inbox-fill"></i>Pending Approvals
+        <span class="tab-badge" *ngIf="submittedExpenses.length > 0">{{ submittedExpenses.length }}</span>
+      </button>
+      <button class="view-tab" [class.active]="mgrTab === 'history'" (click)="switchMgrTab('history')">
+        <i class="bi bi-clock-history"></i>Approval History
+        <span class="tab-badge history-badge" *ngIf="approvals.length > 0">{{ approvals.length }}</span>
       </button>
     </div>
 
-    <!-- Cards -->
-    <div class="cards-grid" *ngIf="filteredSubmitted.length > 0">
-      <div class="approval-expense-card" *ngFor="let e of pagedSubmitted">
-        <div class="card-header">
-          <div class="card-header-left">
-            <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
-            <div>
-              <p class="card-category">{{ e.categoryName }}</p>
-              <span class="card-expid">{{ e.expenseId }}</span>
-            </div>
+    <!-- PENDING TAB -->
+    <ng-container *ngIf="mgrTab === 'pending'">
+      <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+        <div class="admin-filter-row">
+          <div class="filter-group">
+            <label class="field-label">User Name</label>
+            <input type="text" [(ngModel)]="mgrFilterUserName" placeholder="Search by user..." class="field-input filter-select" />
           </div>
-          <span class="status-badge badge-Submitted">Submitted</span>
-        </div>
-        <div class="card-body">
-          <div class="card-meta-row">
-            <div class="card-meta-item">
-              <span class="meta-label">Amount</span>
-              <span class="amount-value">{{ e.amountInRupees || ('&#8377;' + e.amount) }}</span>
-            </div>
-            <div class="card-meta-item">
-              <span class="meta-label">Date</span>
-              <span class="meta-value">{{ e.expenseDate }}</span>
-            </div>
+          <div class="filter-group">
+            <label class="field-label">Min Amount (&#8377;)</label>
+            <input type="number" [(ngModel)]="mgrFilterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
           </div>
-          <div *ngIf="e.documentUrls?.length" class="docs-row">
-            <button class="btn-view-docs" (click)="openFileModal(e.documentUrls)">
-              <i class="bi bi-paperclip me-1"></i>
-              View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
+          <div class="filter-group">
+            <label class="field-label">Max Amount (&#8377;)</label>
+            <input type="number" [(ngModel)]="mgrFilterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">From Date</label>
+            <input type="date" [(ngModel)]="mgrFilterDateFrom" class="field-input filter-select" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">To Date</label>
+            <input type="date" [(ngModel)]="mgrFilterDateTo" class="field-input filter-select" />
+          </div>
+          <div class="filter-group filter-actions-group">
+            <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="loadSubmittedExpenses()">
+              <i class="bi bi-funnel-fill"></i>Apply
+            </button>
+            <button class="btn-sort" [class.active]="mgrSortBy==='amount'" (click)="toggleMgrSort('amount')">
+              <i class="bi bi-currency-rupee"></i>
+              <i class="bi" [ngClass]="mgrSortBy==='amount' ? (mgrSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+            </button>
+            <button class="btn-sort" [class.active]="mgrSortBy==='date'" (click)="toggleMgrSort('date')">
+              <i class="bi bi-calendar3"></i>
+              <i class="bi" [ngClass]="mgrSortBy==='date' ? (mgrSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+            </button>
+            <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearMgrFilters()">
+              <i class="bi bi-x-circle"></i>Reset
             </button>
           </div>
-          <div class="inline-comment">
-            <input type="text" [(ngModel)]="cardComments[e.expenseId]"
-              placeholder="Add comment (optional)..." class="field-input comment-input" />
-          </div>
-        </div>
-        <div class="card-footer">
-          <button class="action-btn btn-approve"
-            [disabled]="submittingId === e.expenseId"
-            (click)="decideInline(e.expenseId, 'approved')">
-            <i class="bi bi-check-circle"></i>Approve
-          </button>
-          <button class="action-btn btn-reject"
-            [disabled]="submittingId === e.expenseId"
-            (click)="decideInline(e.expenseId, 'rejected')">
-            <i class="bi bi-x-circle"></i>Reject
-          </button>
         </div>
       </div>
-    </div>
 
-    <!-- Pagination -->
-    <div class="pagination-bar" *ngIf="mgrTotalPages() > 1">
-      <button class="pg-btn" (click)="mgrPrevPage()" [disabled]="mgrPage === 1">
-        <i class="bi bi-chevron-left"></i>Prev
-      </button>
-      <span class="pg-info">
-        Page <strong>{{ mgrPage }}</strong> of <strong>{{ mgrTotalPages() }}</strong>
-        &nbsp;&middot;&nbsp; {{ filteredSubmitted.length }} records
-      </span>
-      <button class="pg-btn" (click)="mgrNextPage()" [disabled]="mgrPage >= mgrTotalPages()">
-        Next <i class="bi bi-chevron-right"></i>
-      </button>
-    </div>
+      <div *ngIf="submittedExpenses.length === 0" class="empty-state">
+        <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
+        <h3 class="empty-title">All caught up!</h3>
+        <p class="empty-sub">No pending submissions awaiting approval.</p>
+      </div>
+      <div *ngIf="submittedExpenses.length > 0 && filteredSubmitted.length === 0" class="empty-state">
+        <div class="empty-icon"><i class="bi bi-funnel"></i></div>
+        <p class="empty-sub">No expenses match your filters.</p>
+        <button class="btn-ghost" style="margin-top:12px;font-size:12px" (click)="clearMgrFilters()">
+          <i class="bi bi-x-circle me-1"></i>Clear Filters
+        </button>
+      </div>
+
+      <div class="cards-grid" *ngIf="filteredSubmitted.length > 0">
+        <div class="approval-expense-card" *ngFor="let e of pagedSubmitted">
+          <div class="card-header">
+            <div class="card-header-left">
+              <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
+              <div>
+                <span class="card-category">{{ e.categoryName }}</span>
+                <span class="card-expid">{{ e.expenseId }}</span>
+              </div>
+            </div>
+            <span class="status-badge badge-Submitted">Submitted</span>
+          </div>
+          <div class="card-body">
+            <div class="card-meta-row">
+              <div class="card-meta-item">
+                <span class="meta-label">Amount</span>
+                <span class="amount-value">{{ e.amountInRupees || ('&#8377;' + e.amount) }}</span>
+              </div>
+              <div class="card-meta-item">
+                <span class="meta-label">Date</span>
+                <span class="meta-value">{{ e.expenseDate }}</span>
+              </div>
+            </div>
+            <div *ngIf="e.documentUrls?.length" class="docs-row">
+              <button class="btn-view-docs" (click)="openFileModal(e.documentUrls)">
+                <i class="bi bi-paperclip me-1"></i>View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
+              </button>
+            </div>
+            <div class="inline-comment">
+              <input type="text" [(ngModel)]="cardComments[e.expenseId]" placeholder="Add comment (optional)..." class="field-input comment-input" />
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="action-btn btn-approve" [disabled]="submittingId === e.expenseId" (click)="decideInline(e.expenseId, 'approved')">
+              <i class="bi bi-check-circle"></i>Approve
+            </button>
+            <button class="action-btn btn-reject" [disabled]="submittingId === e.expenseId" (click)="decideInline(e.expenseId, 'rejected')">
+              <i class="bi bi-x-circle"></i>Reject
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pagination-bar" *ngIf="mgrTotalPages() > 1">
+        <button class="pg-btn" (click)="mgrPrevPage()" [disabled]="mgrPage === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+        <span class="pg-info">Page <strong>{{ mgrPage }}</strong> of <strong>{{ mgrTotalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredSubmitted.length }} records</span>
+        <button class="pg-btn" (click)="mgrNextPage()" [disabled]="mgrPage >= mgrTotalPages()">Next <i class="bi bi-chevron-right"></i></button>
+      </div>
+    </ng-container>
+
+    <!-- HISTORY TAB -->
+    <ng-container *ngIf="mgrTab === 'history'">
+      <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+        <div class="admin-filter-row">
+          <div class="filter-group">
+            <label class="field-label">Status</label>
+            <select [(ngModel)]="filterStatus" class="field-input filter-select">
+              <option value="">All</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label class="field-label">User Name</label>
+            <input type="text" [(ngModel)]="filterUserName" placeholder="Search by user..." class="field-input filter-select" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">Approver Name</label>
+            <input type="text" [(ngModel)]="filterApproverName" placeholder="Search approver..." class="field-input filter-select" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">Min Amount (&#8377;)</label>
+            <input type="number" [(ngModel)]="filterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">Max Amount (&#8377;)</label>
+            <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">From Date</label>
+            <input type="date" [(ngModel)]="filterDateFrom" class="field-input filter-select" />
+          </div>
+          <div class="filter-group">
+            <label class="field-label">To Date</label>
+            <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
+          </div>
+          <div class="filter-group filter-actions-group">
+            <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()"><i class="bi bi-funnel-fill"></i>Apply</button>
+            <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')">
+              <i class="bi bi-currency-rupee"></i>
+              <i class="bi" [ngClass]="sortBy==='amount' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+            </button>
+            <button class="btn-sort" [class.active]="sortBy==='date'" (click)="toggleSort('date')">
+              <i class="bi bi-calendar3"></i>
+              <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+            </button>
+            <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()"><i class="bi bi-x-circle"></i>Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!filteredApprovals.length" class="empty-state">
+        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+        <h3 class="empty-title">No history yet</h3>
+        <p class="empty-sub">Your approval decisions will appear here.</p>
+      </div>
+
+      <div *ngIf="filteredApprovals.length > 0">
+        <div class="cards-grid">
+          <div class="approval-record-card" *ngFor="let a of pagedApprovals">
+            <div class="arc-header">
+              <div>
+                <span class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</span>
+                <span class="arc-approver"><i class="bi bi-person-check me-1"></i>Approver: {{ a.approverName || '&mdash;' }}</span>
+                <span class="arc-approver" *ngIf="a.employeeName" style="display:block"><i class="bi bi-person me-1"></i>User: {{ a.employeeName }}</span>
+              </div>
+              <span class="status-badge" [ngClass]="{'badge-Approved': a.status === 'Approved', 'badge-Rejected': a.status === 'Rejected', 'badge-Submitted': a.status === 'Pending'}">{{ a.status }}</span>
+            </div>
+            <div class="arc-body">
+              <div class="arc-meta">
+                <div class="arc-meta-item" *ngIf="a.expenseAmount">
+                  <span class="meta-label">Amount</span>
+                  <span class="amount-value" style="font-size:16px">{{ a.amountInRupees || ('&#8377;' + a.expenseAmount) }}</span>
+                </div>
+                <div class="arc-meta-item">
+                  <span class="meta-label">Level</span>
+                  <span class="level-badge">{{ a.level || '&mdash;' }}</span>
+                </div>
+                <div class="arc-meta-item">
+                  <span class="meta-label">Date</span>
+                  <span class="meta-value">{{ a.approvedAt | date:'dd MMM yyyy' }}</span>
+                </div>
+              </div>
+              <div *ngIf="a.comments" class="arc-comments">
+                <i class="bi bi-chat-quote me-1" style="color:var(--text-faint)"></i>{{ a.comments }}
+              </div>
+              <div *ngIf="a.documentUrls?.length" class="docs-row">
+                <button class="btn-view-docs" (click)="openFileModal(a.documentUrls)">
+                  <i class="bi bi-paperclip me-1"></i>View {{ a.documentUrls.length }} File{{ a.documentUrls.length !== 1 ? 's' : '' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pagination-bar">
+          <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+          <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredApprovals.length }} records</span>
+          <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next <i class="bi bi-chevron-right"></i></button>
+        </div>
+      </div>
+    </ng-container>
 
   </ng-container>
 
-  <!-- ═══════════════════════════════════════════════════════
-       ADMIN VIEW
-  ════════════════════════════════════════════════════════ -->
+  <!-- ADMIN -->
   <ng-container *ngIf="role === 'Admin' && !loading">
-
-    <!-- Filter bar -->
     <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
       <div class="admin-filter-row">
         <div class="filter-group">
@@ -163,6 +255,14 @@
             <option value="Rejected">Rejected</option>
             <option value="Pending">Pending</option>
           </select>
+        </div>
+        <div class="filter-group">
+          <label class="field-label">User Name</label>
+          <input type="text" [(ngModel)]="filterUserName" placeholder="Search by user..." class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Approver Name</label>
+          <input type="text" [(ngModel)]="filterApproverName" placeholder="Search approver..." class="field-input filter-select" />
         </div>
         <div class="filter-group">
           <label class="field-label">Min Amount</label>
@@ -181,9 +281,7 @@
           <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
         </div>
         <div class="filter-group filter-actions-group">
-          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()">
-            <i class="bi bi-funnel-fill"></i>Apply
-          </button>
+          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()"><i class="bi bi-funnel-fill"></i>Apply</button>
           <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')">
             <i class="bi bi-currency-rupee"></i>
             <i class="bi" [ngClass]="sortBy==='amount' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
@@ -192,9 +290,7 @@
             <i class="bi bi-calendar3"></i>
             <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
           </button>
-          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()">
-            <i class="bi bi-x-circle"></i>Reset
-          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()"><i class="bi bi-x-circle"></i>Reset</button>
         </div>
       </div>
     </div>
@@ -210,14 +306,11 @@
         <div class="approval-record-card" *ngFor="let a of pagedApprovals">
           <div class="arc-header">
             <div>
-              <p class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</p>
-              <p class="arc-approver"><i class="bi bi-person me-1"></i>{{ a.approverName || '&mdash;' }}</p>
+              <span class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</span>
+              <span class="arc-approver"><i class="bi bi-person-check me-1"></i>Approver: {{ a.approverName || '&mdash;' }}</span>
+              <span class="arc-approver" *ngIf="a.employeeName" style="display:block"><i class="bi bi-person me-1"></i>User: {{ a.employeeName }}</span>
             </div>
-            <span class="status-badge" [ngClass]="{
-              'badge-Approved': a.status === 'Approved',
-              'badge-Rejected': a.status === 'Rejected',
-              'badge-Submitted': a.status === 'Pending'
-            }">{{ a.status }}</span>
+            <span class="status-badge" [ngClass]="{'badge-Approved': a.status === 'Approved', 'badge-Rejected': a.status === 'Rejected', 'badge-Submitted': a.status === 'Pending'}">{{ a.status }}</span>
           </div>
           <div class="arc-body">
             <div class="arc-meta">
@@ -239,27 +332,18 @@
             </div>
             <div *ngIf="a.documentUrls?.length" class="docs-row">
               <button class="btn-view-docs" (click)="openFileModal(a.documentUrls)">
-                <i class="bi bi-paperclip me-1"></i>
-                View {{ a.documentUrls.length }} File{{ a.documentUrls.length !== 1 ? 's' : '' }}
+                <i class="bi bi-paperclip me-1"></i>View {{ a.documentUrls.length }} File{{ a.documentUrls.length !== 1 ? 's' : '' }}
               </button>
             </div>
           </div>
         </div>
       </div>
       <div class="pagination-bar">
-        <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
-          <i class="bi bi-chevron-left"></i>Prev
-        </button>
-        <span class="pg-info">
-          Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong>
-          &nbsp;&middot;&nbsp; {{ filteredApprovals.length }} records
-        </span>
-        <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
-          Next <i class="bi bi-chevron-right"></i>
-        </button>
+        <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+        <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredApprovals.length }} records</span>
+        <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next <i class="bi bi-chevron-right"></i></button>
       </div>
     </div>
-
   </ng-container>
 
   <div *ngIf="role !== 'Manager' && role !== 'Admin'" class="alert-msg">

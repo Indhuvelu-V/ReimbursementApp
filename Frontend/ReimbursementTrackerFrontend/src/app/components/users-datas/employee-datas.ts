@@ -22,9 +22,15 @@ export class EmployeeDatas implements OnInit {
   totalRecords  = 0;
   role:         string | null = null;
 
-  // Filters (server-side)
   filterRole = '';
   filterName = '';
+
+  // Tab state — same pattern as expenses
+  activeTab: 'search' | 'all' = 'search';
+  switchTab(tab: 'search' | 'all') {
+    this.activeTab = tab;
+    if (tab === 'all' && !this.users.length) this.loadUsers();
+  }
 
   constructor(
     private userService:  APIService,
@@ -35,37 +41,24 @@ export class EmployeeDatas implements OnInit {
 
   ngOnInit(): void {
     this.role = this.tokenService.getRoleFromToken();
-    if (this.isAdmin()) this.loadUsers();
   }
 
   isAdmin(): boolean { return this.role === 'Admin'; }
 
   loadUsers() {
     this.loader.show();
-    this.userService.getAllUsers(
-      this.page, this.size,
-      this.filterRole || undefined,
-      this.filterName || undefined
-    ).subscribe({
+    this.userService.getAllUsers(this.page, this.size, this.filterRole || undefined, this.filterName || undefined).subscribe({
       next: (res) => {
         this.users        = res.data ?? res.items ?? [];
         this.totalRecords = res.totalRecords ?? res.totalCount ?? 0;
         this.loader.hide();
       },
-      error: () => {
-        this.toast.showError('Failed to load users.');
-        this.loader.hide();
-      }
+      error: () => { this.toast.showError('Failed to load users.'); this.loader.hide(); }
     });
   }
 
   applyFilters() { this.page = 1; this.loadUsers(); }
-
-  clearFilters() {
-    this.filterRole = ''; this.filterName = '';
-    this.page = 1; this.loadUsers();
-  }
-
+  clearFilters() { this.filterRole = ''; this.filterName = ''; this.page = 1; this.loadUsers(); }
   totalPages() { return Math.ceil(this.totalRecords / this.size); }
   nextPage()   { if (this.page < this.totalPages()) { this.page++; this.loadUsers(); } }
   prevPage()   { if (this.page > 1) { this.page--; this.loadUsers(); } }

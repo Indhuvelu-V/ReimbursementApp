@@ -117,7 +117,7 @@
 .reply-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .btn-reply {
   margin-top: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--violet));
+  background: linear-gradient(135deg, var(--accent), var(--teal));
   color: #fff; border: none; border-radius: var(--r-sm);
   padding: 8px 18px; font-size: 13px; font-weight: 700; cursor: pointer;
   transition: filter 0.15s; display: flex; align-items: center; gap: 6px;
@@ -150,7 +150,7 @@
 }
 .dark-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .btn-send-notif {
-  background: linear-gradient(135deg, var(--violet), var(--accent));
+  background: linear-gradient(135deg, var(--accent), var(--teal));
   color: #fff; border: none; border-radius: var(--r-sm);
   padding: 10px 22px; font-size: 13px; font-weight: 700; cursor: pointer;
   transition: filter 0.15s; display: flex; align-items: center; gap: 6px;

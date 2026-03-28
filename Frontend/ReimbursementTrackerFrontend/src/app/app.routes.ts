@@ -14,6 +14,7 @@ import { EmployeeDatas } from './components/users-datas/employee-datas';
 import { Logs } from './components/logs/logs';
 import { Approvals } from './components/approvals/approvals';
 import { authGuard } from './guards/auth.guard';
+import { ApprovalHistory } from './components/approval-history/approval-history';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -38,6 +39,7 @@ export const routes: Routes = [
       { path: 'expense',            component: Expenses },
       { path: 'policy',             component: Policies },
       { path: 'approvals',          component: Approvals },
+      { path: 'approval-history',   component: ApprovalHistory },
       { path: 'notifications',      component: Notifications },
       { path: 'expense-categories', component: ExpenseCategories },
       { path: 'payment',            component: Payments },

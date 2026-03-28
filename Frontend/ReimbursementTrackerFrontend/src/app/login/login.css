@@ -91,21 +91,27 @@
   border: 1.5px solid var(--border);
   border-radius: var(--r-md);
   color: var(--text);
-  padding: 11px 14px 11px 40px;
+  padding: 11px 44px 11px 40px;
   font-size: 14px; font-family: inherit;
   outline: none;
   transition: all 0.18s;
 }
 .dark-input::placeholder { color: var(--text-faint); }
 .dark-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+/* Suppress browser password manager icon so our toggle is visible */
+.dark-input[type="password"]::-ms-reveal,
+.dark-input[type="password"]::-ms-clear { display: none; }
+.dark-input[type="password"]::-webkit-credentials-auto-fill-button,
+.dark-input[type="password"]::-webkit-strong-password-auto-fill-button { display: none !important; visibility: hidden; }
 .input-invalid { border-color: var(--status-rejected) !important; box-shadow: 0 0 0 3px rgba(244,63,94,0.12) !important; }
 .input-valid   { border-color: var(--teal) !important; }
 
 .toggle-pw {
   position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
   background: none; border: none; cursor: pointer;
-  color: var(--text-faint); font-size: 15px; padding: 4px;
-  transition: color 0.15s;
+  color: var(--text-muted); font-size: 16px; padding: 4px;
+  transition: color 0.15s; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
 }
 .toggle-pw:hover { color: var(--accent); }
 
