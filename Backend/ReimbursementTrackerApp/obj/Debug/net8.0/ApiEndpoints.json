@@ -56,6 +56,11 @@
         "Name": "UserName",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "Action",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -257,6 +262,11 @@
       },
       {
         "Name": "UserName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Action",
         "Type": "System.String",
         "IsRequired": false
       }
@@ -529,6 +539,11 @@
         "Name": "UserName",
         "Type": "System.String",
         "IsRequired": false
+      },
+      {
+        "Name": "Action",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -651,6 +666,11 @@
       },
       {
         "Name": "UserName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Action",
         "Type": "System.String",
         "IsRequired": false
       }

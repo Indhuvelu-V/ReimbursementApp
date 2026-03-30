@@ -2,7 +2,7 @@
 {
     public class PaginationParams
     {
-        private const int MaxPageSize = 50;
+        private const int MaxPageSize = 200;
 
         public int PageNumber { get; set; } = 1;
 
@@ -18,12 +18,10 @@
         public decimal? MinAmount { get; set; }
         public decimal? MaxAmount { get; set; }
 
-        // User filters
         public string? Role { get; set; }
         public string? Name { get; set; }
-
-        // Expense/Payment/Approval filters
         public string? Status { get; set; }
         public string? UserName { get; set; }
+        public string? Action { get; set; }
     }
 }

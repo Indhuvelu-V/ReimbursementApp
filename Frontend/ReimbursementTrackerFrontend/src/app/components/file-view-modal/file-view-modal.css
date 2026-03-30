@@ -76,21 +76,114 @@
   cursor: zoom-out;
 }
 .lightbox-toolbar {
-  position: fixed; top: 16px; right: 20px;
-  display: flex; gap: 10px; z-index: 4001;
+  position: fixed; top: 0; right: 0; left: 0;
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 100%);
+  z-index: 4001;
 }
 .lightbox-btn {
   width: 38px; height: 38px;
-  background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+  background: #1e1e2e; border: 1px solid #444;
   border-radius: var(--r-sm); color: #fff; font-size: 16px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; text-decoration: none;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
-.lightbox-btn:hover { background: rgba(255,255,255,0.25); }
+.lightbox-btn:hover { background: #2d2d44; border-color: #888; }
 .lightbox-img {
   max-width: 92vw; max-height: 88vh;
   border-radius: var(--r-lg);
   box-shadow: 0 20px 80px rgba(0,0,0,0.8);
   cursor: default;
 }
+
+/* Doc card action buttons (Preview + Download) */
+.file-preview-item-doc-wrap { display: flex; flex-direction: column; gap: 6px; }
+
+.doc-action-btns {
+  display: flex; gap: 6px;
+}
+.doc-action-btn {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 5px 8px; font-size: 11px; font-weight: 600;
+  border-radius: var(--r-sm); cursor: pointer;
+  text-decoration: none; border: 1.5px solid var(--border);
+  transition: background 0.15s, border-color 0.15s;
+}
+.preview-btn {
+  background: var(--accent-dim); color: var(--accent); border-color: var(--accent);
+}
+.preview-btn:hover { background: var(--accent); color: #fff; }
+.download-btn {
+  background: var(--surface2); color: var(--text-muted);
+}
+.download-btn:hover { background: var(--surface3); border-color: var(--accent); color: var(--accent); }
+
+.doc-toolbar-actions { display: flex; gap: 8px; }
+
+/* Doc / PDF inline preview */
+.doc-preview-box {
+  width: 90vw; max-width: 1000px; height: 88vh;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+  cursor: default;
+}
+.doc-preview-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px;
+  background: #1e1e2e;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+.doc-preview-title {
+  font-size: 13px; font-weight: 600; color: #e0e0e0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: calc(100% - 100px);
+}
+.doc-preview-frame {
+  flex: 1; width: 100%; border: none; background: #fff;
+}
+
+/* Doc preview state (loading / no-preview / error) */
+.doc-preview-state {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; padding: 40px 24px; text-align: center;
+  color: var(--text-muted);
+}
+.doc-state-icon { font-size: 48px; color: var(--accent); }
+.doc-state-title { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
+.doc-state-sub { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 1s linear infinite; }
+
+
+/* DOCX rendered output */
+.docx-render-wrap {
+  flex: 1; overflow: auto; background: #f5f5f5;
+  padding: 24px; display: flex; flex-direction: column; align-items: center;
+}
+.docx-render-wrap .docx-render { background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+
+/* XLSX rendered table */
+.xlsx-render-wrap {
+  flex: 1; overflow: auto; background: #fff; padding: 16px;
+}
+.xlsx-render-wrap table {
+  border-collapse: collapse; font-size: 13px;
+  width: 100%; font-family: 'Segoe UI', sans-serif;
+}
+.xlsx-render-wrap td, .xlsx-render-wrap th {
+  border: 1px solid #d0d0d0; padding: 6px 10px;
+  white-space: nowrap; color: #1a1a1a;
+}
+.xlsx-render-wrap tr:first-child td,
+.xlsx-render-wrap tr:first-child th {
+  background: #e8f0fe; font-weight: 700;
+}
+.xlsx-render-wrap tr:nth-child(even) td { background: #f9f9f9; }

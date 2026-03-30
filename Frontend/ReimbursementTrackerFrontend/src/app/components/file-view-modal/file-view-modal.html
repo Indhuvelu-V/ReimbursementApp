@@ -15,35 +15,115 @@
       </div>
       <div *ngIf="urls && urls.length > 0" class="file-preview-grid">
         <div *ngFor="let url of urls; let i = index" class="file-preview-item-wrap">
+
+          <!-- Images: fullscreen lightbox -->
           <div *ngIf="api.isImageUrl(url)" class="file-preview-item" (click)="openFullscreen(url)" role="button">
             <img [src]="api.resolveFileUrl(url)" alt="Document {{i+1}}" class="file-preview-img"
                  (error)="onImgError($event)" />
             <div class="file-preview-overlay"><i class="bi bi-zoom-in"></i></div>
             <div class="file-preview-label"><i class="bi bi-image me-1"></i>Image {{ i + 1 }}</div>
           </div>
-          <a *ngIf="!api.isImageUrl(url)" [href]="api.resolveFileUrl(url)" target="_blank" class="file-preview-item">
-            <div class="file-preview-doc">
-              <i class="bi" [ngClass]="api.fileIcon(url)"></i>
-              <span class="file-ext-badge">{{ ext(url) | uppercase }}</span>
+
+          <!-- Non-images: preview + download -->
+          <div *ngIf="!api.isImageUrl(url)" class="file-preview-item-doc-wrap">
+            <div class="file-preview-item" (click)="openDocPreview(url)" role="button">
+              <div class="file-preview-doc">
+                <i class="bi" [ngClass]="api.fileIcon(url)"></i>
+                <span class="file-ext-badge">{{ ext(url) | uppercase }}</span>
+              </div>
+              <div class="file-preview-overlay"><i class="bi bi-eye"></i></div>
+              <div class="file-preview-label"><i class="bi bi-file-earmark me-1"></i>{{ api.fileName(url) }}</div>
             </div>
-            <div class="file-preview-overlay"><i class="bi bi-box-arrow-up-right"></i></div>
-            <div class="file-preview-label"><i class="bi bi-file-earmark me-1"></i>{{ api.fileName(url) }}</div>
-          </a>
+            <div class="doc-action-btns">
+              <button class="doc-action-btn preview-btn" (click)="openDocPreview(url)">
+                <i class="bi bi-eye me-1"></i>Preview
+              </button>
+              <a class="doc-action-btn download-btn" [href]="api.resolveFileUrl(url)" [download]="api.fileName(url)">
+                <i class="bi bi-download me-1"></i>Download
+              </a>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
   </div>
 </ng-container>
 
+<!-- Image lightbox -->
 <ng-container *ngIf="fullscreenUrl">
   <div class="lightbox-backdrop" (click)="closeFullscreen()">
     <div class="lightbox-toolbar">
-      <a [href]="api.resolveFileUrl(fullscreenUrl)" target="_blank" class="lightbox-btn" title="Open in new tab" (click)="$event.stopPropagation()">
-        <i class="bi bi-box-arrow-up-right"></i>
+      <a [href]="api.resolveFileUrl(fullscreenUrl)" [download]="api.fileName(fullscreenUrl)"
+         class="lightbox-btn" title="Download" (click)="$event.stopPropagation()">
+        <i class="bi bi-download"></i>
       </a>
       <button class="lightbox-btn" (click)="closeFullscreen()" title="Close"><i class="bi bi-x-lg"></i></button>
     </div>
     <img [src]="api.resolveFileUrl(fullscreenUrl)" class="lightbox-img" alt="Preview"
          (click)="$event.stopPropagation()" />
+  </div>
+</ng-container>
+
+<!-- Doc / PDF / DOCX / XLSX preview lightbox -->
+<ng-container *ngIf="docDirectUrl">
+  <div class="lightbox-backdrop doc-lightbox-backdrop" (click)="closeDocPreview()">
+    <div class="doc-preview-box" (click)="$event.stopPropagation()">
+
+      <!-- Toolbar -->
+      <div class="doc-preview-toolbar">
+        <span class="doc-preview-title">
+          <i class="bi" [ngClass]="api.fileIcon(docDirectUrl)" style="margin-right:6px"></i>{{ docPreviewName }}
+        </span>
+        <div class="doc-toolbar-actions">
+          <a [href]="docDirectUrl" [download]="docPreviewName" class="lightbox-btn" title="Download">
+            <i class="bi bi-download"></i>
+          </a>
+          <button class="lightbox-btn" (click)="closeDocPreview()" title="Close">
+            <i class="bi bi-x-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading spinner -->
+      <div *ngIf="docPreviewLoading" class="doc-preview-state">
+        <i class="bi bi-hourglass-split doc-state-icon spin"></i>
+        <p>Loading preview…</p>
+      </div>
+
+      <!-- PDF: native iframe -->
+      <iframe *ngIf="!docPreviewLoading && previewMode === 'pdf' && docPreviewUrl"
+              [src]="docPreviewUrl" class="doc-preview-frame" frameborder="0"></iframe>
+
+      <!-- DOCX: rendered by docx-preview into this div -->
+      <div *ngIf="!docPreviewLoading && previewMode === 'docx'"
+           id="docx-render-container" class="docx-render-wrap"></div>
+
+      <!-- XLSX: rendered as HTML table -->
+      <div *ngIf="!docPreviewLoading && previewMode === 'xlsx' && xlsxHtml"
+           class="xlsx-render-wrap" [innerHTML]="xlsxHtml"></div>
+
+      <!-- .doc (old binary) — no renderer available -->
+      <div *ngIf="!docPreviewLoading && previewMode === 'none'" class="doc-preview-state">
+        <i class="bi bi-file-earmark-word doc-state-icon" style="color:#2b579a"></i>
+        <p class="doc-state-title">Preview not available for .doc files</p>
+        <p class="doc-state-sub">Old Word format (.doc) can't be rendered in the browser.<br>Download to open in Microsoft Word.</p>
+        <a [href]="docDirectUrl" [download]="docPreviewName" class="btn-primary"
+           style="margin-top:16px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px">
+          <i class="bi bi-download"></i> Download {{ docPreviewName }}
+        </a>
+      </div>
+
+      <!-- Error -->
+      <div *ngIf="docPreviewError" class="doc-preview-state">
+        <i class="bi bi-exclamation-triangle doc-state-icon" style="color:#f43f5e"></i>
+        <p class="doc-state-title">Failed to load file</p>
+        <a [href]="docDirectUrl" [download]="docPreviewName" class="btn-primary"
+           style="margin-top:12px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;padding:10px 20px">
+          <i class="bi bi-download"></i> Download instead
+        </a>
+      </div>
+
+    </div>
   </div>
 </ng-container>

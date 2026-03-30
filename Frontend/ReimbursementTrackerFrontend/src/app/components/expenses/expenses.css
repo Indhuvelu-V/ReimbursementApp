@@ -214,3 +214,27 @@
 @media (max-width: 640px) {
   .status-cards-row { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* Existing files in edit mode */
+.existing-files-section {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--r-md);
+}
+.existing-files-label {
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  margin: 0 0 8px 0;
+}
+.existing-files-hint {
+  font-size: 11px; color: var(--text-faint);
+  margin: 8px 0 0 0;
+}
+.existing-file-item { position: relative; }
+.existing-file-badge {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 9px; font-weight: 700;
+  background: var(--accent); color: #fff;
+  padding: 1px 5px; border-radius: 99px;
+}

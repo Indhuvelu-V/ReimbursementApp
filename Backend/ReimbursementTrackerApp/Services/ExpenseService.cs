@@ -200,14 +200,55 @@ namespace ReimbursementTrackerApp.Services
             var oldAmount = existingExpense.Amount;
             var oldDocs = existingExpense.DocumentUrls ?? new List<string>();
 
-            // ── Files already saved by controller; DocumentUrls contains paths ─
-            var documentUrls = dto.DocumentUrls?.ToList() ?? new List<string>(oldDocs);
+            // ── Build final document list ─────────────────────────────────────
+            // Frontend sends:
+            //   DocumentUrls = kept existing files (or "__EMPTY__" if all deleted)
+            //   Documents    = new IFormFile uploads (controller saves them and appends paths)
+            //
+            // Strip the sentinel, then use whatever remains as the final list.
+            var rawSent = dto.DocumentUrls?.ToList();
 
-            existingExpense.Amount = dto.Amount;
-            existingExpense.CategoryId = dto.CategoryId;
-            existingExpense.CategoryName = dto.CategoryName;
-            existingExpense.ExpenseDate = dto.ExpenseDate;
-            existingExpense.DocumentUrls = documentUrls;
+            List<string> documentUrls;
+            if (rawSent == null)
+            {
+                // Frontend sent nothing at all — keep old docs unchanged
+                documentUrls = new List<string>(oldDocs);
+            }
+            else
+            {
+                // Remove sentinel, keep real paths only
+                documentUrls = rawSent
+                    .Where(u => u != "__EMPTY__")
+                    .Distinct()
+                    .ToList();
+            }
+
+            Console.WriteLine($"[UpdateExpense] rawSent=[{string.Join(", ", rawSent ?? new List<string>())}]");
+            Console.WriteLine($"[UpdateExpense] oldDocs=[{string.Join(", ", oldDocs)}]");
+            Console.WriteLine($"[UpdateExpense] finalDocs=[{string.Join(", ", documentUrls)}]");
+
+            // ── Resolve category name ─────────────────────────────────────────
+            string resolvedCategoryName = dto.CategoryName;
+            if (string.IsNullOrWhiteSpace(resolvedCategoryName))
+            {
+                try
+                {
+                    var allCategories = (await _categoryRepo.GetAllAsync())?.ToList() ?? new List<ExpenseCategory>();
+                    var matchedCategory = allCategories.FirstOrDefault(c => c.CategoryId == dto.CategoryId);
+                    resolvedCategoryName = matchedCategory?.CategoryName.ToString()
+                        ?? existingExpense.CategoryName
+                        ?? dto.CategoryId;
+                }
+                catch { resolvedCategoryName = existingExpense.CategoryName ?? dto.CategoryId; }
+            }
+            if (string.IsNullOrWhiteSpace(resolvedCategoryName))
+                resolvedCategoryName = dto.CategoryId;
+
+            existingExpense.Amount       = dto.Amount;
+            existingExpense.CategoryId   = dto.CategoryId;
+            existingExpense.CategoryName = resolvedCategoryName;
+            existingExpense.ExpenseDate  = dto.ExpenseDate;
+            existingExpense.DocumentUrlsJson = System.Text.Json.JsonSerializer.Serialize(documentUrls);
 
             await _expenseRepo.UpdateAsync(expenseId, existingExpense);
 
@@ -217,7 +258,7 @@ namespace ReimbursementTrackerApp.Services
                 ExpenseId = expenseId,
                 Amount = existingExpense.Amount,
                 OldAmount = oldAmount,
-                DocumentUrls = existingExpense.DocumentUrls,
+                DocumentUrls = documentUrls,
                 OldDocumentUrls = oldDocs,
                 Date = DateTime.UtcNow
             });
@@ -437,7 +478,9 @@ namespace ReimbursementTrackerApp.Services
                 UserId = e.UserId ?? "",
                 UserName = expenseOwnerName ?? "",
                 CategoryId = e.CategoryId ?? "",
-                CategoryName = e.Category?.CategoryName.ToString() ?? e.CategoryName,
+                CategoryName = string.IsNullOrWhiteSpace(e.CategoryName)
+                    ? (e.Category?.CategoryName.ToString() ?? "")
+                    : e.CategoryName,
                 Amount = e.Amount,
                 AmountInRupees = CurrencyHelper.FormatRupees(e.Amount),
                 ExpenseDate = e.ExpenseDate.ToString("dd-MM-yyyy"),

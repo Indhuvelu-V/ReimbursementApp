@@ -153,3 +153,15 @@
   .log-action-text { max-width: 200px; }
   .log-meta-grid { gap: 12px; }
 }
+
+/* Danger outline button for bulk delete */
+.btn-danger-outline {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1.5px solid #f43f5e; color: #f43f5e;
+  background: rgba(244,63,94,0.06);
+  border-radius: var(--r-sm); font-weight: 600;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.btn-danger-outline:hover {
+  background: #f43f5e; color: #fff;
+}

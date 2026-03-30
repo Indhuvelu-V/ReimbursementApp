@@ -80,6 +80,11 @@ export class Expenses implements OnInit {
   // ── File modal ─────────────────────────────────────────────────────────────
   showFileModal  = false;
   modalFileUrls: string[] = [];
+  existingDocUrls: string[] = [];   // files already saved on the expense being edited
+
+  removeExistingFile(url: string) {
+    this.existingDocUrls = this.existingDocUrls.filter(u => u !== url);
+  }
 
   // ── Form dates ─────────────────────────────────────────────────────────────
   readonly minDate:          string;
@@ -131,15 +136,14 @@ export class Expenses implements OnInit {
   }
 
   fetchCategoryLimit(categoryId: string) {
-    this.loadingCategoryLimit = true;
-    this.api.apiGetCategoryByType(categoryId).subscribe({
-      next: (cat: any) => {
-        this.categoryMaxLimit  = cat?.maxLimit ?? null;
-        this.categoryLimitName = cat?.categoryName ?? categoryId;
-        this.loadingCategoryLimit = false;
-      },
-      error: () => { this.categoryMaxLimit = null; this.loadingCategoryLimit = false; }
-    });
+    const cat = this.categories.find(c => c.categoryId === categoryId);
+    if (cat) {
+      this.categoryMaxLimit  = cat.maxLimit ?? null;
+      this.categoryLimitName = cat.categoryName ?? categoryId;
+    } else {
+      this.categoryMaxLimit  = null;
+      this.categoryLimitName = '';
+    }
   }
 
   loadExpenses() {
@@ -298,12 +302,25 @@ export class Expenses implements OnInit {
     }
 
     const fd = new FormData();
-    fd.append('categoryId',  this.form.value.categoryId);
+    fd.append('categoryId',   this.form.value.categoryId);
+    // Also send categoryName so backend can use it directly
+    const selectedCat = this.categories.find(c => c.categoryId === this.form.value.categoryId);
+    fd.append('categoryName', selectedCat?.categoryName ?? '');
     fd.append('amount',      this.form.value.amount);
     fd.append('expenseDate', this.form.value.expenseDate);
     this.files.forEach(f => fd.append('Documents', f));
 
     if (this.isEditMode && this.editExpenseId) {
+      // Send kept existing files so backend knows which ones to preserve
+      console.log('[Edit Submit] existingDocUrls to keep:', this.existingDocUrls);
+      console.log('[Edit Submit] new files:', this.files.map(f => f.name));
+      // Always send DocumentUrls so backend knows the list is intentional.
+      // If all files deleted, send sentinel '__EMPTY__' so backend doesn't fall back to old docs.
+      if (this.existingDocUrls.length > 0) {
+        this.existingDocUrls.forEach(u => fd.append('DocumentUrls', u));
+      } else {
+        fd.append('DocumentUrls', '__EMPTY__');
+      }
       this.loader.show();
       this.api.updateExpense(this.editExpenseId, fd)
         .pipe(finalize(() => this.clearFiles()))
@@ -362,6 +379,10 @@ export class Expenses implements OnInit {
       amount:      expense.amount,
       expenseDate: this.formatDate(expense.expenseDate)
     });
+
+    // Show existing uploaded files as previews (read-only, not re-uploaded)
+    this.existingDocUrls = expense.documentUrls ?? [];
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -421,8 +442,9 @@ export class Expenses implements OnInit {
   resetForm()   {
     this.form.reset();
     this.clearFiles();
-    this.isEditMode    = false;
-    this.editExpenseId = null;
+    this.isEditMode      = false;
+    this.editExpenseId   = null;
+    this.existingDocUrls = [];
     this.categoryMaxLimit  = null;
     this.categoryLimitName = '';
   }

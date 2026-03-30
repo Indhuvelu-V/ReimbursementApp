@@ -61,12 +61,17 @@
         <div class="form-row">
 
           <div class="field">
-            <label class="field-label"><i class="bi bi-tag me-1"></i>Category ID</label>
-            <input formControlName="categoryId" placeholder="e.g. C1" class="field-input"
-                   [class.is-error]="categoryId.invalid && categoryId.touched"
-                   [class.is-valid]="categoryId.valid && categoryId.touched" />
+            <label class="field-label"><i class="bi bi-tag me-1"></i>Category</label>
+            <select formControlName="categoryId" class="field-input"
+                    [class.is-error]="categoryId.invalid && categoryId.touched"
+                    [class.is-valid]="categoryId.valid && categoryId.touched">
+              <option value="">Select a category</option>
+              <option *ngFor="let cat of categories" [value]="cat.categoryId">
+                {{ cat.categoryName }}
+              </option>
+            </select>
             <span class="field-error" *ngIf="categoryId.invalid && categoryId.touched">
-              <i class="bi bi-exclamation-circle me-1"></i>Category ID is required
+              <i class="bi bi-exclamation-circle me-1"></i>Category is required
             </span>
           </div>
 
@@ -75,9 +80,6 @@
               <i class="bi bi-currency-rupee me-1"></i>Amount
               <span *ngIf="categoryMaxLimit !== null" class="field-optional">
                 — max {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
-              </span>
-              <span *ngIf="loadingCategoryLimit" class="field-optional">
-                <i class="bi bi-hourglass-split me-1"></i>Loading limit…
               </span>
             </label>
             <div class="input-with-prefix">
@@ -138,6 +140,30 @@
                   <i class="bi bi-x"></i>
                 </button>
               </div>
+            </div>
+
+            <!-- Existing uploaded files shown during edit -->
+            <div *ngIf="isEditMode && existingDocUrls.length > 0" class="existing-files-section">
+              <p class="existing-files-label">
+                <i class="bi bi-paperclip me-1"></i>Currently uploaded ({{ existingDocUrls.length }} file{{ existingDocUrls.length !== 1 ? 's' : '' }})
+                <span style="font-weight:400;color:var(--text-faint)"> — click × to remove</span>
+              </p>
+              <div class="selected-files-grid">
+                <div *ngFor="let url of existingDocUrls" class="selected-file-item existing-file-item">
+                  <img *ngIf="apiSvc.isImageUrl(url)" [src]="apiSvc.resolveFileUrl(url)" alt="existing" class="selected-file-img" />
+                  <div *ngIf="!apiSvc.isImageUrl(url)" class="selected-file-doc">
+                    <i class="bi" [ngClass]="apiSvc.fileIcon(url)"></i>
+                  </div>
+                  <span class="selected-file-name">{{ apiSvc.fileName(url) }}</span>
+                  <button type="button" class="selected-file-remove" (click)="removeExistingFile(url)" title="Remove this file">
+                    <i class="bi bi-x"></i>
+                  </button>
+                </div>
+              </div>
+              <p class="existing-files-hint">New files you select above will be added alongside these.</p>
+            </div>
+            <div *ngIf="isEditMode && existingDocUrls.length === 0 && !files.length" class="existing-files-section" style="text-align:center;color:var(--text-faint);font-size:12px">
+              <i class="bi bi-trash3 me-1"></i>All existing files removed. Upload new ones above if needed.
             </div>
           </div>
 

@@ -115,6 +115,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -544,6 +551,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -913,6 +927,13 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "Action",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1062,6 +1083,13 @@
           },
           {
             "name": "UserName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Action",
             "in": "query",
             "schema": {
               "type": "string"
@@ -1369,6 +1397,10 @@
             "nullable": true
           },
           "userName": {
+            "type": "string",
+            "nullable": true
+          },
+          "action": {
             "type": "string",
             "nullable": true
           }

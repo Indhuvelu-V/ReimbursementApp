@@ -15,6 +15,10 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 
+// PIPELINE ORDER NOTE: UseCors MUST be before UseStaticFiles
+// so that /uploads responses include Access-Control-Allow-Origin headers.
+// Without this, fetch() from Angular (localhost:4200) to backend (localhost:5138)
+// is blocked by the browser's CORS policy on static file responses.
 var builder = WebApplication.CreateBuilder(args);
 
 // =====================================================
@@ -27,6 +31,8 @@ builder.Services.AddControllers(options =>
 .AddJsonOptions(options =>
 {
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
 });
 
 // =====================================================
@@ -175,19 +181,17 @@ if (app.Environment.IsDevelopment())
 //   http://localhost:5138/uploads/{filename}
 // Accessible to Admin, Manager, Finance (no auth required on static files
 // since the path is direct and not guessable � GUID filenames used).
-app.UseStaticFiles();
-
-// ?? Optional: if you want uploads outside wwwroot (e.g. /uploads at project root)
-// uncomment the block below and comment out app.UseStaticFiles() above:
-//
-// app.UseStaticFiles(new StaticFileOptions
-// {
-//     FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-//         Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
-//     RequestPath = "/uploads"
-// });
-
 app.UseCors();
+
+// Static files with explicit CORS headers on responses
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+        ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET");
+    }
+});
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -1,0 +1,15 @@
+global using System;
+global using System.Collections.Generic;
+global using System.Linq;
+global using System.Threading.Tasks;
+global using FluentAssertions;
+global using Moq;
+global using Xunit;
+global using Microsoft.AspNetCore.Http;
+global using System.Security.Claims;
+global using ReimbursementTrackerApp.Interfaces;
+global using ReimbursementTrackerApp.Models;
+global using ReimbursementTrackerApp.Models.Common;
+global using ReimbursementTrackerApp.Models.DTOs;
+global using ReimbursementTrackerApp.Models.Enums;
+global using ReimbursementTrackerApp.Services;

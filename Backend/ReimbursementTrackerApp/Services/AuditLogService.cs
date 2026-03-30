@@ -121,7 +121,12 @@ namespace ReimbursementTrackerApp.Services
                     !l.Action.ToLower().Contains("fetch") &&
                     !l.Action.ToLower().Contains("view") &&
                     (from == null || l.Date >= from) &&
-                    (to == null || l.Date <= to)
+                    (to == null || l.Date <= to) &&
+                    (string.IsNullOrWhiteSpace(paginationParams.UserName) ||
+                     (l.UserName ?? "").ToLower().Contains(paginationParams.UserName.ToLower()) ||
+                     (l.UserId ?? "").ToLower().Contains(paginationParams.UserName.ToLower())) &&
+                    (string.IsNullOrWhiteSpace(paginationParams.Action) ||
+                     (l.Action ?? "").ToLower().Contains(paginationParams.Action.ToLower()))
                 )
                 .ToList();
 

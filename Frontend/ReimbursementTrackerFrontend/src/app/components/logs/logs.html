@@ -37,7 +37,8 @@
         </div>
         <div class="filter-group">
           <label class="field-label">User Name</label>
-          <input type="text" class="field-input filter-select" [(ngModel)]="filterUserName" placeholder="Search by user..." />
+          <input type="text" class="field-input filter-select" [(ngModel)]="filterUserName"
+            placeholder="Search by user..." (keyup.enter)="applyUserNameFilter()" />
         </div>
         <div class="filter-group">
           <label class="field-label">Action Type</label>
@@ -58,6 +59,11 @@
           </button>
           <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilter()">
             <i class="bi bi-x-circle"></i>Reset
+          </button>
+          <button *ngIf="filteredLogs.length > 0 && hasActiveFilter"
+                  class="btn-danger-outline" style="padding:8px 14px;font-size:12px"
+                  (click)="confirmBulkDelete()" title="Delete all filtered logs">
+            <i class="bi bi-trash3 me-1"></i>Delete Filtered ({{ filteredLogs.length }})
           </button>
         </div>
       </div>
@@ -171,6 +177,35 @@
       <button class="btn-ghost" (click)="cancelDelete()"><i class="bi bi-x-circle me-2"></i>Cancel</button>
       <button class="btn-primary" style="background:linear-gradient(135deg,#f43f5e,#e11d48)" (click)="executeDelete()">
         <i class="bi bi-trash3 me-2"></i>Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal-backdrop" *ngIf="showBulkDeleteConfirm" (click)="cancelBulkDelete()"></div>
+<div class="modal-box confirm-modal" *ngIf="showBulkDeleteConfirm">
+  <div class="modal-head">
+    <h4><i class="bi bi-trash3 me-2" style="color:var(--status-rejected)"></i>Delete Filtered Logs?</h4>
+    <button class="modal-close-btn" (click)="cancelBulkDelete()"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" style="text-align:center;padding:24px">
+    <div class="confirm-icon-wrap" style="background:rgba(244,63,94,0.1);border-color:rgba(244,63,94,0.3);color:var(--status-rejected)">
+      <i class="bi bi-exclamation-triangle-fill"></i>
+    </div>
+    <p style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">
+      Delete {{ filteredLogs.length }} log{{ filteredLogs.length !== 1 ? 's' : '' }}?
+    </p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:0">
+      All <strong>{{ filteredLogs.length }}</strong> currently filtered audit logs will be permanently deleted.<br>
+      This action <strong>cannot be undone</strong>.
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;margin-top:24px">
+      <button class="btn-ghost" (click)="cancelBulkDelete()">
+        <i class="bi bi-x-circle me-2"></i>Cancel
+      </button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#f43f5e,#e11d48)" (click)="executeBulkDelete()">
+        <i class="bi bi-trash3 me-2"></i>Yes, Delete All {{ filteredLogs.length }}
       </button>
     </div>
   </div>

@@ -59,7 +59,14 @@ namespace ReimbursementTrackerApp.Repositories
             {
                 throw new KeyNotFoundException($"Entity with id {key} not found.");
             }
-            _context.Entry(entry).CurrentValues.SetValues(entity);
+
+            // If same object reference (already tracked), SetValues is a no-op.
+            // Use CurrentValues.SetValues only when they differ, then save.
+            if (!ReferenceEquals(entry, entity))
+            {
+                _context.Entry(entry).CurrentValues.SetValues(entity);
+            }
+            // Either way, SaveChanges persists all tracked changes on this entity
             await _context.SaveChangesAsync();
             return entry;
         }
