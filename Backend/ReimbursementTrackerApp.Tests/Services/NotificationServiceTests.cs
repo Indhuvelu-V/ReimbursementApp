@@ -1,5 +1,11 @@
+using FluentAssertions;
+using Moq;
 using Microsoft.Extensions.Logging;
+using ReimbursementTrackerApp.Interfaces;
+using ReimbursementTrackerApp.Models;
+using ReimbursementTrackerApp.Models.DTOs;
 using ReimbursementTrackerApp.Services;
+using Xunit;
 
 namespace ReimbursementTrackerApp.Tests.Services
 {
@@ -16,64 +22,71 @@ namespace ReimbursementTrackerApp.Tests.Services
             _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
                 .ReturnsAsync(new CreateAuditLogsResponseDto());
 
-        // ── CreateNotification ────────────────────────────────────────────────
+        private void SetupAdd() =>
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>()))
+                .ReturnsAsync((Notification n) => n);
 
         [Fact]
         public async Task CreateNotification_ValidRequest_ReturnsDto()
         {
-            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>()))
-                .ReturnsAsync((Notification n) => n);
-            SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.CreateNotification(new CreateNotificationRequestDto
+            SetupAdd(); SetupAudit();
+            var result = await CreateService().CreateNotification(new CreateNotificationRequestDto
             {
-                UserId     = "U1",
-                Message    = "Your expense was approved.",
-                SenderRole = "System"
+                UserId = "U1", Message = "Expense approved.", SenderRole = "System"
             });
-
             result.Should().NotBeNull();
-            result.Message.Should().Be("Your expense was approved.");
+            result.Message.Should().Be("Expense approved.");
             result.UserId.Should().Be("U1");
             result.ReadStatus.Should().Be("Unread");
         }
 
         [Fact]
-        public async Task CreateNotification_DefaultsSenderRoleToManager()
+        public async Task CreateNotification_NoSenderRole_DefaultsToManager()
         {
-            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>()))
-                .ReturnsAsync((Notification n) => n);
-            SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.CreateNotification(new CreateNotificationRequestDto
+            SetupAdd(); SetupAudit();
+            var result = await CreateService().CreateNotification(new CreateNotificationRequestDto
             {
-                UserId  = "U1",
-                Message = "Hello"
-                // SenderRole not set → defaults to "Manager"
+                UserId = "U1", Message = "Hello"
             });
-
             result.SenderRole.Should().Be("Manager");
         }
 
-        // ── GetNotificationsByUser ────────────────────────────────────────────
+        [Fact]
+        public async Task CreateNotification_SetsCreatedAtToUtcNow()
+        {
+            SetupAdd(); SetupAudit();
+            var before = DateTime.UtcNow.AddSeconds(-1);
+            var result = await CreateService().CreateNotification(new CreateNotificationRequestDto
+            {
+                UserId = "U1", Message = "Test"
+            });
+            result.CreatedAt.Should().BeAfter(before);
+        }
+
+        [Fact]
+        public async Task CreateNotification_AuditLogFails_StillReturnsDto()
+        {
+            SetupAdd();
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ThrowsAsync(new Exception("Audit failure"));
+            var result = await CreateService().CreateNotification(new CreateNotificationRequestDto
+            {
+                UserId = "U1", Message = "Test"
+            });
+            result.Should().NotBeNull();
+        }
 
         [Fact]
         public async Task GetNotificationsByUser_ReturnsOnlyUserNotifications()
         {
-            var notifications = new List<Notification>
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>
             {
-                new Notification { NotificationId = "N1", UserId = "U1", Message = "Approved",  CreatedAt = DateTime.UtcNow },
-                new Notification { NotificationId = "N2", UserId = "U2", Message = "Rejected",  CreatedAt = DateTime.UtcNow },
-                new Notification { NotificationId = "N3", UserId = "U1", Message = "Paid",      CreatedAt = DateTime.UtcNow }
-            };
-            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(notifications);
+                new() { NotificationId = "N1", UserId = "U1", Message = "Approved", CreatedAt = DateTime.UtcNow },
+                new() { NotificationId = "N2", UserId = "U2", Message = "Rejected", CreatedAt = DateTime.UtcNow },
+                new() { NotificationId = "N3", UserId = "U1", Message = "Paid",     CreatedAt = DateTime.UtcNow }
+            });
             SetupAudit();
-
-            var svc    = CreateService();
-            var result = (await svc.GetNotificationsByUser("U1")).ToList();
-
+            var result = (await CreateService().GetNotificationsByUser("U1")).ToList();
             result.Should().HaveCount(2);
             result.All(n => n.UserId == "U1").Should().BeTrue();
         }
@@ -83,91 +96,133 @@ namespace ReimbursementTrackerApp.Tests.Services
         {
             _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>());
             SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.GetNotificationsByUser("U1");
-
+            var result = await CreateService().GetNotificationsByUser("U1");
             result.Should().BeEmpty();
         }
 
-        // ── MarkAsRead ────────────────────────────────────────────────────────
+        [Fact]
+        public async Task GetNotificationsByUser_OrderedNewestFirst()
+        {
+            var older = DateTime.UtcNow.AddHours(-2);
+            var newer = DateTime.UtcNow;
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>
+            {
+                new() { NotificationId = "N1", UserId = "U1", Message = "Old", CreatedAt = older },
+                new() { NotificationId = "N2", UserId = "U1", Message = "New", CreatedAt = newer }
+            });
+            SetupAudit();
+            var result = (await CreateService().GetNotificationsByUser("U1")).ToList();
+            result.First().NotificationId.Should().Be("N2");
+        }
 
         [Fact]
         public async Task MarkAsRead_UnreadNotification_ChangesStatusToRead()
         {
-            var notif = new Notification
-            {
-                NotificationId = "N1", UserId = "U1",
-                Message = "Test", ReadStatus = "Unread"
-            };
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", Message = "Test", ReadStatus = "Unread" };
             _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
             _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
             SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.MarkAsRead("N1", "U1");
-
+            var result = await CreateService().MarkAsRead("N1", "U1");
             result.Should().NotBeNull();
             result!.ReadStatus.Should().Be("Read");
         }
 
         [Fact]
-        public async Task MarkAsRead_WrongUser_ReturnsNull()
+        public async Task MarkAsRead_AlreadyRead_ReturnsWithoutUpdate()
         {
-            var notif = new Notification
-            {
-                NotificationId = "N1", UserId = "U1", ReadStatus = "Unread"
-            };
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", ReadStatus = "Read" };
             _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
             SetupAudit();
+            var result = await CreateService().MarkAsRead("N1", "U1");
+            result.Should().NotBeNull();
+            _notifRepo.Verify(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Notification>()), Times.Never);
+        }
 
-            var svc    = CreateService();
-            var result = await svc.MarkAsRead("N1", "WRONG_USER");
-
+        [Fact]
+        public async Task MarkAsRead_WrongUser_ReturnsNull()
+        {
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", ReadStatus = "Unread" };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            SetupAudit();
+            var result = await CreateService().MarkAsRead("N1", "WRONG_USER");
             result.Should().BeNull();
         }
 
-        // ── ReplyNotification ─────────────────────────────────────────────────
+        [Fact]
+        public async Task MarkAsRead_NotFound_ReturnsNull()
+        {
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>());
+            SetupAudit();
+            var result = await CreateService().MarkAsRead("MISSING", "U1");
+            result.Should().BeNull();
+        }
 
         [Fact]
-        public async Task ReplyNotification_ManagerSent_SavesReply()
+        public async Task ReplyNotification_ValidReply_SavesReplyAndMarksRead()
         {
-            var notif = new Notification
-            {
-                NotificationId = "N1", UserId = "U1",
-                Message = "Please clarify", SenderRole = "Manager", ReadStatus = "Unread"
-            };
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", Message = "Clarify?", SenderRole = "Manager", ReadStatus = "Unread" };
             _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
             _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
             SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.ReplyNotification(
-                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Clarified!" },
-                "U1");
-
+            var result = await CreateService().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Clarified!" }, "U1");
             result.Should().NotBeNull();
             result!.Reply.Should().Be("Clarified!");
             result.ReadStatus.Should().Be("Read");
         }
 
         [Fact]
-        public async Task ReplyNotification_SystemSent_ReturnsNull()
+        public async Task ReplyNotification_NotificationNotFound_ReturnsNull()
         {
-            var notif = new Notification
-            {
-                NotificationId = "N1", UserId = "U1",
-                Message = "Auto message", SenderRole = "System"
-            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>());
+            SetupAudit();
+            var result = await CreateService().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "MISSING", Reply = "Reply" }, "U1");
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task ReplyNotification_WrongUser_ReturnsNull()
+        {
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", SenderRole = "Manager" };
             _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
             SetupAudit();
-
-            var svc    = CreateService();
-            var result = await svc.ReplyNotification(
-                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Reply" },
-                "U1");
-
+            var result = await CreateService().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Reply" }, "WRONG");
             result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task GetSentNotifications_ReturnsSenderNotifications()
+        {
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>
+            {
+                new() { NotificationId = "N1", UserId = "U1", SenderId = "MGR1", CreatedAt = DateTime.UtcNow },
+                new() { NotificationId = "N2", UserId = "U2", SenderId = "MGR1", CreatedAt = DateTime.UtcNow },
+                new() { NotificationId = "N3", UserId = "U3", SenderId = "MGR2", CreatedAt = DateTime.UtcNow }
+            });
+            var result = (await CreateService().GetSentNotifications("MGR1")).ToList();
+            result.Should().HaveCount(2);
+            result.All(n => n.SenderId == "MGR1").Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task MarkSentAsRead_ValidSender_UpdatesReadStatus()
+        {
+            var notif = new Notification { NotificationId = "N1", SenderId = "MGR1", ReadStatus = "Unread" };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            await CreateService().MarkSentAsRead("N1", "MGR1");
+            _notifRepo.Verify(r => r.UpdateAsync("N1", It.IsAny<Notification>()), Times.Once);
+        }
+
+        [Fact]
+        public async Task MarkSentAsRead_WrongSender_DoesNotUpdate()
+        {
+            var notif = new Notification { NotificationId = "N1", SenderId = "MGR1", ReadStatus = "Unread" };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            await CreateService().MarkSentAsRead("N1", "WRONG");
+            _notifRepo.Verify(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Notification>()), Times.Never);
         }
     }
 }

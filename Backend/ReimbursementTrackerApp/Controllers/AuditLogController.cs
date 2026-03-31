@@ -62,9 +62,9 @@ namespace ReimbursementTrackerApp.Controllers
         // =====================================================
         // GET PAGED LOGS
         // =====================================================
-        [HttpPost("paged")]
+        [HttpGet("paged")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetPagedLogs([FromBody] PaginationParams paginationParams)
+        public async Task<IActionResult> GetPagedLogs([FromQuery] PaginationParams paginationParams)
         {
             _logger.LogInformation("Request to fetch audit logs. Page {Page}, Size {Size}",
                 paginationParams.PageNumber, paginationParams.PageSize);

@@ -253,7 +253,7 @@ namespace ReimbursementTrackerApp.Controllers
         // =====================================================
         // GET ALL EXPENSES — unchanged
         // =====================================================
-        [HttpPost("all")]
+        [HttpGet("all")]
         [Authorize(Roles = "Manager,Finance,Admin")]
         public async Task<IActionResult> GetAllExpenses([FromQuery] PaginationParams paginationParams)
         {

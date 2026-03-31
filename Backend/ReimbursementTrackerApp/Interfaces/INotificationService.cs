@@ -13,5 +13,8 @@ namespace ReimbursementTrackerApp.Interfaces
 
         // ✅ NEW — was missing, fixes the broken MarkAsRead controller endpoint
         Task<CreateNotificationResponseDto?> MarkAsRead(string notificationId, string userId);
+
+        Task<IEnumerable<CreateNotificationResponseDto>> GetSentNotifications(string senderId);
+        Task MarkSentAsRead(string notificationId, string senderId);
     }
 }

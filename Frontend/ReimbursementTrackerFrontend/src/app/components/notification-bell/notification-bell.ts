@@ -21,51 +21,71 @@ export class NotificationBell implements OnInit, OnDestroy {
   unreadCount   = 0;
   showDropdown  = false;
   loading       = false;
-  role:         string = '';
+  role          = '';
 
-  // No polling — notifications load on init + on bell click only
   ngOnInit() {
     this.role = this.tokenService.getRoleFromToken() ?? '';
     this.loadNotifications();
   }
 
-  ngOnDestroy() { /* no interval to clear */ }
+  ngOnDestroy() {}
 
   loadNotifications() {
     const r = this.role.toLowerCase();
-    if (r !== 'employee' && r !== 'manager' && r !== 'admin' && r !== 'finance') return;
+    if (!['employee', 'manager', 'admin', 'finance'].includes(r)) return;
     this.loading = true;
-    this.api.getMyNotifications().subscribe({
-      next: (res: CreateNotificationResponseDto[]) => {
-        const list = res ?? [];
-        // Deduplicate by notificationId and sort newest first
-        const seen = new Set<string>();
-        const deduped = list.filter(n => {
-          if (seen.has(n.notificationId)) return false;
-          seen.add(n.notificationId);
-          return true;
-        });
-        this.notifications = deduped.slice(0, 5);
-        this.unreadCount   = deduped.filter(n => n.readStatus?.toLowerCase() === 'unread').length;
-        this.loading = false;
-      },
-      error: () => { this.loading = false; }
-    });
+
+    if (r === 'manager') {
+      // Manager: received + sent (with replies) — both from real DB state
+      this.api.getMyNotifications().subscribe({
+        next: (received) => {
+          this.api.getSentNotifications().subscribe({
+            next: (sent) => {
+              // Sent notifications with a reply that are still "Unread" count for manager
+              const combined = [...(received ?? []), ...(sent ?? [])];
+              this.buildList(combined);
+              this.loading = false;
+            },
+            error: () => { this.buildList(received ?? []); this.loading = false; }
+          });
+        },
+        error: () => { this.loading = false; }
+      });
+    } else {
+      this.api.getMyNotifications().subscribe({
+        next: (res) => { this.buildList(res ?? []); this.loading = false; },
+        error: () => { this.loading = false; }
+      });
+    }
+  }
+
+  private buildList(list: CreateNotificationResponseDto[]) {
+    const seen = new Set<string>();
+    const deduped = list
+      .filter(n => { if (seen.has(n.notificationId)) return false; seen.add(n.notificationId); return true; })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    this.notifications = deduped.slice(0, 5);
+    this.unreadCount   = deduped.filter(n => n.readStatus?.toLowerCase() === 'unread').length;
   }
 
   toggleDropdown() {
     this.showDropdown = !this.showDropdown;
-    // Refresh notifications each time the dropdown is opened
-    if (this.showDropdown) {
-      this.loadNotifications();
-    }
+    if (this.showDropdown) this.loadNotifications();
   }
 
   markAsRead(n: CreateNotificationResponseDto, event: Event) {
     event.preventDefault();
     event.stopPropagation();
     if (n.readStatus?.toLowerCase() !== 'unread') return;
-    this.api.markAsRead(n.notificationId).subscribe({
+
+    const currentUserId = this.tokenService.getUserIdFromToken() ?? '';
+    const isSent = n.senderId === currentUserId;
+
+    const api$ = isSent
+      ? this.api.markSentAsRead(n.notificationId)
+      : this.api.markAsRead(n.notificationId);
+
+    api$.subscribe({
       next: () => {
         n.readStatus = 'Read';
         this.unreadCount = Math.max(0, this.unreadCount - 1);
@@ -74,27 +94,45 @@ export class NotificationBell implements OnInit, OnDestroy {
     });
   }
 
+  markAllRead(event: Event) {
+    event.stopPropagation();
+    const currentUserId = this.tokenService.getUserIdFromToken() ?? '';
+    const unread = this.notifications.filter(n => n.readStatus?.toLowerCase() === 'unread');
+    unread.forEach(n => {
+      const isSent = n.senderId === currentUserId;
+      const api$ = isSent ? this.api.markSentAsRead(n.notificationId) : this.api.markAsRead(n.notificationId);
+      api$.subscribe({ next: () => { n.readStatus = 'Read'; }, error: () => {} });
+    });
+    this.unreadCount = 0;
+  }
+
   goToNotifications() {
     this.showDropdown = false;
-    const r = this.role.toLowerCase();
     const routes: Record<string, string> = {
       employee: '/employee/notifications',
       manager:  '/manager/notifications',
       finance:  '/finance/notifications',
       admin:    '/admin/notifications',
     };
-    this.router.navigate([routes[r] ?? '/login']);
+    this.router.navigate([routes[this.role.toLowerCase()] ?? '/login']);
+  }
+
+  formatTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+    const d = new Date(utcStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
   }
 
   accentClass(n: CreateNotificationResponseDto): string {
-    if (n.reply && n.senderRole === 'Manager') return 'item-replied';
+    if (n.reply) return 'item-replied';
     if (n.readStatus?.toLowerCase() === 'unread') return 'item-unread';
     return 'item-read';
   }
 
   @HostListener('document:click', ['$event'])
   clickOutside(event: Event) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.bell-wrapper')) this.showDropdown = false;
+    if (!(event.target as HTMLElement).closest('.bell-wrapper')) this.showDropdown = false;
   }
 }

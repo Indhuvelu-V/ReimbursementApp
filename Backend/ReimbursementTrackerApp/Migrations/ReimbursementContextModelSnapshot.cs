@@ -310,6 +310,10 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<string>("Reply")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SenderRole")
                         .IsRequired()
                         .ValueGeneratedOnAdd()

@@ -117,14 +117,64 @@
     "ContainingType": "ReimbursementTrackerApp.Controllers.AuditLogsController",
     "Method": "GetPagedLogs",
     "RelativePath": "api/AuditLogs/paged",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "paginationParams",
-        "Type": "ReimbursementTrackerApp.Models.Common.PaginationParams",
-        "IsRequired": true
+        "Name": "PageNumber",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "PageSize",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "FromDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "ToDate",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "MinAmount",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "MaxAmount",
+        "Type": "System.Nullable\u00601[[System.Decimal, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "Role",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Status",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "UserName",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Action",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -211,7 +261,7 @@
     "ContainingType": "ReimbursementTrackerApp.Controllers.ExpenseController",
     "Method": "GetAllExpenses",
     "RelativePath": "api/Expense/all",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -442,12 +492,38 @@
   },
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.NotificationController",
+    "Method": "GetSentNotifications",
+    "RelativePath": "api/Notification/GetSentNotifications",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.NotificationController",
     "Method": "GetMyNotificationsLegacy",
     "RelativePath": "api/Notification/GetUsersNotifications",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.NotificationController",
+    "Method": "MarkSentAsRead",
+    "RelativePath": "api/Notification/Sender/read/{notificationId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "notificationId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
     "ReturnTypes": []
   },
   {
@@ -486,7 +562,7 @@
     "ContainingType": "ReimbursementTrackerApp.Controllers.PaymentController",
     "Method": "GetAllPayments",
     "RelativePath": "api/Payment",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [
@@ -615,7 +691,7 @@
     "ContainingType": "ReimbursementTrackerApp.Controllers.UsersController",
     "Method": "GetAllUsers",
     "RelativePath": "api/Users/allusers",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [

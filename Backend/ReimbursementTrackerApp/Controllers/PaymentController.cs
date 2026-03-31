@@ -75,10 +75,10 @@ namespace ReimbursementTrackerApp.Controllers
 
             try
             {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var role = User.FindFirstValue(ClaimTypes.Role);
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+                var role   = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
 
-                var payment = await _service.GetPaymentByExpenseId(expenseId, userId, role!);
+                var payment = await _service.GetPaymentByExpenseId(expenseId, userId, role);
 
                 if (payment == null)
                 {
@@ -104,7 +104,7 @@ namespace ReimbursementTrackerApp.Controllers
         // =====================================================
         // 🔹 Get All Payments (Admin/Finance) with Pagination
         // =====================================================
-        [HttpPost]
+        [HttpGet]
         [Authorize(Roles = "Finance,Admin")]
         public async Task<IActionResult> GetAllPayments([FromQuery] PaginationParams paginationParams)
         {

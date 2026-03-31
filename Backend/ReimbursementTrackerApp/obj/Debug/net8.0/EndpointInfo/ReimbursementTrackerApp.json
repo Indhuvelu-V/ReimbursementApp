@@ -163,29 +163,93 @@
       }
     },
     "/api/AuditLogs/paged": {
-      "post": {
+      "get": {
         "tags": [
           "AuditLogs"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PaginationParams"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PaginationParams"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/PaginationParams"
-              }
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "FromDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ToDate",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "MinAmount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "MaxAmount",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "double"
+            }
+          },
+          {
+            "name": "Role",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Name",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "UserName",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Action",
+            "in": "query",
+            "schema": {
+              "type": "string"
             }
           }
-        },
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -473,7 +537,7 @@
       }
     },
     "/api/Expense/all": {
-      "post": {
+      "get": {
         "tags": [
           "Expense"
         ],
@@ -785,6 +849,40 @@
         }
       }
     },
+    "/api/Notification/GetSentNotifications": {
+      "get": {
+        "tags": [
+          "Notification"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Notification/Sender/read/{notificationId}": {
+      "post": {
+        "tags": [
+          "Notification"
+        ],
+        "parameters": [
+          {
+            "name": "notificationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Payment/CompletePayment/{expenseId}": {
       "post": {
         "tags": [
@@ -849,7 +947,7 @@
       }
     },
     "/api/Payment": {
-      "post": {
+      "get": {
         "tags": [
           "Payment"
         ],
@@ -1009,7 +1107,7 @@
       }
     },
     "/api/Users/allusers": {
-      "post": {
+      "get": {
         "tags": [
           "Users"
         ],
@@ -1289,6 +1387,10 @@
           "senderRole": {
             "type": "string",
             "nullable": true
+          },
+          "senderId": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -1354,58 +1456,6 @@
           "OfficeSupplies"
         ],
         "type": "string"
-      },
-      "PaginationParams": {
-        "type": "object",
-        "properties": {
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "fromDate": {
-            "type": "string",
-            "nullable": true
-          },
-          "toDate": {
-            "type": "string",
-            "nullable": true
-          },
-          "minAmount": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "maxAmount": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "role": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "userName": {
-            "type": "string",
-            "nullable": true
-          },
-          "action": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
       },
       "ReplyNotificationRequestDto": {
         "required": [

@@ -1,0 +1,55 @@
+<ng-container *ngIf="!isAuthPage">
+
+<!-- Floating button -->
+<button class="chat-fab" (click)="toggle()" [class.open]="isOpen" title="Help Assistant">
+  <i class="bi" [ngClass]="isOpen ? 'bi-x-lg' : 'bi-chat-dots-fill'"></i>
+  <span class="chat-fab-label" *ngIf="!isOpen">Help</span>
+</button>
+
+<!-- Chat window -->
+<div class="chat-window" [class.visible]="isOpen">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <div class="chat-header-left">
+      <div class="chat-avatar"><i class="bi bi-robot"></i></div>
+      <div>
+        <p class="chat-title">RT Assistant</p>
+        <p class="chat-status"><span class="status-dot"></span>Online</p>
+      </div>
+    </div>
+    <button class="chat-close" (click)="toggle()"><i class="bi bi-x-lg"></i></button>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-messages" #msgList>
+    <div *ngFor="let m of messages"
+         class="chat-msg-wrap"
+         [class.user-wrap]="m.from === 'user'"
+         [class.bot-wrap]="m.from === 'bot'">
+      <div class="chat-bubble" [class.user-bubble]="m.from === 'user'" [class.bot-bubble]="m.from === 'bot'">
+        <div class="bubble-text" [innerHTML]="formatText(m.text)"></div>
+        <span class="bubble-time">{{ m.time }}</span>
+      </div>
+    </div>
+
+    <!-- Typing indicator -->
+    <div *ngIf="isTyping" class="chat-msg-wrap bot-wrap">
+      <div class="chat-bubble bot-bubble typing-bubble">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="chat-input-row">
+    <textarea class="chat-input" [(ngModel)]="input" (keydown)="onKey($event)"
+              placeholder="Ask me anything…" rows="1"></textarea>
+    <button class="chat-send" (click)="send()" [disabled]="!input.trim()">
+      <i class="bi bi-send-fill"></i>
+    </button>
+  </div>
+
+</div>
+
+</ng-container>

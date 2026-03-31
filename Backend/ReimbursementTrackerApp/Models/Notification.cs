@@ -7,12 +7,13 @@ namespace ReimbursementTrackerApp
     public class Notification : IComparable<Notification>, IEquatable<Notification>
     {
         public string NotificationId { get; set; } = string.Empty;
-        public string UserId { get; set; } = string.Empty; // Employee who receives the notification
-        public string Message { get; set; } = string.Empty; // Manager message
-        public string? Reply { get; set; } // Employee can reply
+        public string UserId { get; set; } = string.Empty;     // Recipient
+        public string SenderId { get; set; } = string.Empty;   // Who sent it
+        public string Message { get; set; } = string.Empty;
+        public string? Reply { get; set; }
         public string Description { get; set; } = string.Empty;
-        public string ReadStatus { get; set; } = "Unread"; // "Unread" or "Read"
-        public string SenderRole { get; set; } = "Manager"; // "Manager" or "Employee"
+        public string ReadStatus { get; set; } = "Unread";
+        public string SenderRole { get; set; } = "Manager";
         public DateTime CreatedAt { get; set; }
 
         public User? User { get; set; }

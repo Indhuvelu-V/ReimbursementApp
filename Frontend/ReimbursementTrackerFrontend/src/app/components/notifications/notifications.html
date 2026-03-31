@@ -1,96 +1,181 @@
 <div class="notif-container">
 
-  <!-- Manager: Create Notification Form -->
-  <div *ngIf="isManager()" class="manager-form-card">
-    <h5><i class="bi bi-megaphone"></i>Send Notification to Employee</h5>
-    <div class="form-group">
-      <label>Employee User ID</label>
-      <input type="text" class="dark-input" [(ngModel)]="newNotifUserId" placeholder="Enter employee user ID" />
-    </div>
-    <div class="form-group">
-      <label>Message</label>
-      <input type="text" class="dark-input" [(ngModel)]="newNotifMessage" placeholder="Type your message..." />
-    </div>
-    <button class="btn-send-notif" (click)="sendNotification()" [disabled]="!newNotifUserId || !newNotifMessage">
-      <i class="bi bi-send"></i>Send
-    </button>
-  </div>
-
-  <!-- Header -->
+  <!-- Page header -->
   <div class="notif-header">
     <div class="notif-header-left">
       <div class="page-icon"><i class="bi bi-bell-fill"></i></div>
       <div>
         <h2>Notifications</h2>
-        <p class="notif-sub">Your activity feed</p>
+        <p class="notif-sub">Your messages and activity</p>
       </div>
     </div>
     <div class="notif-header-right">
       <span *ngIf="unreadCount > 0" class="unread-badge">{{ unreadCount }} unread</span>
-      <button *ngIf="unreadCount > 0" class="btn-mark-all" (click)="markAllRead()">
+      <button *ngIf="unreadCount > 0 && mainTab === 'inbox'" class="btn-mark-all" (click)="markAllRead()">
         <i class="bi bi-check-all"></i>Mark All Read
+      </button>
+      <!-- Manager: compose button -->
+      <button *ngIf="isManager()" class="btn-compose" (click)="showSendForm = !showSendForm">
+        <i class="bi bi-pencil-square me-1"></i>{{ showSendForm ? 'Cancel' : 'New Message' }}
       </button>
     </div>
   </div>
 
-  <!-- Legend -->
-  <div class="legend">
-    <span class="legend-item"><span class="dot dot-blue"></span>Unread</span>
-    <span class="legend-item"><span class="dot dot-green"></span>Replied by Manager</span>
-    <span class="legend-item"><span class="dot dot-gray"></span>Read</span>
+  <!-- Compose form (Manager only) -->
+  <div *ngIf="isManager() && showSendForm" class="manager-form-card">
+    <h5><i class="bi bi-megaphone me-2"></i>Send Message</h5>
+    <div class="form-group">
+      <label>Recipient User ID</label>
+      <input type="text" class="dark-input" [(ngModel)]="newNotifUserId" placeholder="Enter user ID" />
+    </div>
+    <div class="form-group">
+      <label>Message</label>
+      <textarea class="dark-input" [(ngModel)]="newNotifMessage" placeholder="Type your message..." rows="3"></textarea>
+    </div>
+    <button class="btn-send-notif" (click)="sendNotification()" [disabled]="!newNotifUserId.trim() || !newNotifMessage.trim()">
+      <i class="bi bi-send me-1"></i>Send
+    </button>
   </div>
 
-  <!-- Filter tabs -->
-  <div class="filter-tabs">
-    <button class="tab-btn" [class.active]="activeTab==='all'" (click)="setTab('all')">All <span class="tab-count">{{ notifications.length }}</span></button>
-    <button class="tab-btn unread-tab" [class.active]="activeTab==='unread'" (click)="setTab('unread')">Unread <span class="tab-count">{{ unreadCount }}</span></button>
-    <button class="tab-btn replied-tab" [class.active]="activeTab==='replied'" (click)="setTab('replied')">Replied</button>
-    <button class="tab-btn read-tab" [class.active]="activeTab==='read'" (click)="setTab('read')">Read</button>
+  <!-- Main tabs: Inbox / Sent -->
+  <div class="main-tabs">
+    <button class="main-tab" [class.active]="mainTab === 'inbox'" (click)="setMainTab('inbox')">
+      <i class="bi bi-inbox me-1"></i>Inbox
+      <span class="tab-count" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+    </button>
+    <button *ngIf="isManager()" class="main-tab" [class.active]="mainTab === 'sent'" (click)="setMainTab('sent')">
+      <i class="bi bi-send me-1"></i>Sent
+      <span class="tab-count" *ngIf="sent.length > 0">{{ sent.length }}</span>
+    </button>
   </div>
 
-  <!-- Empty -->
-  <div *ngIf="!filtered.length" class="empty-state">
-    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-    <p class="empty-title">No notifications here</p>
-    <p class="empty-sub">You're all caught up!</p>
-  </div>
+  <!-- ══ INBOX ══ -->
+  <ng-container *ngIf="mainTab === 'inbox'">
 
-  <!-- Notification cards -->
-  <div *ngFor="let n of filtered" class="notif-card"
-       [ngClass]="{'unread-card': n.readStatus==='Unread', 'replied-card': n.reply && n.senderRole==='Manager', 'read-card': n.readStatus==='Read' && !n.reply}">
-    <div class="notif-card-inner">
-      <div class="notif-top">
-        <span class="notif-msg">{{ n.message }}</span>
-        <div class="notif-meta">
-          <span class="notif-time">{{ n.createdAt | date:'dd MMM, h:mm a' }}</span>
-          <span class="status-dot"
-                [ngStyle]="{background: n.readStatus==='Unread' ? 'var(--accent)' : (n.reply && n.senderRole==='Manager') ? 'var(--status-approved)' : 'var(--text-faint)'}">
-          </span>
-        </div>
-      </div>
+    <!-- Sub-tabs -->
+    <div class="filter-tabs">
+      <button class="tab-btn" [class.active]="recvTab==='all'" (click)="setRecvTab('all')">
+        All <span class="tab-count">{{ received.length }}</span>
+      </button>
+      <button class="tab-btn unread-tab" [class.active]="recvTab==='unread'" (click)="setRecvTab('unread')">
+        Unread <span class="tab-count">{{ unreadCount }}</span>
+      </button>
+      <button class="tab-btn replied-tab" [class.active]="recvTab==='replied'" (click)="setRecvTab('replied')">
+        Replied
+      </button>
+      <button class="tab-btn read-tab" [class.active]="recvTab==='read'" (click)="setRecvTab('read')">
+        Read
+      </button>
     </div>
 
-    <!-- Reply section (Employee only) -->
-    <div class="reply-section" *ngIf="isEmployee()">
-      <span class="reply-label">Reply</span>
-      <div *ngIf="n.reply" class="existing-reply"><i class="bi bi-chat-right-text me-2"></i>{{ n.reply }}</div>
-      <textarea *ngIf="!n.reply" class="reply-input" [(ngModel)]="replyTexts[n.notificationId]" placeholder="Type your reply..." rows="2"></textarea>
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">
-        <button *ngIf="!n.reply" class="btn-reply"
-                [disabled]="!replyTexts[n.notificationId]"
-                (click)="replyToNotification(n)">
-          <i class="bi bi-reply"></i>Send Reply
-        </button>
-        <button *ngIf="n.readStatus==='Unread'" class="btn-mark-read" (click)="markRead(n)">
+    <div *ngIf="!filteredRecv.length" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+      <p class="empty-title">No messages</p>
+      <p class="empty-sub">You're all caught up!</p>
+    </div>
+
+    <div *ngFor="let n of filteredRecv" class="notif-card"
+         [ngClass]="{'unread-card': n.readStatus==='Unread', 'replied-card': !!n.reply, 'read-card': n.readStatus==='Read' && !n.reply}">
+
+      <!-- Message -->
+      <div class="notif-card-inner">
+        <div class="notif-top">
+          <div>
+            <span class="notif-sender-badge">
+              <i class="bi bi-person-fill me-1"></i>{{ n.senderRole }}
+            </span>
+            <span class="notif-msg">{{ n.message }}</span>
+          </div>
+          <div class="notif-meta">
+            <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
+            <span class="status-dot"
+                  [ngStyle]="{background: n.readStatus==='Unread' ? 'var(--accent)' : n.reply ? 'var(--status-approved)' : 'var(--text-faint)'}">
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reply section — only for non-System messages -->
+      <div class="reply-section" *ngIf="!isSystem(n)">
+
+        <!-- Existing reply -->
+        <div *ngIf="n.reply && !replyTexts[n.notificationId]" class="existing-reply">
+          <span class="reply-label"><i class="bi bi-reply me-1"></i>Your Reply</span>
+          <span class="reply-text">{{ n.reply }}</span>
+          <button class="btn-edit-reply" (click)="replyTexts[n.notificationId] = n.reply!">
+            <i class="bi bi-pencil me-1"></i>Edit
+          </button>
+        </div>
+
+        <!-- Reply textarea -->
+        <div *ngIf="!n.reply || replyTexts[n.notificationId]">
+          <span class="reply-label"><i class="bi bi-reply me-1"></i>{{ n.reply ? 'Edit Reply' : 'Reply' }}</span>
+          <textarea class="reply-input"
+                    [(ngModel)]="replyTexts[n.notificationId]"
+                    placeholder="Type your reply..."
+                    rows="2"></textarea>
+        </div>
+
+        <div class="reply-actions">
+          <button *ngIf="!n.reply || replyTexts[n.notificationId]"
+                  class="btn-reply"
+                  [disabled]="!replyTexts[n.notificationId]?.trim()"
+                  (click)="replyToNotification(n)">
+            <i class="bi bi-reply"></i>{{ n.reply ? 'Update Reply' : 'Send Reply' }}
+          </button>
+          <button *ngIf="replyTexts[n.notificationId] && n.reply"
+                  class="btn-mark-read"
+                  (click)="replyTexts[n.notificationId] = ''">
+            <i class="bi bi-x"></i>Cancel
+          </button>
+          <button *ngIf="n.readStatus === 'Unread'" class="btn-mark-read" (click)="markRead(n)">
+            <i class="bi bi-check2"></i>Mark Read
+          </button>
+        </div>
+      </div>
+
+      <!-- System message: only mark read -->
+      <div class="reply-section" *ngIf="isSystem(n) && n.readStatus === 'Unread'" style="padding-top:8px">
+        <button class="btn-mark-read" (click)="markRead(n)">
           <i class="bi bi-check2"></i>Mark Read
         </button>
       </div>
+
+    </div>
+  </ng-container>
+
+  <!-- ══ SENT (Manager only) ══ -->
+  <ng-container *ngIf="mainTab === 'sent' && isManager()">
+
+    <div *ngIf="!sent.length" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-send"></i></div>
+      <p class="empty-title">No sent messages</p>
+      <p class="empty-sub">Messages you send will appear here with replies.</p>
     </div>
 
-    <!-- Mark read (non-employee) -->
-    <div class="reply-section" *ngIf="!isEmployee() && n.readStatus==='Unread'" style="padding-top:10px">
-      <button class="btn-mark-read" (click)="markRead(n)"><i class="bi bi-check2"></i>Mark Read</button>
+    <div *ngFor="let n of sent" class="notif-card" [ngClass]="{'replied-card': !!n.reply}">
+      <div class="notif-card-inner">
+        <div class="notif-top">
+          <div>
+            <span class="notif-sender-badge sent-badge">
+              <i class="bi bi-send me-1"></i>To: {{ n.userId }}
+            </span>
+            <span class="notif-msg">{{ n.message }}</span>
+          </div>
+          <span class="notif-time">{{ formatTime(n.createdAt) }}</span>
+        </div>
+      </div>
+
+      <!-- Show employee reply if exists -->
+      <div class="reply-section" *ngIf="n.reply">
+        <span class="reply-label"><i class="bi bi-chat-right-text me-1"></i>Reply received</span>
+        <div class="reply-text employee-reply">{{ n.reply }}</div>
+      </div>
+      <div class="reply-section" *ngIf="!n.reply" style="padding-top:6px">
+        <span style="font-size:12px;color:var(--text-faint)"><i class="bi bi-hourglass me-1"></i>Awaiting reply</span>
+      </div>
     </div>
-  </div>
+
+  </ng-container>
 
 </div>

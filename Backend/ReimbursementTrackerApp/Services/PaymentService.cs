@@ -23,19 +23,22 @@ namespace ReimbursementTrackerApp.Services
         private readonly IRepository<string, User> _userRepo;
         private readonly INotificationService _notificationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAuditLogService _auditLogService;
 
         public PaymentService(
             IRepository<string, Payment> paymentRepo,
             IRepository<string, Expense> expenseRepo,
             IRepository<string, User> userRepo,
             INotificationService notificationService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IAuditLogService auditLogService)
         {
             _paymentRepo = paymentRepo;
             _expenseRepo = expenseRepo;
             _userRepo = userRepo;
             _notificationService = notificationService;
             _httpContextAccessor = httpContextAccessor;
+            _auditLogService = auditLogService;
         }
 
         // =====================================================
@@ -53,9 +56,9 @@ namespace ReimbursementTrackerApp.Services
             if (role != UserRole.Finance)
                 throw new UnauthorizedAccessException("Only Finance users can complete payments.");
 
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
-            if (expense == null)
-                throw new KeyNotFoundException("Expense not found.");
+            Expense expense;
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId) ?? throw new KeyNotFoundException("Expense not found."); }
+            catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense not found."); }
 
             var payment = expense.Payments?.FirstOrDefault();
             if (payment != null && payment.PaymentStatus == PaymentStatusEnum.Paid)
@@ -86,7 +89,9 @@ namespace ReimbursementTrackerApp.Services
 
             // Ensure User is loaded for UserName in response
             if (payment.User == null && payment.UserId != null)
-                payment.User = await _userRepo.GetByIdAsync(payment.UserId);
+            {
+                try { payment.User = await _userRepo.GetByIdAsync(payment.UserId); } catch { }
+            }
 
             await _paymentRepo.UpdateAsync(payment.PaymentId, payment);
 
@@ -100,6 +105,14 @@ namespace ReimbursementTrackerApp.Services
                 Message = $"Your expense '{expense.ExpenseId}' has been PAID successfully. Amount: ₹{expense.Amount:N2}",
                 Description = $"Reference No: {referenceNo} | Mode: {paymentMode}",
                 SenderRole = "System"
+            });
+
+            await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = $"Paid Expense {expenseId}",
+                ExpenseId = expenseId,
+                Amount = expense.Amount,
+                Date = DateTime.UtcNow
             });
 
             // ✅ Pass expense to MapToDto so DocumentUrls are included
@@ -191,7 +204,7 @@ namespace ReimbursementTrackerApp.Services
 
             if (payment == null) return null;
 
-            role = role?.Trim();
+            role = (role ?? string.Empty).Trim();
 
             // Employee & Manager → only own payments
             if ((role.Equals("Employee", StringComparison.OrdinalIgnoreCase) ||
@@ -204,7 +217,9 @@ namespace ReimbursementTrackerApp.Services
             // Finance & Admin → full access
 
             if (payment.User == null && payment.UserId != null)
-                payment.User = await _userRepo.GetByIdAsync(payment.UserId);
+            {
+                try { payment.User = await _userRepo.GetByIdAsync(payment.UserId); } catch { }
+            }
 
             // ✅ Load expense to get DocumentUrls for this payment
             Expense? expense = null;

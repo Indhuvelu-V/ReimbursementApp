@@ -114,20 +114,57 @@ namespace ReimbursementTrackerApp.Services
             if (!string.IsNullOrEmpty(paginationParams.ToDate))
                 to = DateTime.Parse(paginationParams.ToDate).Date.AddDays(1).AddTicks(-1);
 
+            // Classify any action string into a canonical category
+            static string Classify(string action)
+            {
+                var a = action.ToLower();
+                // payment must be checked before create/update to avoid "CompletePayment" hitting "creat"
+                if (a.Contains("paid") || a.Contains("payment") || a.Contains("complet")) return "payment";
+                if (a.Contains("approv"))   return "approved";
+                if (a.Contains("reject"))   return "rejected";
+                if (a.Contains("resubmit")) return "submitted";
+                if (a.Contains("submit"))   return "submitted";
+                if (a.Contains("delet") || a.Contains("remov")) return "deleted";
+                if (a.Contains("updat") || a.Contains("edit"))  return "updated";
+                if (a.Contains("creat") || a.Contains("added") || a.Contains("register")) return "created";
+                return "other";
+            }
+
+            // Phrases that indicate a pure read — exclude from audit log view
+            var readOnlyPhrases = new[] { "viewed", "fetched", "getall", "getby", "get " };
+
             var filteredLogs = logList
                 .Where(l =>
-                    !string.IsNullOrEmpty(l.Action) &&
-                    !l.Action.ToLower().Contains("get") &&
-                    !l.Action.ToLower().Contains("fetch") &&
-                    !l.Action.ToLower().Contains("view") &&
-                    (from == null || l.Date >= from) &&
-                    (to == null || l.Date <= to) &&
-                    (string.IsNullOrWhiteSpace(paginationParams.UserName) ||
-                     (l.UserName ?? "").ToLower().Contains(paginationParams.UserName.ToLower()) ||
-                     (l.UserId ?? "").ToLower().Contains(paginationParams.UserName.ToLower())) &&
-                    (string.IsNullOrWhiteSpace(paginationParams.Action) ||
-                     (l.Action ?? "").ToLower().Contains(paginationParams.Action.ToLower()))
-                )
+                {
+                    if (string.IsNullOrEmpty(l.Action)) return false;
+                    var actionLower = l.Action.ToLower();
+
+                    // Drop pure read-only logs
+                    if (readOnlyPhrases.Any(p => actionLower.Contains(p))) return false;
+
+                    // Date range
+                    if (from != null && l.Date < from) return false;
+                    if (to   != null && l.Date > to)   return false;
+
+                    // Username filter
+                    if (!string.IsNullOrWhiteSpace(paginationParams.UserName))
+                    {
+                        var q = paginationParams.UserName.ToLower();
+                        if (!(l.UserName ?? "").ToLower().Contains(q) &&
+                            !(l.UserId   ?? "").ToLower().Contains(q))
+                            return false;
+                    }
+
+                    // Action filter — compare canonical categories
+                    if (!string.IsNullOrWhiteSpace(paginationParams.Action))
+                    {
+                        var wanted = paginationParams.Action.Trim().ToLower();
+                        var actual = Classify(l.Action);
+                        if (actual != wanted) return false;
+                    }
+
+                    return true;
+                })
                 .ToList();
 
             var totalRecords = filteredLogs.Count;
@@ -171,11 +208,17 @@ namespace ReimbursementTrackerApp.Services
             if (tokenData.role != UserRole.Admin)
                 throw new UnauthorizedAccessException("Only admins can delete audit logs.");
 
-            var log = await _auditLogRepo.GetByIdAsync(logId);
-            if (log == null) return false;
-
-            await _auditLogRepo.DeleteAsync(logId);
-            return true;
+            try
+            {
+                var log = await _auditLogRepo.GetByIdAsync(logId);
+                if (log == null) return false;
+                await _auditLogRepo.DeleteAsync(logId);
+                return true;
+            }
+            catch (KeyNotFoundException)
+            {
+                return false;
+            }
         }
     }
 }

@@ -37,7 +37,7 @@ export class APIService {
     let params = new HttpParams().set('pageNumber', page).set('pageSize', size);
     if (role) params = params.set('Role', role);
     if (name) params = params.set('Name', name);
-    return this.http.post(`${this.baseUrl}/Users/allusers`, {}, { params });
+    return this.http.get(`${this.baseUrl}/Users/allusers`, { params });
   }
 
   getUserById(userId: string): Observable<User> {
@@ -79,7 +79,7 @@ export class APIService {
     if (minAmount != null)   params = params.set('MinAmount', minAmount);
     if (maxAmount != null)   params = params.set('MaxAmount', maxAmount);
     if (userName)            params = params.set('UserName', userName);
-    return this.http.post<{ data: any[]; totalRecords: number }>(`${this.baseUrl}/Expense/all`, {}, { params });
+    return this.http.get<{ data: any[]; totalRecords: number }>(`${this.baseUrl}/Expense/all`, { params });
   }
 
   submitExpense(expenseId: string): Observable<any> {
@@ -150,13 +150,21 @@ export class APIService {
     if (maxAmount != null) params = params.set('MaxAmount', maxAmount);
     if (status)            params = params.set('Status', status);
     if (userName)          params = params.set('UserName', userName);
-    return this.http.post(`${this.baseUrl}/Payment`, {}, { params });
+    return this.http.get(`${this.baseUrl}/Payment`, { params });
   }
 
   // ============================= NOTIFICATIONS =============================
 
   getMyNotifications(): Observable<CreateNotificationResponseDto[]> {
     return this.http.get<CreateNotificationResponseDto[]>(`${this.baseUrl}/Notification/GetMyNotifications`);
+  }
+
+  getSentNotifications(): Observable<CreateNotificationResponseDto[]> {
+    return this.http.get<CreateNotificationResponseDto[]>(`${this.baseUrl}/Notification/GetSentNotifications`);
+  }
+
+  markSentAsRead(notificationId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/Notification/Sender/read/${notificationId}`, {});
   }
 
   replyNotification(data: { notificationId: string; reply: string }): Observable<CreateNotificationResponseDto> {
@@ -193,12 +201,12 @@ export class APIService {
     userName?: string,
     action?: string
   ): Observable<PagedResponse<CreateAuditLogsResponseDto>> {
-    const payload: any = { pageNumber, pageSize };
-    if (fromDate) payload.fromDate = fromDate;
-    if (toDate)   payload.toDate   = toDate;
-    if (userName) payload.userName = userName;
-    if (action)   payload.action   = action;
-    return this.http.post<PagedResponse<CreateAuditLogsResponseDto>>(`${this.baseUrl}/AuditLogs/paged`, payload);
+    let params = new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize);
+    if (fromDate) params = params.set('fromDate', fromDate);
+    if (toDate)   params = params.set('toDate', toDate);
+    if (userName) params = params.set('userName', userName);
+    if (action)   params = params.set('action', action);
+    return this.http.get<PagedResponse<CreateAuditLogsResponseDto>>(`${this.baseUrl}/AuditLogs/paged`, { params });
   }
 
   createAuditLog(data: any): Observable<any> {

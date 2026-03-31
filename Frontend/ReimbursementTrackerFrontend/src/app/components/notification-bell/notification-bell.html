@@ -16,6 +16,9 @@
         <button class="btn-refresh" (click)="loadNotifications(); $event.stopPropagation()" title="Refresh">
           <i class="bi bi-arrow-clockwise"></i>
         </button>
+        <button *ngIf="unreadCount > 0" class="btn-refresh" (click)="markAllRead($event)" title="Mark all read">
+          <i class="bi bi-check-all"></i>
+        </button>
       </div>
     </div>
 
@@ -34,7 +37,7 @@
       <div class="item-content">
         <div class="msg">{{ n.message }}</div>
         <div class="item-meta">
-          <small class="time">{{ n.createdAt | date:'dd MMM, h:mm a' }}</small>
+          <small class="time">{{ formatTime(n.createdAt) }}</small>
           <span class="read-dot"
                 [ngClass]="{
                   'dot-blue':  n.readStatus?.toLowerCase() === 'unread',

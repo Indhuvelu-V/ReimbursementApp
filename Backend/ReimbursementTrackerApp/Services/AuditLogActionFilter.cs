@@ -47,10 +47,23 @@ namespace ReimbursementTrackerApp.Filters
                 if (context.ActionArguments.ContainsKey("expenseId"))
                     entityId = context.ActionArguments["expenseId"]?.ToString() ?? "";
 
-                // Build description
-                var actionDescription = $"{action} executed on {controller}";
-                if (!string.IsNullOrEmpty(entityId))
-                    actionDescription += $" - Id: {entityId}";
+                // Build a human-readable action string based on HTTP method + controller/action
+                var httpMethod = context.HttpContext.Request.Method.ToUpper();
+
+                // Map to clean readable action names for audit log filtering
+                var actionKey = action?.ToLower() ?? "";
+                string actionDescription;
+
+                if (actionKey.Contains("resubmit"))      actionDescription = $"Resubmitted Expense (Id: {entityId})";
+                else if (actionKey.Contains("submit"))   actionDescription = $"Submitted Expense (Id: {entityId})";
+                else if (actionKey.Contains("complet"))  return; // PaymentService logs this directly
+                else if (actionKey.Contains("manager"))  actionDescription = $"Manager Approval on Expense (Id: {entityId})";
+                else if (actionKey.Contains("approv"))   actionDescription = $"Manager Approval on Expense (Id: {entityId})";
+                else if (httpMethod == "DELETE" || actionKey.Contains("delet")) actionDescription = $"Deleted {controller} (Id: {entityId})";
+                else if (httpMethod == "PUT"    || actionKey.Contains("updat")) actionDescription = $"Updated {controller} (Id: {entityId})";
+                else if (httpMethod == "POST"   || actionKey.Contains("creat")) actionDescription = $"Created {controller} (Id: {entityId})";
+                else if (httpMethod == "GET") return; // skip pure reads — no audit log needed
+                else actionDescription = $"{httpMethod} {action} on {controller}" + (string.IsNullOrEmpty(entityId) ? "" : $" (Id: {entityId})");
 
                 // Parse Role safely
                 UserRole parsedRole = UserRole.Employee; // default

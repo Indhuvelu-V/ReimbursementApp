@@ -30,7 +30,7 @@ namespace ReimbursementTrackerApp.Services
         public async Task<CreateUserResponseDto?> CreateUser(CreateUserRequestDto request)
         {
             var users = await _userRepo.GetAllAsync();
-            var existingUser = users.FirstOrDefault(u => u.UserId == request.UserId);
+            var existingUser = (users ?? Enumerable.Empty<User>()).FirstOrDefault(u => u.UserId == request.UserId);
 
 
             if (existingUser != null)

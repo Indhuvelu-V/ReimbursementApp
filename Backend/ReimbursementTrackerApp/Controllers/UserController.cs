@@ -67,11 +67,18 @@ namespace ReimbursementTrackerApp.Controllers
         // 🔹 3️⃣ GET ALL USERS (Admin Only)
         // =====================================================
         [Authorize(Roles = "Admin")]
-        [HttpPost("allusers")]
+        [HttpGet("allusers")]
         public async Task<IActionResult> GetAllUsers([FromQuery] PaginationParams paginationParams)
         {
-            var users = await _userService.GetAllUsers(paginationParams);
-            return Ok(users);
+            try
+            {
+                var users = await _userService.GetAllUsers(paginationParams);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to fetch users.", details = ex.Message });
+            }
         }
 
     }

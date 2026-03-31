@@ -167,14 +167,15 @@ export class Logs implements OnInit {
 
   actionLabel(action: string = ''): string {
     const a = action.toLowerCase();
-    if (a.includes('creat') || a.includes('added')) return 'CREATE';
-    if (a.includes('updat') || a.includes('edit'))  return 'UPDATE';
-    if (a.includes('delet') || a.includes('remov')) return 'DELETE';
-    if (a.includes('submit') || a.includes('resubmit')) return 'SUBMIT';
-    if (a.includes('approv')) return 'APPROVE';
-    if (a.includes('reject')) return 'REJECT';
-    if (a.includes('paid') || a.includes('payment')) return 'PAYMENT';
-    if (a.includes('view') || a.includes('list'))   return 'VIEW';
+    if (a.includes('resubmit'))                      return 'SUBMIT';
+    if (a.includes('submit'))                        return 'SUBMIT';
+    if (a.includes('paid') || a.includes('payment') || a.includes('complet')) return 'PAYMENT';
+    if (a.includes('approv'))                        return 'APPROVE';
+    if (a.includes('reject'))                        return 'REJECT';
+    if (a.includes('delet') || a.includes('remov'))  return 'DELETE';
+    if (a.includes('updat') || a.includes('edit'))   return 'UPDATE';
+    if (a.includes('creat') || a.includes('added'))  return 'CREATE';
+    if (a.includes('view')  || a.includes('list'))   return 'VIEW';
     return 'ACTION';
   }
 

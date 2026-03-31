@@ -38,7 +38,7 @@ namespace ReimbursementTrackerApp.Services
             var computedHash = _passwordService.HashPassword(
                 request.Password,
                 user.PasswordHash,
-                out byte[] newHash);
+                out byte[]? newHash);
 
             if (!computedHash.SequenceEqual(user.Password))
                 throw new UnAuthorizedException("Invalid password");

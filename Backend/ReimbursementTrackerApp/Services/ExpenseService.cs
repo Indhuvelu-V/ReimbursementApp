@@ -89,9 +89,9 @@ namespace ReimbursementTrackerApp.Services
             var documentUrls = request.DocumentUrls ?? new List<string>();
 
             // ── Fetch category ────────────────────────────────────────────────
-            var category = await _categoryRepo.GetByIdAsync(request.CategoryId);
-            if (category == null)
-                throw new KeyNotFoundException("Expense category not found.");
+            ExpenseCategory category;
+            try { category = await _categoryRepo.GetByIdAsync(request.CategoryId) ?? throw new KeyNotFoundException("Expense category not found."); }
+            catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense category not found."); }
 
             if (request.Amount > category.MaxLimit)
                 throw new InvalidOperationException($"Amount exceeds limit for {category.CategoryName}");
@@ -184,9 +184,10 @@ namespace ReimbursementTrackerApp.Services
         {
             var (userId, userName, role) = GetUserFromToken();
 
-            var existingExpense = await _expenseRepo.GetByIdAsync(expenseId);
-            if (existingExpense == null)
-                return (false, "Expense not found.", null);
+            Expense? existingExpense;
+            try { existingExpense = await _expenseRepo.GetByIdAsync(expenseId); }
+            catch (KeyNotFoundException) { return (false, "Expense not found.", null); }
+            if (existingExpense == null) return (false, "Expense not found.", null);
 
             if (existingExpense.UserId != userId && role != UserRole.Admin)
                 return (false, "Not authorized.", null);
@@ -273,9 +274,10 @@ namespace ReimbursementTrackerApp.Services
         {
             var (userId, userName, role) = GetUserFromToken();
 
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
-            if (expense == null)
-                return (false, "Not found", null);
+            Expense? expense;
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId); }
+            catch (KeyNotFoundException) { return (false, "Not found", null); }
+            if (expense == null) return (false, "Not found", null);
 
             if (expense.UserId != userId && role != UserRole.Admin)
                 return (false, "Not authorized", null);
@@ -307,7 +309,9 @@ namespace ReimbursementTrackerApp.Services
         {
             var (userId, userName, role) = GetUserFromToken();
 
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
+            Expense? expense;
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId); }
+            catch (KeyNotFoundException) { return null; }
             if (expense == null) return null;
 
             if (role == UserRole.Employee && expense.UserId != userId)
@@ -399,10 +403,9 @@ namespace ReimbursementTrackerApp.Services
         // =====================================================
         public async Task<CreateExpenseResponseDto?> SubmitExpense(string expenseId)
         {
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
-
-            if (expense == null)
-                throw new KeyNotFoundException("Expense not found.");
+            Expense expense;
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId) ?? throw new KeyNotFoundException("Expense not found."); }
+            catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense not found."); }
 
             if (expense.Status != ExpenseStatus.Draft)
                 throw new InvalidOperationException("Only Draft expenses can be submitted.");
@@ -431,10 +434,9 @@ namespace ReimbursementTrackerApp.Services
         {
             var (userId, userName, role) = GetUserFromToken();
 
-            var expense = await _expenseRepo.GetByIdAsync(expenseId);
-
-            if (expense == null)
-                throw new KeyNotFoundException("Expense not found.");
+            Expense expense;
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId) ?? throw new KeyNotFoundException("Expense not found."); }
+            catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense not found."); }
 
             // Only the owner (or Admin) can resubmit
             if (expense.UserId != userId && role != UserRole.Admin)

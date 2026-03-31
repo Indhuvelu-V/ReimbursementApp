@@ -20,44 +20,74 @@ export class Notifications implements OnInit {
   private toast        = inject(ToastService);
   private tokenService = inject(TokenService);
 
-  notifications: CreateNotificationResponseDto[] = [];
-  filtered:      CreateNotificationResponseDto[] = [];
-  replyTexts:    Record<string, string> = {};
-  unreadCount    = 0;
-  activeTab      = 'all';
-  role           = '';
-  newNotifUserId = '';
-  newNotifMessage= '';
+  // Inbox (received)
+  received:     CreateNotificationResponseDto[] = [];
+  filteredRecv: CreateNotificationResponseDto[] = [];
+  unreadCount   = 0;
+  recvTab       = 'all';   // all | unread | replied | read
+
+  // Sent (outbox — manager sees replies here)
+  sent:         CreateNotificationResponseDto[] = [];
+
+  // Main view tab
+  mainTab: 'inbox' | 'sent' = 'inbox';
+
+  replyTexts: Record<string, string> = {};
+  role        = '';
+
+  // Send form (Manager only)
+  newNotifUserId  = '';
+  newNotifMessage = '';
+  showSendForm    = false;
 
   ngOnInit() {
     this.role = this.tokenService.getRoleFromToken() ?? '';
-    this.loadNotifications();
+    this.loadAll();
   }
 
-  isEmployee(): boolean { return this.role?.toLowerCase() === 'employee'; }
-  isManager():  boolean { return this.role?.toLowerCase() === 'manager'; }
+  isManager(): boolean { return this.role?.toLowerCase() === 'manager'; }
+  isSystem(n: CreateNotificationResponseDto): boolean {
+    return n.senderRole?.toLowerCase() === 'system';
+  }
 
-  loadNotifications() {
+  loadAll() {
+    this.loadReceived();
+    if (this.isManager()) this.loadSent();
+  }
+
+  loadReceived() {
     this.loader.show();
     this.api.getMyNotifications().subscribe({
-      next: (res: CreateNotificationResponseDto[]) => {
-        this.notifications = res ?? [];
-        this.unreadCount   = this.notifications.filter(n => n.readStatus === 'Unread').length;
-        this.applyTab();
+      next: (res) => {
+        this.received   = res ?? [];
+        this.unreadCount = this.received.filter(n => n.readStatus === 'Unread').length;
+        this.applyRecvTab();
         this.loader.hide();
       },
       error: () => { this.toast.showError('Failed to load notifications.'); this.loader.hide(); }
     });
   }
 
-  setTab(tab: string) { this.activeTab = tab; this.applyTab(); }
+  loadSent() {
+    this.api.getSentNotifications().subscribe({
+      next: (res) => { this.sent = res ?? []; },
+      error: () => {}
+    });
+  }
 
-  applyTab() {
-    switch (this.activeTab) {
-      case 'unread':  this.filtered = this.notifications.filter(n => n.readStatus === 'Unread'); break;
-      case 'replied': this.filtered = this.notifications.filter(n => n.reply && n.senderRole === 'Manager'); break;
-      case 'read':    this.filtered = this.notifications.filter(n => n.readStatus === 'Read'); break;
-      default:        this.filtered = [...this.notifications];
+  setMainTab(tab: 'inbox' | 'sent') {
+    this.mainTab = tab;
+    if (tab === 'sent' && this.isManager()) this.loadSent();
+  }
+
+  setRecvTab(tab: string) { this.recvTab = tab; this.applyRecvTab(); }
+
+  applyRecvTab() {
+    switch (this.recvTab) {
+      case 'unread':  this.filteredRecv = this.received.filter(n => n.readStatus === 'Unread'); break;
+      case 'replied': this.filteredRecv = this.received.filter(n => !!n.reply); break;
+      case 'read':    this.filteredRecv = this.received.filter(n => n.readStatus === 'Read'); break;
+      default:        this.filteredRecv = [...this.received];
     }
   }
 
@@ -66,7 +96,11 @@ export class Notifications implements OnInit {
     if (!reply) return;
     this.loader.show();
     this.api.replyNotification({ notificationId: n.notificationId, reply }).subscribe({
-      next: () => { this.toast.show('Reply sent ✅'); this.replyTexts[n.notificationId] = ''; this.loadNotifications(); },
+      next: () => {
+        this.toast.show('Reply sent ✅');
+        this.replyTexts[n.notificationId] = '';
+        this.loadReceived();
+      },
       error: (err) => { this.toast.showError(err?.error?.message || 'Failed to send reply.'); this.loader.hide(); }
     });
   }
@@ -74,30 +108,47 @@ export class Notifications implements OnInit {
   markRead(n: CreateNotificationResponseDto) {
     this.loader.show();
     this.api.markAsRead(n.notificationId).subscribe({
-      next: () => { this.toast.show('Marked as read'); this.loadNotifications(); },
+      next: () => { this.toast.show('Marked as read'); this.loadReceived(); },
       error: () => { this.toast.showError('Failed to mark as read.'); this.loader.hide(); }
     });
   }
 
   markAllRead() {
-    const unread = this.notifications.filter(n => n.readStatus === 'Unread');
+    const unread = this.received.filter(n => n.readStatus === 'Unread');
     if (!unread.length) return;
     this.loader.show();
     let done = 0;
     unread.forEach(n => {
       this.api.markAsRead(n.notificationId).subscribe({
-        next: () => { done++; if (done === unread.length) { this.toast.show('All marked as read ✅'); this.loadNotifications(); } },
+        next: () => { done++; if (done === unread.length) { this.toast.show('All marked as read ✅'); this.loadReceived(); } },
         error: () => { done++; if (done === unread.length) this.loader.hide(); }
       });
     });
   }
 
   sendNotification() {
-    if (!this.newNotifUserId || !this.newNotifMessage) return;
+    if (!this.newNotifUserId.trim() || !this.newNotifMessage.trim()) return;
     this.loader.show();
-    this.api.createNotification({ userId: this.newNotifUserId, message: this.newNotifMessage }).subscribe({
-      next: () => { this.toast.show('Notification sent ✅'); this.newNotifUserId = ''; this.newNotifMessage = ''; this.loader.hide(); },
-      error: (err) => { this.toast.showError(err?.error?.message || 'Failed to send notification.'); this.loader.hide(); }
+    this.api.createNotification({ userId: this.newNotifUserId.trim(), message: this.newNotifMessage.trim() }).subscribe({
+      next: () => {
+        this.toast.show('Notification sent ✅');
+        this.newNotifUserId = ''; this.newNotifMessage = '';
+        this.showSendForm = false;
+        this.loadSent();
+        this.loader.hide();
+      },
+      error: (err) => { this.toast.showError(err?.error?.message || 'Failed to send.'); this.loader.hide(); }
+    });
+  }
+
+  formatTime(dateStr: string): string {
+    if (!dateStr) return '';
+    const utcStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z';
+    const d = new Date(utcStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleString('en-IN', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit', hour12: true
     });
   }
 }

@@ -34,12 +34,13 @@ namespace ReimbursementTrackerApp.Services
             var notification = new Notification
             {
                 NotificationId = Guid.NewGuid().ToString(),
-                UserId = request.UserId,
-                Message = request.Message,
-                Description = request.Description ?? string.Empty,
-                ReadStatus = "Unread",
-                SenderRole = request.SenderRole ?? "Manager",
-                CreatedAt = DateTime.UtcNow
+                UserId         = request.UserId,
+                SenderId       = request.SenderId ?? string.Empty,
+                Message        = request.Message,
+                Description    = request.Description ?? string.Empty,
+                ReadStatus     = "Unread",
+                SenderRole     = request.SenderRole ?? "Manager",
+                CreatedAt      = DateTime.UtcNow
             };
 
             await _notificationRepo.AddAsync(notification);
@@ -149,10 +150,10 @@ namespace ReimbursementTrackerApp.Services
             var notification = all?.FirstOrDefault(n =>
                 n.NotificationId == request.NotificationId && n.UserId == employeeId);
 
-            if (notification == null || notification.SenderRole != "Manager")
+            if (notification == null)
             {
-                _logger.LogWarning("Reply blocked for Notification {NotificationId} by User {UserId} (SenderRole: {SenderRole})",
-                    request.NotificationId, employeeId, notification?.SenderRole);
+                _logger.LogWarning("Reply blocked: Notification {NotificationId} not found for User {UserId}",
+                    request.NotificationId, employeeId);
                 return null;
             }
 
@@ -180,18 +181,45 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // =====================================================
+        // GET SENT NOTIFICATIONS (messages this user sent)
+        // =====================================================
+        public async Task<IEnumerable<CreateNotificationResponseDto>> GetSentNotifications(string senderId)
+        {
+            var all = await _notificationRepo.GetAllAsync();
+            return all?
+                .Where(n => n.SenderId == senderId)
+                .OrderByDescending(n => n.CreatedAt)
+                .Select(MapToDto)
+                .ToList() ?? new List<CreateNotificationResponseDto>();
+        }
+
+        // =====================================================
+        // MARK SENT NOTIFICATION AS READ BY SENDER
+        // =====================================================
+        public async Task MarkSentAsRead(string notificationId, string senderId)
+        {
+            var all = await _notificationRepo.GetAllAsync();
+            var notification = all?.FirstOrDefault(n =>
+                n.NotificationId == notificationId && n.SenderId == senderId);
+            if (notification == null) return;
+            notification.ReadStatus = "Read";
+            await _notificationRepo.UpdateAsync(notification.NotificationId, notification);
+        }
+
+        // =====================================================
         // PRIVATE MAPPER — single source of truth for DTO mapping
         // =====================================================
         private static CreateNotificationResponseDto MapToDto(Notification n) => new()
         {
             NotificationId = n.NotificationId,
-            UserId = n.UserId,
-            Message = n.Message,
-            Reply = n.Reply,
-            Description = n.Description,
-            ReadStatus = n.ReadStatus,
-            SenderRole = n.SenderRole,
-            CreatedAt = n.CreatedAt
+            UserId         = n.UserId,
+            SenderId       = n.SenderId,
+            Message        = n.Message,
+            Reply          = n.Reply,
+            Description    = n.Description,
+            ReadStatus     = n.ReadStatus,
+            SenderRole     = n.SenderRole,
+            CreatedAt      = DateTime.SpecifyKind(n.CreatedAt, DateTimeKind.Utc)
         };
     }
 }

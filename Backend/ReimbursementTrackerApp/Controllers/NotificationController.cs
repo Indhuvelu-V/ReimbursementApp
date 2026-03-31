@@ -35,6 +35,9 @@ namespace ReimbursementTrackerApp.Controllers
 
             try
             {
+                // Inject sender ID from token so service doesn't need HttpContextAccessor
+                request.SenderId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
                 var result = await _service.CreateNotification(request);
 
                 _logger.LogInformation("Notification created successfully for User {UserId}", request.UserId);
@@ -178,6 +181,45 @@ namespace ReimbursementTrackerApp.Controllers
                     message = "Failed to mark notification as read.",
                     details = ex.Message
                 });
+            }
+        }
+        // =====================================================
+        // 5️⃣ GET SENT NOTIFICATIONS (Manager sees replies)
+        // =====================================================
+        [HttpGet("GetSentNotifications")]
+        [Authorize(Roles = "Manager,Admin,Finance,Employee")]
+        public async Task<IActionResult> GetSentNotifications()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "User ID not found in token." });
+
+                var result = await _service.GetSentNotifications(userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Failed to fetch sent notifications.", details = ex.Message });
+            }
+        }
+        // =====================================================
+        // 6️⃣ MARK SENT NOTIFICATION AS READ (Sender marks it)
+        // =====================================================
+        [HttpPost("Sender/read/{notificationId}")]
+        [Authorize(Roles = "Manager,Admin,Finance,Employee")]
+        public async Task<IActionResult> MarkSentAsRead(string notificationId)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+                await _service.MarkSentAsRead(notificationId, userId);
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
             }
         }
     }
