@@ -472,7 +472,7 @@ namespace ReimbursementTrackerApp.Services
         // =====================================================
         private CreateExpenseResponseDto MapToDto(Expense e, string? expenseOwnerName = null)
         {
-            var (userId, _, role) = GetUserFromToken();
+            var (userId, userName, role) = GetUserFromToken();
 
             return new CreateExpenseResponseDto
             {

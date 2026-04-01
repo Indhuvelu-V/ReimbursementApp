@@ -236,4 +236,146 @@ namespace ReimbursementTrackerApp.Tests.Services
             result.Should().BeFalse();
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class AuditLogServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, AuditLog>> _logRepo     = new();
+        private readonly Mock<IHttpContextAccessor>           _httpContext = new();
+
+        private AuditLogService CreateService(string userId = "U1", string userName = "Alice", string role = "Admin")
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, userId),
+                new(ClaimTypes.Name, userName),
+                new(ClaimTypes.Role, role)
+            };
+            var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
+            _httpContext.Setup(h => h.HttpContext).Returns(ctx);
+            return new AuditLogService(_logRepo.Object, _httpContext.Object);
+        }
+
+        private void SetupAdd() =>
+            _logRepo.Setup(r => r.AddAsync(It.IsAny<AuditLog>())).ReturnsAsync((AuditLog l) => l);
+
+        // Branch: CreateLog — partial explicit info (UserId set but UserName empty) → uses token
+        [Fact]
+        public async Task CreateLog_PartialExplicitInfo_FallsBackToToken()
+        {
+            SetupAdd();
+            var svc = CreateService("U1", "Alice", "Employee");
+            var result = await svc.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = "Test", UserId = "EXPLICIT", UserName = "", Role = null
+            });
+            // Falls back to token since UserName is empty
+            result.UserName.Should().Be("Alice");
+        }
+
+        // Branch: GetAllLogs — null repo result → returns empty
+        [Fact]
+        public async Task GetAllLogs_NullRepo_ReturnsEmpty()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<AuditLog>?)null);
+            var result = await CreateService().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().BeEmpty();
+        }
+
+        // Branch: GetAllLogs — pageNumber < 1 → defaults to 1
+        [Fact]
+        public async Task GetAllLogs_InvalidPageNumber_DefaultsToOne()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense E1", Date = DateTime.UtcNow, UserName = "Alice" }
+            });
+            var result = await CreateService().GetAllLogs(new PaginationParams { PageNumber = 0, PageSize = 10 });
+            result.Data.Should().HaveCount(1);
+        }
+
+        // Branch: GetAllLogs — pageSize < 1 → defaults to 10
+        [Fact]
+        public async Task GetAllLogs_InvalidPageSize_DefaultsToTen()
+        {
+            var logs = Enumerable.Range(1, 5)
+                .Select(i => new AuditLog { LogId = $"L{i}", Action = $"Created Expense E{i}", Date = DateTime.UtcNow, UserName = "Alice" })
+                .ToList();
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(logs);
+            var result = await CreateService().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 0 });
+            result.Data.Should().HaveCount(5);
+        }
+
+        // Branch: GetAllLogs — "other" classify → not excluded, shown in all-actions view
+        [Fact]
+        public async Task GetAllLogs_UnknownAction_ShownInAllActionsView()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Some unknown action", Date = DateTime.UtcNow, UserName = "Alice" }
+            });
+            var result = await CreateService().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().HaveCount(1);
+        }
+
+        // Branch: GetAllLogs — action filter with unknown key → Classify returns "other", no match
+        [Fact]
+        public async Task GetAllLogs_UnknownFilterKey_ReturnsNoResults()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Custom action xyz", Date = DateTime.UtcNow, UserName = "Alice" },
+                new() { LogId = "L2", Action = "Another action",    Date = DateTime.UtcNow, UserName = "Alice" }
+            });
+            var result = await CreateService().GetAllLogs(new PaginationParams
+            { PageNumber = 1, PageSize = 10, Action = "xyz" });
+            // "xyz" is not a known category key — Classify returns "other" for both logs,
+            // but "other" != "xyz" so nothing matches
+            result.Data.Should().BeEmpty();
+        }
+
+        // Branch: DeleteLog — log found but GetByIdAsync returns null (edge case)
+        [Fact]
+        public async Task DeleteLog_LogFoundThenDeleted_ReturnsTrue()
+        {
+            var log = new AuditLog { LogId = "L1", Action = "Test" };
+            _logRepo.Setup(r => r.GetByIdAsync("L1")).ReturnsAsync(log);
+            _logRepo.Setup(r => r.DeleteAsync("L1")).ReturnsAsync(log);
+            var result = await CreateService("U1", "Alice", "Admin").DeleteLog("L1");
+            result.Should().BeTrue();
+        }
+
+        // Branch: GetAllLogs — FromDate only (no ToDate)
+        [Fact]
+        public async Task GetAllLogs_FromDateOnly_FiltersCorrectly()
+        {
+            var today = DateTime.UtcNow;
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense E1", Date = today.AddDays(-5), UserName = "A" },
+                new() { LogId = "L2", Action = "Updated Expense E2", Date = today,             UserName = "A" }
+            });
+            var result = await CreateService().GetAllLogs(new PaginationParams
+            { PageNumber = 1, PageSize = 10, FromDate = today.ToString("yyyy-MM-dd") });
+            result.Data.Should().HaveCount(1);
+            result.Data.First().LogId.Should().Be("L2");
+        }
+
+        // Branch: GetAllLogs — ToDate only (no FromDate)
+        [Fact]
+        public async Task GetAllLogs_ToDateOnly_FiltersCorrectly()
+        {
+            var today = DateTime.UtcNow;
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense E1", Date = today.AddDays(-1), UserName = "A" },
+                new() { LogId = "L2", Action = "Updated Expense E2", Date = today.AddDays(5),  UserName = "A" }
+            });
+            var result = await CreateService().GetAllLogs(new PaginationParams
+            { PageNumber = 1, PageSize = 10, ToDate = today.ToString("yyyy-MM-dd") });
+            result.Data.Should().HaveCount(1);
+            result.Data.First().LogId.Should().Be("L1");
+        }
+    }
 }

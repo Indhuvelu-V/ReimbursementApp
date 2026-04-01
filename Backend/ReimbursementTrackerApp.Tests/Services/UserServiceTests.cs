@@ -202,4 +202,108 @@ namespace ReimbursementTrackerApp.Tests.Services
             result.TotalPages.Should().Be(3);
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class UserServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, User>> _userRepo        = new();
+        private readonly Mock<IPasswordService>          _passwordService = new();
+        private readonly Mock<IAuditLogService>          _auditService    = new();
+
+        private UserService Svc() => new(_userRepo.Object, _passwordService.Object, _auditService.Object);
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        private void SetupPassword() =>
+            _passwordService.Setup(p => p.HashPassword(It.IsAny<string>(), null, out It.Ref<byte[]?>.IsAny))
+                .Returns(new byte[] { 1, 2, 3 });
+
+        // Branch: Admin role → approvalLevel = null (default case)
+        [Fact]
+        public async Task CreateUser_AdminRole_ApprovalLevelNull()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+            SetupPassword();
+            _userRepo.Setup(r => r.AddAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+            SetupAudit();
+
+            var result = await Svc().CreateUser(new CreateUserRequestDto
+            { UserId = "A1", UserName = "Admin", Password = "x", Role = UserRole.Admin });
+
+            result!.ApprovalLevel.Should().BeNull();
+        }
+
+        // Branch: Employee role → approvalLevel = null
+        [Fact]
+        public async Task CreateUser_EmployeeRole_ApprovalLevelNull()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+            SetupPassword();
+            _userRepo.Setup(r => r.AddAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+            SetupAudit();
+
+            var result = await Svc().CreateUser(new CreateUserRequestDto
+            { UserId = "E1", UserName = "Emp", Password = "x", Role = UserRole.Employee });
+
+            result!.ApprovalLevel.Should().BeNull();
+        }
+
+        // Branch: hashKey is null → Array.Empty used
+        [Fact]
+        public async Task CreateUser_NullHashKey_UsesEmptyArray()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+            byte[]? nullKey = null;
+            _passwordService.Setup(p => p.HashPassword(It.IsAny<string>(), null, out nullKey))
+                .Returns(new byte[] { 1 });
+            _userRepo.Setup(r => r.AddAsync(It.IsAny<User>())).ReturnsAsync((User u) => u);
+            SetupAudit();
+
+            var result = await Svc().CreateUser(new CreateUserRequestDto
+            { UserId = "U1", UserName = "Test", Password = "x", Role = UserRole.Employee });
+
+            result.Should().NotBeNull();
+        }
+
+        // Branch: GetAllUsers — repo throws → wraps in Exception
+        [Fact]
+        public async Task GetAllUsers_RepoThrows_WrapsException()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ThrowsAsync(new InvalidOperationException("DB error"));
+            SetupAudit();
+
+            var ex = await Assert.ThrowsAsync<Exception>(() =>
+                Svc().GetAllUsers(new PaginationParams { PageNumber = 1, PageSize = 10 }));
+
+            ex.Message.Should().Contain("Unexpected error");
+        }
+
+        // Branch: GetAllUsers — no role/name filter, returns all
+        [Fact]
+        public async Task GetAllUsers_NoFilters_ReturnsAll()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>
+            {
+                new() { UserId = "U1", UserName = "Alice" },
+                new() { UserId = "U2", UserName = "Bob" }
+            });
+            SetupAudit();
+
+            var result = await Svc().GetAllUsers(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().HaveCount(2);
+        }
+
+        // Branch: GetUserById — null users list → throws
+        [Fact]
+        public async Task GetUserById_NullUserList_ThrowsKeyNotFound()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<User>?)null);
+            SetupAudit();
+
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => Svc().GetUserById("U1"));
+        }
+    }
 }

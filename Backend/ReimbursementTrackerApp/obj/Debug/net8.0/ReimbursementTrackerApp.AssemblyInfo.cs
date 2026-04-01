@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7a580c33529901782168c995ef492bd0bd19c971")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f1f1f08c7c8138e2f9cd1cf5284a6c83d1c834fb")]
 [assembly: System.Reflection.AssemblyProductAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

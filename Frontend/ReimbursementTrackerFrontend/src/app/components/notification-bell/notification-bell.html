@@ -40,9 +40,9 @@
           <small class="time">{{ formatTime(n.createdAt) }}</small>
           <span class="read-dot"
                 [ngClass]="{
-                  'dot-blue':  n.readStatus?.toLowerCase() === 'unread',
+                  'dot-blue':  n.readStatus.toLowerCase() === 'unread',
                   'dot-green': n.reply && n.senderRole === 'Manager',
-                  'dot-gray':  n.readStatus?.toLowerCase() === 'read' && !n.reply
+                  'dot-gray':  n.readStatus.toLowerCase() === 'read' && !n.reply
                 }">
           </span>
         </div>

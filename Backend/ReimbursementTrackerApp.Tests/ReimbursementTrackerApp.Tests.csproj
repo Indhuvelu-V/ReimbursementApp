@@ -12,36 +12,36 @@
 
   <ItemGroup>
     <!-- Core test runner -->
-    <PackageReference Include="Microsoft.NET.Test.Sdk"               Version="17.9.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" />
 
     <!-- xUnit -->
-    <PackageReference Include="xunit"                                Version="2.7.0" />
-    <PackageReference Include="xunit.runner.visualstudio"            Version="2.5.7">
+    <PackageReference Include="xunit" Version="2.7.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.7">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 
     <!-- Mocking -->
-    <PackageReference Include="Moq"                                  Version="4.20.70" />
+    <PackageReference Include="Moq" Version="4.20.70" />
 
     <!-- EF Core InMemory for DB-dependent tests -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
 
     <!-- Code coverage collector -->
-    <PackageReference Include="coverlet.collector"                   Version="6.0.0">
+    <PackageReference Include="coverlet.collector" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.msbuild"                     Version="6.0.0">
+    <PackageReference Include="coverlet.msbuild" Version="6.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
 
     <!-- Assertions -->
-    <PackageReference Include="FluentAssertions"                     Version="6.12.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
 
     <!-- ASP.NET Core HTTP abstractions -->
-    <PackageReference Include="Microsoft.AspNetCore.Http"            Version="2.2.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
   </ItemGroup>
 
   <ItemGroup>

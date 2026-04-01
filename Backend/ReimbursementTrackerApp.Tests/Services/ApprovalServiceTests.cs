@@ -213,4 +213,140 @@ namespace ReimbursementTrackerApp.Tests.Services
             result.Data.Should().HaveCount(3);
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class ApprovalServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, Expense>>  _expenseRepo  = new();
+        private readonly Mock<IRepository<string, Approval>> _approvalRepo = new();
+        private readonly Mock<IRepository<string, User>>     _userRepo     = new();
+        private readonly Mock<INotificationService>          _notifService = new();
+        private readonly Mock<IAuditLogService>              _auditService = new();
+
+        private ApprovalService Svc() =>
+            new(_expenseRepo.Object, _approvalRepo.Object, _userRepo.Object,
+                _notifService.Object, _auditService.Object);
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        private void SetupNotif() =>
+            _notifService.Setup(n => n.CreateNotification(It.IsAny<CreateNotificationRequestDto>()))
+                .ReturnsAsync(new CreateNotificationResponseDto());
+
+        // Branch: ManagerApproval — managerUser not found → ApproverName = ""
+        [Fact]
+        public async Task ManagerApproval_ManagerNotInUserList_ApproverNameEmpty()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Submitted, Amount = 500 };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { expense });
+            _approvalRepo.Setup(r => r.AddAsync(It.IsAny<Approval>())).ReturnsAsync((Approval a) => a);
+            _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(expense);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>()); // no users
+            SetupAudit(); SetupNotif();
+
+            var result = await Svc().ManagerApproval(new CreateApprovalRequestDto
+            { ExpenseId = "E1", ManagerId = "MGR1", Status = "approved" });
+
+            result!.ApproverName.Should().Be("");
+        }
+
+        // Branch: ManagerApproval — with comments → notification includes comments
+        [Fact]
+        public async Task ManagerApproval_WithComments_NotificationIncludesComments()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Submitted, Amount = 500 };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { expense });
+            _approvalRepo.Setup(r => r.AddAsync(It.IsAny<Approval>())).ReturnsAsync((Approval a) => a);
+            _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(expense);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new() { UserId = "MGR1", UserName = "Mgr" } });
+            SetupAudit();
+
+            CreateNotificationRequestDto? captured = null;
+            _notifService.Setup(n => n.CreateNotification(It.IsAny<CreateNotificationRequestDto>()))
+                .Callback<CreateNotificationRequestDto>(r => captured = r)
+                .ReturnsAsync(new CreateNotificationResponseDto());
+
+            await Svc().ManagerApproval(new CreateApprovalRequestDto
+            { ExpenseId = "E1", ManagerId = "MGR1", Status = "rejected", Comments = "Not valid" });
+
+            captured!.Description.Should().Contain("Not valid");
+        }
+
+        // Branch: ManagerApproval — empty comments → description is empty
+        [Fact]
+        public async Task ManagerApproval_EmptyComments_DescriptionEmpty()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Submitted, Amount = 500 };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { expense });
+            _approvalRepo.Setup(r => r.AddAsync(It.IsAny<Approval>())).ReturnsAsync((Approval a) => a);
+            _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(expense);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new() { UserId = "MGR1", UserName = "Mgr" } });
+            SetupAudit();
+
+            CreateNotificationRequestDto? captured = null;
+            _notifService.Setup(n => n.CreateNotification(It.IsAny<CreateNotificationRequestDto>()))
+                .Callback<CreateNotificationRequestDto>(r => captured = r)
+                .ReturnsAsync(new CreateNotificationResponseDto());
+
+            await Svc().ManagerApproval(new CreateApprovalRequestDto
+            { ExpenseId = "E1", ManagerId = "MGR1", Status = "approved", Comments = "" });
+
+            captured!.Description.Should().Be(string.Empty);
+        }
+
+        // Branch: GetAllApprovals — expense not in map → DocumentUrls empty, Amount 0
+        [Fact]
+        public async Task GetAllApprovals_ExpenseNotFound_DefaultsApplied()
+        {
+            var approvals = new List<Approval>
+            {
+                new() { ApprovalId = "A1", ExpenseId = "MISSING", ManagerId = "MGR1", Status = ApprovalStatus.Approved }
+            };
+            _approvalRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(approvals);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new() { UserId = "MGR1", UserName = "Mgr" } });
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            SetupAudit();
+
+            var result = await Svc().GetAllApprovals(new PaginationParams { PageNumber = 1, PageSize = 10 });
+
+            result.Data.First().ExpenseAmount.Should().Be(0);
+            result.Data.First().DocumentUrls.Should().BeEmpty();
+        }
+
+        // Branch: GetAllApprovals — employee name not in userMap → EmployeeName = ""
+        [Fact]
+        public async Task GetAllApprovals_EmployeeNotInUserMap_EmployeeNameEmpty()
+        {
+            var approvals = new List<Approval>
+            {
+                new() { ApprovalId = "A1", ExpenseId = "E1", ManagerId = "MGR1", Status = ApprovalStatus.Approved }
+            };
+            _approvalRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(approvals);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { new() { UserId = "MGR1", UserName = "Mgr" } });
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP_UNKNOWN", Amount = 100 }
+            });
+            SetupAudit();
+
+            var result = await Svc().GetAllApprovals(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.First().EmployeeName.Should().Be("");
+        }
+
+        // Branch: GetAllApprovals — empty approvals list
+        [Fact]
+        public async Task GetAllApprovals_EmptyApprovals_ReturnsEmpty()
+        {
+            _approvalRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Approval>());
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            SetupAudit();
+
+            var result = await Svc().GetAllApprovals(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().BeEmpty();
+        }
+    }
 }

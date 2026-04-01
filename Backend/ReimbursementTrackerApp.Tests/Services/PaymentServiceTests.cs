@@ -255,4 +255,144 @@ namespace ReimbursementTrackerApp.Tests.Services
             result.Should().BeNull();
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class PaymentServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, Payment>> _paymentRepo  = new();
+        private readonly Mock<IRepository<string, Expense>> _expenseRepo  = new();
+        private readonly Mock<IRepository<string, User>>    _userRepo     = new();
+        private readonly Mock<INotificationService>         _notifService = new();
+        private readonly Mock<IHttpContextAccessor>         _httpContext  = new();
+        private readonly Mock<IAuditLogService>             _auditService = new();
+
+        private PaymentService Svc(string role = "Finance")
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, "FIN1"),
+                new(ClaimTypes.Name, "Finance User"),
+                new(ClaimTypes.Role, role)
+            };
+            var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
+            _httpContext.Setup(h => h.HttpContext).Returns(ctx);
+            return new PaymentService(_paymentRepo.Object, _expenseRepo.Object,
+                _userRepo.Object, _notifService.Object, _httpContext.Object, _auditService.Object);
+        }
+
+        private void SetupNotif() =>
+            _notifService.Setup(n => n.CreateNotification(It.IsAny<CreateNotificationRequestDto>()))
+                .ReturnsAsync(new CreateNotificationResponseDto());
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        // Branch: CompletePayment — existing pending payment (not null) → updates it
+        [Fact]
+        public async Task CompletePayment_ExistingPendingPayment_UpdatesInsteadOfCreating()
+        {
+            var existingPayment = new Payment { PaymentId = "P1", PaymentStatus = PaymentStatusEnum.Pending };
+            var expense = new Expense
+            {
+                ExpenseId = "E1", UserId = "EMP1", Amount = 500,
+                Status = ExpenseStatus.Approved,
+                Payments = new List<Payment> { existingPayment }
+            };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _paymentRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Payment>())).ReturnsAsync(existingPayment);
+            _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(expense);
+            _userRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync(new User { UserId = "EMP1" });
+            SetupNotif(); SetupAudit();
+
+            var result = await Svc().CompletePayment("E1", "REF001", "Cash");
+
+            result.Should().NotBeNull();
+            result!.PaymentStatus.Should().Be("Paid");
+            _paymentRepo.Verify(r => r.AddAsync(It.IsAny<Payment>()), Times.Never);
+        }
+
+        // Branch: CompletePayment — user load fails → UserName still works
+        [Fact]
+        public async Task CompletePayment_UserLoadFails_StillCompletes()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Amount = 500, Status = ExpenseStatus.Approved };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _paymentRepo.Setup(r => r.AddAsync(It.IsAny<Payment>())).ReturnsAsync((Payment p) => p);
+            _paymentRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Payment>())).ReturnsAsync((string k, Payment p) => p);
+            _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(expense);
+            _userRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ThrowsAsync(new KeyNotFoundException());
+            SetupNotif(); SetupAudit();
+
+            var result = await Svc().CompletePayment("E1", "REF", "Cash");
+            result.Should().NotBeNull();
+        }
+
+        // Branch: GetAllPayments — null payments → returns empty
+        [Fact]
+        public async Task GetAllPayments_NullPayments_ReturnsEmpty()
+        {
+            _paymentRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<Payment>?)null);
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await Svc().GetAllPayments(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().BeEmpty();
+        }
+
+        // Branch: GetPaymentByExpenseId — Manager role, own payment → returns
+        [Fact]
+        public async Task GetPaymentByExpenseId_ManagerOwnPayment_Returns()
+        {
+            var payment = new Payment { PaymentId = "P1", ExpenseId = "E1", UserId = "MGR1", AmountPaid = 500, PaymentStatus = PaymentStatusEnum.Paid };
+            _paymentRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Payment> { payment });
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(new Expense { ExpenseId = "E1" });
+            _userRepo.Setup(r => r.GetByIdAsync("MGR1")).ReturnsAsync(new User { UserId = "MGR1" });
+
+            var result = await Svc().GetPaymentByExpenseId("E1", "MGR1", "Manager");
+            result.Should().NotBeNull();
+        }
+
+        // Branch: GetPaymentByExpenseId — Manager role, other's payment → null
+        [Fact]
+        public async Task GetPaymentByExpenseId_ManagerOtherPayment_ReturnsNull()
+        {
+            var payment = new Payment { PaymentId = "P1", ExpenseId = "E1", UserId = "EMP1", AmountPaid = 500, PaymentStatus = PaymentStatusEnum.Paid };
+            _paymentRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Payment> { payment });
+
+            var result = await Svc().GetPaymentByExpenseId("E1", "MGR1", "Manager");
+            result.Should().BeNull();
+        }
+
+        // Branch: GetPaymentByExpenseId — expense load fails → DocumentUrls empty
+        [Fact]
+        public async Task GetPaymentByExpenseId_ExpenseLoadFails_DocumentUrlsEmpty()
+        {
+            var payment = new Payment { PaymentId = "P1", ExpenseId = "E1", UserId = "FIN1", AmountPaid = 500, PaymentStatus = PaymentStatusEnum.Paid };
+            _paymentRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Payment> { payment });
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ThrowsAsync(new KeyNotFoundException());
+            _userRepo.Setup(r => r.GetByIdAsync(It.IsAny<string>())).ReturnsAsync(new User { UserId = "FIN1" });
+
+            var result = await Svc().GetPaymentByExpenseId("E1", "FIN1", "Finance");
+            result.Should().NotBeNull();
+            result!.DocumentUrls.Should().BeEmpty();
+        }
+
+        // Branch: GetAllPayments — user not in map → UserName empty
+        [Fact]
+        public async Task GetAllPayments_UserNotInMap_UserNameEmpty()
+        {
+            var payments = new List<Payment>
+            {
+                new() { PaymentId = "P1", UserId = "UNKNOWN", AmountPaid = 100, PaymentStatus = PaymentStatusEnum.Paid, PaymentDate = DateTime.UtcNow }
+            };
+            _paymentRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(payments);
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await Svc().GetAllPayments(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.First().UserName.Should().Be("");
+        }
+    }
 }

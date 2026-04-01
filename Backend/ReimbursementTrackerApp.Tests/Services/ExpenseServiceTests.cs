@@ -31,111 +31,141 @@ namespace ReimbursementTrackerApp.Tests.Services
             };
             var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
             _httpContext.Setup(h => h.HttpContext).Returns(ctx);
-            return new ExpenseService(
-                _expenseRepo.Object, _categoryRepo.Object,
-                _userRepo.Object, _auditService.Object,
-                _httpContext.Object, _fileUpload.Object);
+            return new ExpenseService(_expenseRepo.Object, _categoryRepo.Object,
+                _userRepo.Object, _auditService.Object, _httpContext.Object, _fileUpload.Object);
+        }
+
+        private ExpenseService CreateUnauthenticatedService()
+        {
+            _httpContext.Setup(h => h.HttpContext).Returns(new DefaultHttpContext());
+            return new ExpenseService(_expenseRepo.Object, _categoryRepo.Object,
+                _userRepo.Object, _auditService.Object, _httpContext.Object, _fileUpload.Object);
         }
 
         private void SetupAudit() =>
             _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
                 .ReturnsAsync(new CreateAuditLogsResponseDto());
 
-        private ExpenseCategory DefaultCategory(decimal maxLimit = 5000) =>
-            new() { CategoryId = "C1", CategoryName = ExpenseCategoryType.Travel, MaxLimit = maxLimit };
+        private ExpenseCategory Cat(decimal max = 5000) =>
+            new() { CategoryId = "C1", CategoryName = ExpenseCategoryType.Travel, MaxLimit = max };
 
         // ── CreateExpense ─────────────────────────────────────────────────────
 
         [Fact]
-        public async Task CreateExpense_ValidRequest_ReturnsDraftExpense()
+        public async Task CreateExpense_ValidRequest_ReturnsDraft()
         {
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
-            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(DefaultCategory());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
+            _expenseRepo.Setup(r => r.AddAsync(It.IsAny<Expense>())).ReturnsAsync((Expense e) => e);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+            SetupAudit();
+
+            var result = await CreateService().CreateExpense(new CreateExpenseRequestDto
+            { CategoryId = "C1", Amount = 1000, ExpenseDate = DateTime.UtcNow });
+
+            result!.Status.Should().Be("Draft");
+            result.Amount.Should().Be(1000);
+        }
+
+        [Fact]
+        public async Task CreateExpense_WithDocumentUrls_AttachesUrls()
+        {
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
             _expenseRepo.Setup(r => r.AddAsync(It.IsAny<Expense>())).ReturnsAsync((Expense e) => e);
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
             SetupAudit();
 
             var result = await CreateService().CreateExpense(new CreateExpenseRequestDto
             {
-                CategoryId = "C1", Amount = 1000, ExpenseDate = DateTime.UtcNow
+                CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow,
+                DocumentUrls = new List<string> { "/uploads/file1.pdf" }
             });
 
-            result.Should().NotBeNull();
-            result!.Status.Should().Be("Draft");
-            result.Amount.Should().Be(1000);
+            result!.DocumentUrls.Should().Contain("/uploads/file1.pdf");
         }
 
         [Fact]
-        public async Task CreateExpense_AmountExceedsLimit_ThrowsInvalidOperation()
+        public async Task CreateExpense_AmountExceedsLimit_Throws()
         {
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
-            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(DefaultCategory(500));
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat(500));
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 CreateService().CreateExpense(new CreateExpenseRequestDto
-                {
-                    CategoryId = "C1", Amount = 9999, ExpenseDate = DateTime.UtcNow
-                }));
+                { CategoryId = "C1", Amount = 9999, ExpenseDate = DateTime.UtcNow }));
         }
 
         [Fact]
-        public async Task CreateExpense_DuplicateActiveExpense_ThrowsInvalidOperation()
+        public async Task CreateExpense_DuplicateActiveExpense_Throws()
         {
             var existing = new Expense { ExpenseId = "E1", UserId = "EMP1", ExpenseDate = DateTime.UtcNow, Status = ExpenseStatus.Submitted };
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { existing });
-            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(DefaultCategory());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 CreateService().CreateExpense(new CreateExpenseRequestDto
-                {
-                    CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow
-                }));
+                { CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow }));
+        }
+
+        [Fact]
+        public async Task CreateExpense_DuplicateDraftExpense_Throws()
+        {
+            var existing = new Expense { ExpenseId = "E1", UserId = "EMP1", ExpenseDate = DateTime.UtcNow, Status = ExpenseStatus.Draft };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { existing });
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                CreateService().CreateExpense(new CreateExpenseRequestDto
+                { CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow }));
         }
 
         [Fact]
         public async Task CreateExpense_RejectedExpenseExists_UpdatesInPlace()
         {
-            var rejected = new Expense
-            {
-                ExpenseId = "E1", UserId = "EMP1",
-                ExpenseDate = DateTime.UtcNow, Status = ExpenseStatus.Rejected,
-                Amount = 200
-            };
+            var rejected = new Expense { ExpenseId = "E1", UserId = "EMP1", ExpenseDate = DateTime.UtcNow, Status = ExpenseStatus.Rejected, Amount = 200 };
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense> { rejected });
-            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(DefaultCategory());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
             _expenseRepo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Expense>())).ReturnsAsync(rejected);
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
             SetupAudit();
 
             var result = await CreateService().CreateExpense(new CreateExpenseRequestDto
-            {
-                CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow
-            });
+            { CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow });
 
-            result.Should().NotBeNull();
-            result!.Status.Should().Be("Draft"); // reset to Draft after re-edit
-            _expenseRepo.Verify(r => r.AddAsync(It.IsAny<Expense>()), Times.Never); // no new record
+            result!.Status.Should().Be("Draft");
+            _expenseRepo.Verify(r => r.AddAsync(It.IsAny<Expense>()), Times.Never);
         }
 
         [Fact]
-        public async Task CreateExpense_PastMonthDate_ThrowsInvalidOperation()
+        public async Task CreateExpense_PastMonthDate_Throws()
         {
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
-            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(DefaultCategory());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
             await Assert.ThrowsAsync<InvalidOperationException>(() =>
                 CreateService().CreateExpense(new CreateExpenseRequestDto
-                {
-                    CategoryId = "C1", Amount = 500,
-                    ExpenseDate = DateTime.UtcNow.AddMonths(-2)
-                }));
+                { CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow.AddMonths(-2) }));
         }
 
         [Fact]
-        public async Task CreateExpense_CategoryNotFound_ThrowsKeyNotFound()
+        public async Task CreateExpense_FutureMonthDate_Throws()
+        {
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+            _categoryRepo.Setup(r => r.GetByIdAsync("C1")).ReturnsAsync(Cat());
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                CreateService().CreateExpense(new CreateExpenseRequestDto
+                { CategoryId = "C1", Amount = 500, ExpenseDate = DateTime.UtcNow.AddMonths(2) }));
+        }
+
+        [Fact]
+        public async Task CreateExpense_CategoryNotFound_Throws()
         {
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
             _categoryRepo.Setup(r => r.GetByIdAsync("MISSING")).ThrowsAsync(new KeyNotFoundException());
@@ -143,15 +173,13 @@ namespace ReimbursementTrackerApp.Tests.Services
 
             await Assert.ThrowsAsync<KeyNotFoundException>(() =>
                 CreateService().CreateExpense(new CreateExpenseRequestDto
-                {
-                    CategoryId = "MISSING", Amount = 500, ExpenseDate = DateTime.UtcNow
-                }));
+                { CategoryId = "MISSING", Amount = 500, ExpenseDate = DateTime.UtcNow }));
         }
 
         // ── SubmitExpense ─────────────────────────────────────────────────────
 
         [Fact]
-        public async Task SubmitExpense_DraftExpense_ChangesStatusToSubmitted()
+        public async Task SubmitExpense_Draft_ChangesStatusToSubmitted()
         {
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
@@ -163,7 +191,7 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
 
         [Fact]
-        public async Task SubmitExpense_NotDraft_ThrowsInvalidOperation()
+        public async Task SubmitExpense_NotDraft_Throws()
         {
             var expense = new Expense { ExpenseId = "E1", Status = ExpenseStatus.Submitted };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
@@ -172,16 +200,25 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
 
         [Fact]
-        public async Task SubmitExpense_NotFound_ThrowsKeyNotFound()
+        public async Task SubmitExpense_NotFound_Throws()
         {
             _expenseRepo.Setup(r => r.GetByIdAsync("MISSING")).ThrowsAsync(new KeyNotFoundException());
             await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateService().SubmitExpense("MISSING"));
         }
 
+        [Fact]
+        public async Task SubmitExpense_ApprovedExpense_Throws()
+        {
+            var expense = new Expense { ExpenseId = "E1", Status = ExpenseStatus.Approved };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => CreateService().SubmitExpense("E1"));
+        }
+
         // ── ResubmitExpense ───────────────────────────────────────────────────
 
         [Fact]
-        public async Task ResubmitExpense_RejectedByOwner_ChangesStatusToSubmitted()
+        public async Task ResubmitExpense_RejectedByOwner_Succeeds()
         {
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Rejected, Amount = 500 };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
@@ -193,7 +230,31 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
 
         [Fact]
-        public async Task ResubmitExpense_AlreadyApproved_ThrowsInvalidOperation()
+        public async Task ResubmitExpense_DraftByOwner_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 300 };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            SetupAudit();
+
+            var result = await CreateService("EMP1").ResubmitExpense("E1");
+            result!.Status.Should().Be("Submitted");
+        }
+
+        [Fact]
+        public async Task ResubmitExpense_AdminCanResubmitOthers()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Rejected, Amount = 300 };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            SetupAudit();
+
+            var result = await CreateService("ADMIN1", "Admin").ResubmitExpense("E1");
+            result!.Status.Should().Be("Submitted");
+        }
+
+        [Fact]
+        public async Task ResubmitExpense_AlreadyApproved_Throws()
         {
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Approved };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
@@ -203,13 +264,31 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
 
         [Fact]
-        public async Task ResubmitExpense_DifferentUser_ThrowsUnauthorized()
+        public async Task ResubmitExpense_AlreadyPaid_Throws()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Paid };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                CreateService("EMP1").ResubmitExpense("E1"));
+        }
+
+        [Fact]
+        public async Task ResubmitExpense_DifferentUser_Throws()
         {
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Rejected };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
 
             await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-                CreateService("OTHER_USER").ResubmitExpense("E1"));
+                CreateService("OTHER").ResubmitExpense("E1"));
+        }
+
+        [Fact]
+        public async Task ResubmitExpense_NotFound_Throws()
+        {
+            _expenseRepo.Setup(r => r.GetByIdAsync("MISSING")).ThrowsAsync(new KeyNotFoundException());
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                CreateService("EMP1").ResubmitExpense("MISSING"));
         }
 
         // ── DeleteExpense ─────────────────────────────────────────────────────
@@ -228,9 +307,44 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
 
         [Fact]
+        public async Task DeleteExpense_SubmittedByOwner_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Submitted, Amount = 100 };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.DeleteAsync("E1")).ReturnsAsync(expense);
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("EMP1").DeleteExpenseSafe("E1");
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task DeleteExpense_AdminDeletesOthers_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100 };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.DeleteAsync("E1")).ReturnsAsync(expense);
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("ADMIN1", "Admin").DeleteExpenseSafe("E1");
+            success.Should().BeTrue();
+        }
+
+        [Fact]
         public async Task DeleteExpense_ApprovedExpense_Fails()
         {
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Approved };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var (success, msg, _) = await CreateService("EMP1").DeleteExpenseSafe("E1");
+            success.Should().BeFalse();
+            msg.Should().Contain("Cannot delete");
+        }
+
+        [Fact]
+        public async Task DeleteExpense_PaidExpense_Fails()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Paid };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
 
             var (success, _, _) = await CreateService("EMP1").DeleteExpenseSafe("E1");
@@ -257,6 +371,48 @@ namespace ReimbursementTrackerApp.Tests.Services
             success.Should().BeFalse();
         }
 
+        // ── GetExpenseById ────────────────────────────────────────────────────
+
+        [Fact]
+        public async Task GetExpenseById_OwnerEmployee_ReturnsDto()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, ExpenseDate = DateTime.UtcNow };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var result = await CreateService("EMP1", "Employee").GetExpenseById("E1");
+            result.Should().NotBeNull();
+            result!.ExpenseId.Should().Be("E1");
+        }
+
+        [Fact]
+        public async Task GetExpenseById_EmployeeOtherExpense_ReturnsNull()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP2", Status = ExpenseStatus.Draft, Amount = 100, ExpenseDate = DateTime.UtcNow };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var result = await CreateService("EMP1", "Employee").GetExpenseById("E1");
+            result.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task GetExpenseById_ManagerCanSeeAny_ReturnsDto()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, ExpenseDate = DateTime.UtcNow };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var result = await CreateService("MGR1", "Manager").GetExpenseById("E1");
+            result.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task GetExpenseById_NotFound_ReturnsNull()
+        {
+            _expenseRepo.Setup(r => r.GetByIdAsync("MISSING")).ThrowsAsync(new KeyNotFoundException());
+
+            var result = await CreateService().GetExpenseById("MISSING");
+            result.Should().BeNull();
+        }
+
         // ── GetAllExpenses ────────────────────────────────────────────────────
 
         [Fact]
@@ -270,17 +426,15 @@ namespace ReimbursementTrackerApp.Tests.Services
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
-            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
-            {
-                PageNumber = 1, PageSize = 10, Status = "Submitted"
-            });
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(
+                new PaginationParams { PageNumber = 1, PageSize = 10, Status = "Submitted" });
 
             result.Data.Should().HaveCount(1);
             result.Data.First().Status.Should().Be("Submitted");
         }
 
         [Fact]
-        public async Task GetAllExpenses_EmployeeSeesOnlyOwnExpenses()
+        public async Task GetAllExpenses_EmployeeSeesOnlyOwn()
         {
             var expenses = new List<Expense>
             {
@@ -290,7 +444,9 @@ namespace ReimbursementTrackerApp.Tests.Services
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
-            var result = await CreateService("EMP1", "Employee").GetAllExpenses(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            var result = await CreateService("EMP1", "Employee").GetAllExpenses(
+                new PaginationParams { PageNumber = 1, PageSize = 10 });
+
             result.Data.Should().HaveCount(1);
             result.Data.First().UserId.Should().Be("EMP1");
         }
@@ -307,19 +463,78 @@ namespace ReimbursementTrackerApp.Tests.Services
             _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
             _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
 
-            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
-            {
-                PageNumber = 1, PageSize = 10, MinAmount = 200, MaxAmount = 800
-            });
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(
+                new PaginationParams { PageNumber = 1, PageSize = 10, MinAmount = 200, MaxAmount = 800 });
 
             result.Data.Should().HaveCount(1);
             result.Data.First().Amount.Should().Be(500);
         }
 
+        [Fact]
+        public async Task GetAllExpenses_DateFilter_ReturnsInRange()
+        {
+            var today = DateTime.UtcNow;
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today.AddDays(-5), Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today,             Amount = 200 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
+            {
+                PageNumber = 1, PageSize = 10,
+                FromDate = today.ToString("yyyy-MM-dd"),
+                ToDate   = today.ToString("yyyy-MM-dd")
+            });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().ExpenseId.Should().Be("E2");
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_UserNameFilter_ReturnsMatchingUser()
+        {
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP2", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 200 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>
+            {
+                new() { UserId = "EMP1", UserName = "Alice" },
+                new() { UserId = "EMP2", UserName = "Bob" }
+            });
+
+            var result = await CreateService("MGR1", "Manager").GetAllExpenses(
+                new PaginationParams { PageNumber = 1, PageSize = 10, UserName = "alice" });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().UserId.Should().Be("EMP1");
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_Pagination_ReturnsCorrectPage()
+        {
+            var expenses = Enumerable.Range(1, 12)
+                .Select(i => new Expense { ExpenseId = $"E{i}", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = i * 100 })
+                .ToList();
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(
+                new PaginationParams { PageNumber = 2, PageSize = 5 });
+
+            result.Data.Should().HaveCount(5);
+            result.TotalRecords.Should().Be(12);
+        }
+
         // ── GetMyExpenses ─────────────────────────────────────────────────────
 
         [Fact]
-        public async Task GetMyExpenses_ReturnsOnlyCurrentUserExpenses()
+        public async Task GetMyExpenses_ReturnsOnlyCurrentUser()
         {
             var expenses = new List<Expense>
             {
@@ -333,25 +548,122 @@ namespace ReimbursementTrackerApp.Tests.Services
             result.First().UserId.Should().Be("EMP1");
         }
 
+        [Fact]
+        public async Task GetMyExpenses_NoExpenses_ReturnsEmpty()
+        {
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>());
+
+            var result = await CreateService("EMP1").GetMyExpenses();
+            result.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task GetMyExpenses_Unauthenticated_ReturnsEmpty()
+        {
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 100 }
+            });
+
+            // Anonymous user — userId = "Anonymous", won't match "EMP1"
+            var result = await CreateUnauthenticatedService().GetMyExpenses();
+            result.Should().BeEmpty();
+        }
+
         // ── UpdateExpense ─────────────────────────────────────────────────────
 
         [Fact]
         public async Task UpdateExpense_DraftByOwner_Succeeds()
         {
-            var expense = new Expense
-            {
-                ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft,
-                Amount = 100, CategoryId = "C1", CategoryName = "Travel"
-            };
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
             _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
-            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { DefaultCategory() });
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
             SetupAudit();
 
-            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1", new CreateExpenseRequestDto
-            {
-                CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow
-            });
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_RejectedByOwner_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Rejected, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_AdminUpdatesOthers_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("ADMIN1", "Admin").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_ApprovedStatus_Fails()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Approved };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var (success, msg, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeFalse();
+            msg.Should().Contain("Only Draft");
+        }
+
+        [Fact]
+        public async Task UpdateExpense_WithEmptySentinel_ClearsDocuments()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            var (success, _, dto) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto
+                {
+                    CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow,
+                    DocumentUrls = new List<string> { "__EMPTY__" }
+                });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_NullDocumentUrls_KeepsOldDocs()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto
+                {
+                    CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow,
+                    DocumentUrls = null
+                });
 
             success.Should().BeTrue();
         }
@@ -361,10 +673,8 @@ namespace ReimbursementTrackerApp.Tests.Services
         {
             _expenseRepo.Setup(r => r.GetByIdAsync("MISSING")).ThrowsAsync(new KeyNotFoundException());
 
-            var (success, msg, _) = await CreateService().UpdateExpenseSafe("MISSING", new CreateExpenseRequestDto
-            {
-                CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow
-            });
+            var (success, _, _) = await CreateService().UpdateExpenseSafe("MISSING",
+                new CreateExpenseRequestDto { CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow });
 
             success.Should().BeFalse();
         }
@@ -375,13 +685,204 @@ namespace ReimbursementTrackerApp.Tests.Services
             var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft };
             _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
 
-            var (success, msg, _) = await CreateService("OTHER").UpdateExpenseSafe("E1", new CreateExpenseRequestDto
-            {
-                CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow
-            });
+            var (success, msg, _) = await CreateService("OTHER").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow });
 
             success.Should().BeFalse();
             msg.Should().Contain("authorized");
+        }
+
+        // ── Additional branch coverage ────────────────────────────────────────
+
+        [Fact]
+        public async Task UpdateExpense_SubmittedByOwner_Succeeds()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Submitted, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "Travel", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_PaidStatus_ReturnsFalse()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Paid };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var (success, msg, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", Amount = 100, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeFalse();
+            msg.Should().Contain("Only Draft");
+        }
+
+        [Fact]
+        public async Task UpdateExpense_NoCategoryName_LooksUpFromRepo()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory> { Cat() });
+            SetupAudit();
+
+            // CategoryName is empty — service should look it up from repo
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_NoCategoryNameAndRepoFails_FallsBackToExisting()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "Travel" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ThrowsAsync(new Exception("DB error"));
+            SetupAudit();
+
+            var (success, _, _) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task UpdateExpense_NoCategoryNameAndNoMatch_FallsBackToCategoryId()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, CategoryId = "C1", CategoryName = "" };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+            _expenseRepo.Setup(r => r.UpdateAsync("E1", It.IsAny<Expense>())).ReturnsAsync(expense);
+            _categoryRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<ExpenseCategory>());
+            SetupAudit();
+
+            var (success, _, dto) = await CreateService("EMP1").UpdateExpenseSafe("E1",
+                new CreateExpenseRequestDto { CategoryId = "C1", CategoryName = "", Amount = 300, ExpenseDate = DateTime.UtcNow });
+
+            success.Should().BeTrue();
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_FromDateOnly_FiltersCorrectly()
+        {
+            var today = DateTime.UtcNow;
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today.AddDays(-5), Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today,             Amount = 200 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
+            { PageNumber = 1, PageSize = 10, FromDate = today.ToString("yyyy-MM-dd") });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().ExpenseId.Should().Be("E2");
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_ToDateOnly_FiltersCorrectly()
+        {
+            var today = DateTime.UtcNow;
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today.AddDays(-1), Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = today.AddDays(5),  Amount = 200 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
+            { PageNumber = 1, PageSize = 10, ToDate = today.ToString("yyyy-MM-dd") });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().ExpenseId.Should().Be("E1");
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_MinAmountOnly_FiltersCorrectly()
+        {
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 500 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
+            { PageNumber = 1, PageSize = 10, MinAmount = 300 });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().Amount.Should().Be(500);
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_MaxAmountOnly_FiltersCorrectly()
+        {
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 100 },
+                new() { ExpenseId = "E2", UserId = "EMP1", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 500 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateService("EMP1", "Manager").GetAllExpenses(new PaginationParams
+            { PageNumber = 1, PageSize = 10, MaxAmount = 300 });
+
+            result.Data.Should().HaveCount(1);
+            result.Data.First().Amount.Should().Be(100);
+        }
+
+        [Fact]
+        public async Task GetAllExpenses_Unauthenticated_TreatedAsEmployee()
+        {
+            var expenses = new List<Expense>
+            {
+                new() { ExpenseId = "E1", UserId = "Anonymous", Status = ExpenseStatus.Draft, ExpenseDate = DateTime.UtcNow, Amount = 100 }
+            };
+            _expenseRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(expenses);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>());
+
+            var result = await CreateUnauthenticatedService().GetAllExpenses(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            // Anonymous user treated as Employee, sees only own (Anonymous) expenses
+            result.Data.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public async Task MapToDto_EmptyCategoryName_FallsBackToCategory()
+        {
+            var category = new ExpenseCategory { CategoryId = "C1", CategoryName = ExpenseCategoryType.Travel, MaxLimit = 5000 };
+            var expense = new Expense
+            {
+                ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft,
+                Amount = 100, ExpenseDate = DateTime.UtcNow,
+                CategoryId = "C1", CategoryName = "", // empty — should fall back to Category nav prop
+                Category = category
+            };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var result = await CreateService("EMP1", "Employee").GetExpenseById("E1");
+            result.Should().NotBeNull();
+            result!.CategoryName.Should().Be("Travel");
+        }
+
+        [Fact]
+        public async Task GetExpenseById_AdminCanSeeAny_ReturnsDto()
+        {
+            var expense = new Expense { ExpenseId = "E1", UserId = "EMP1", Status = ExpenseStatus.Draft, Amount = 100, ExpenseDate = DateTime.UtcNow };
+            _expenseRepo.Setup(r => r.GetByIdAsync("E1")).ReturnsAsync(expense);
+
+            var result = await CreateService("ADMIN1", "Admin").GetExpenseById("E1");
+            result.Should().NotBeNull();
         }
     }
 }

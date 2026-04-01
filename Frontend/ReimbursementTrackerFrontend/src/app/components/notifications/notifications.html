@@ -119,7 +119,7 @@
         <div class="reply-actions">
           <button *ngIf="!n.reply || replyTexts[n.notificationId]"
                   class="btn-reply"
-                  [disabled]="!replyTexts[n.notificationId]?.trim()"
+                  [disabled]="!replyTexts[n.notificationId].trim()"
                   (click)="replyToNotification(n)">
             <i class="bi bi-reply"></i>{{ n.reply ? 'Update Reply' : 'Send Reply' }}
           </button>

@@ -225,4 +225,111 @@ namespace ReimbursementTrackerApp.Tests.Services
             _notifRepo.Verify(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Notification>()), Times.Never);
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class NotificationServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, Notification>> _notifRepo    = new();
+        private readonly Mock<IAuditLogService>                   _auditService = new();
+        private readonly Mock<ILogger<NotificationService>>       _logger       = new();
+
+        private NotificationService Svc() => new(_notifRepo.Object, _auditService.Object, _logger.Object);
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        // Branch: GetNotificationsByUser — null repo result → returns empty
+        [Fact]
+        public async Task GetNotificationsByUser_NullRepo_ReturnsEmpty()
+        {
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<Notification>?)null);
+            SetupAudit();
+
+            var result = await Svc().GetNotificationsByUser("U1");
+            result.Should().BeEmpty();
+        }
+
+        // Branch: GetNotificationsByUser — audit log fails → still returns data
+        [Fact]
+        public async Task GetNotificationsByUser_AuditFails_StillReturns()
+        {
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification>
+            {
+                new() { NotificationId = "N1", UserId = "U1", CreatedAt = DateTime.UtcNow }
+            });
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ThrowsAsync(new Exception("Audit fail"));
+
+            var result = (await Svc().GetNotificationsByUser("U1")).ToList();
+            result.Should().HaveCount(1);
+        }
+
+        // Branch: MarkAsRead — audit log fails → still returns dto
+        [Fact]
+        public async Task MarkAsRead_AuditFails_StillReturnsDto()
+        {
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", ReadStatus = "Unread" };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ThrowsAsync(new Exception("Audit fail"));
+
+            var result = await Svc().MarkAsRead("N1", "U1");
+            result.Should().NotBeNull();
+            result!.ReadStatus.Should().Be("Read");
+        }
+
+        // Branch: ReplyNotification — audit log fails → still returns dto
+        [Fact]
+        public async Task ReplyNotification_AuditFails_StillReturnsDto()
+        {
+            var notif = new Notification { NotificationId = "N1", UserId = "U1", SenderRole = "Manager", ReadStatus = "Unread" };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ThrowsAsync(new Exception("Audit fail"));
+
+            var result = await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "ok" }, "U1");
+            result.Should().NotBeNull();
+        }
+
+        // Branch: GetSentNotifications — null repo → returns empty
+        [Fact]
+        public async Task GetSentNotifications_NullRepo_ReturnsEmpty()
+        {
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<Notification>?)null);
+
+            var result = await Svc().GetSentNotifications("MGR1");
+            result.Should().BeEmpty();
+        }
+
+        // Branch: CreateNotification — with SenderId set
+        [Fact]
+        public async Task CreateNotification_WithSenderId_SetsSenderId()
+        {
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ReturnsAsync((Notification n) => n);
+            SetupAudit();
+
+            var result = await Svc().CreateNotification(new CreateNotificationRequestDto
+            { UserId = "U1", Message = "Test", SenderId = "MGR1", SenderRole = "Manager" });
+
+            result.SenderId.Should().Be("MGR1");
+        }
+
+        // Branch: CreateNotification — with Description set
+        [Fact]
+        public async Task CreateNotification_WithDescription_SetsDescription()
+        {
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ReturnsAsync((Notification n) => n);
+            SetupAudit();
+
+            var result = await Svc().CreateNotification(new CreateNotificationRequestDto
+            { UserId = "U1", Message = "Test", Description = "Some detail" });
+
+            result.Description.Should().Be("Some detail");
+        }
+    }
 }

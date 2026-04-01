@@ -115,4 +115,41 @@ namespace ReimbursementTrackerApp.Tests.Services
                 CreateService().CheckUser(new CheckUserRequestDto { UserName = "x", Password = "y" }));
         }
     }
+
+    // ── Additional branch coverage ────────────────────────────────────────────
+
+    public class AuthServiceBranchTests
+    {
+        private readonly Mock<IRepository<string, User>> _userRepo        = new();
+        private readonly Mock<IPasswordService>          _passwordService = new();
+        private readonly Mock<ITokenService>             _tokenService    = new();
+
+        private AuthService Svc() => new(_userRepo.Object, _passwordService.Object, _tokenService.Object);
+
+        // Branch: users is null → Enumerable.Empty used → user not found
+        [Fact]
+        public async Task CheckUser_NullUserList_ThrowsUnAuthorized()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<User>?)null);
+            await Assert.ThrowsAsync<UnAuthorizedException>(() =>
+                Svc().CheckUser(new CheckUserRequestDto { UserName = "x", Password = "y" }));
+        }
+
+        // Branch: multiple users, correct one found by exact username match
+        [Fact]
+        public async Task CheckUser_MultipleUsers_MatchesCorrectOne()
+        {
+            var target = new User { UserId = "U2", UserName = "bob", Role = UserRole.Manager, Password = new byte[] { 5 }, PasswordHash = new byte[] { 6 } };
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>
+            {
+                new() { UserId = "U1", UserName = "alice", Password = new byte[] { 1 }, PasswordHash = new byte[] { 2 } },
+                target
+            });
+            _passwordService.Setup(p => p.HashPassword("pass", target.PasswordHash, out It.Ref<byte[]?>.IsAny)).Returns(target.Password);
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>())).Returns("tok");
+
+            var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "bob", Password = "pass" });
+            result.Token.Should().Be("tok");
+        }
+    }
 }
