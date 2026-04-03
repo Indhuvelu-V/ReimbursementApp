@@ -15,7 +15,6 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 
-// PIPELINE ORDER NOTE: UseCors MUST be before UseStaticFiles
 // so that /uploads responses include Access-Control-Allow-Origin headers.
 // Without this, fetch() from Angular (localhost:4200) to backend (localhost:5138)
 // is blocked by the browser's CORS policy on static file responses.
