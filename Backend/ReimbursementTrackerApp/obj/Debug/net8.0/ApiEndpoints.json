@@ -83,22 +83,6 @@
   },
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.AuditLogsController",
-    "Method": "CreateLog",
-    "RelativePath": "api/AuditLogs",
-    "HttpMethod": "POST",
-    "IsController": true,
-    "Order": 0,
-    "Parameters": [
-      {
-        "Name": "request",
-        "Type": "ReimbursementTrackerApp.Models.DTOs.CreateAuditLogsRequestDto",
-        "IsRequired": true
-      }
-    ],
-    "ReturnTypes": []
-  },
-  {
-    "ContainingType": "ReimbursementTrackerApp.Controllers.AuditLogsController",
     "Method": "DeleteLog",
     "RelativePath": "api/AuditLogs/{logId}",
     "HttpMethod": "DELETE",

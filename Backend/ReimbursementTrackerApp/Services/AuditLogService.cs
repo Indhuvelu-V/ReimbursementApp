@@ -14,7 +14,9 @@ namespace ReimbursementTrackerApp.Services
         private readonly IRepository<string, AuditLog> _auditLogRepo;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuditLogService(IRepository<string, AuditLog> auditLogRepo, IHttpContextAccessor httpContextAccessor)
+        public AuditLogService(
+            IRepository<string, AuditLog> auditLogRepo,
+            IHttpContextAccessor httpContextAccessor)
         {
             _auditLogRepo = auditLogRepo;
             _httpContextAccessor = httpContextAccessor;
@@ -47,35 +49,33 @@ namespace ReimbursementTrackerApp.Services
             string userName;
             UserRole role;
 
-            // ✅ If user info is passed (e.g., REGISTER) → use it
             if (!string.IsNullOrEmpty(request.UserId) &&
                 !string.IsNullOrEmpty(request.UserName) &&
                 request.Role.HasValue)
             {
-                userId = request.UserId;
+                userId   = request.UserId;
                 userName = request.UserName;
-                role = request.Role.Value;
+                role     = request.Role.Value;
             }
             else
             {
-                // ✅ Otherwise → use token
                 var tokenData = GetUserFromToken();
-                userId = tokenData.userId;
+                userId   = tokenData.userId;
                 userName = tokenData.userName;
-                role = tokenData.role;
+                role     = tokenData.role;
             }
 
             var log = new AuditLog
             {
-                LogId = Guid.NewGuid().ToString(),
-                UserId = userId,
-                UserName = userName,
-                Role = role,
-                Action = request.Action,
-                ExpenseId = request.ExpenseId,
-                Amount = request.Amount,
-                OldAmount = request.OldAmount,
-                DocumentUrls = request.DocumentUrls ?? new List<string>(),
+                LogId      = Guid.NewGuid().ToString(),
+                UserId     = userId,
+                UserName   = userName,
+                Role       = role,
+                Action     = request.Action,
+                ExpenseId  = request.ExpenseId,
+                Amount     = request.Amount,
+                OldAmount  = request.OldAmount,
+                DocumentUrls    = request.DocumentUrls    ?? new List<string>(),
                 OldDocumentUrls = request.OldDocumentUrls ?? new List<string>(),
                 Date = DateTime.UtcNow
             };
@@ -84,17 +84,17 @@ namespace ReimbursementTrackerApp.Services
 
             return new CreateAuditLogsResponseDto
             {
-                LogId = log.LogId,
-                UserId = log.UserId,
-                UserName = log.UserName,
-                Role = log.Role,
-                Action = log.Action,
-                ExpenseId = log.ExpenseId,
-                Amount = log.Amount,
-                OldAmount = log.OldAmount,
-                DocumentUrls = log.DocumentUrls,
+                LogId      = log.LogId,
+                UserId     = log.UserId,
+                UserName   = log.UserName,
+                Role       = log.Role,
+                Action     = log.Action,
+                ExpenseId  = log.ExpenseId,
+                Amount     = log.Amount,
+                OldAmount  = log.OldAmount,
+                DocumentUrls    = log.DocumentUrls,
                 OldDocumentUrls = log.OldDocumentUrls,
-                Date = log.Date,
+                Date        = log.Date,
                 Description = $"Action performed: {log.Action}"
             };
         }
@@ -177,19 +177,18 @@ namespace ReimbursementTrackerApp.Services
                 .Take(pageSize)
                 .Select(log => new CreateAuditLogsResponseDto
                 {
-                    LogId = log.LogId,
-                    UserId = log.UserId ?? string.Empty,
-                    UserName = log.UserName,
-                    Role = log.Role,
-                    Action = log.Action,
-                    ExpenseId = log.ExpenseId,
-                    Amount = log.Amount,
-                    OldAmount = log.OldAmount,
-                    DocumentUrls = log.DocumentUrls,
+                    LogId      = log.LogId,
+                    UserId     = log.UserId ?? string.Empty,
+                    UserName   = log.UserName,
+                    Role       = log.Role,
+                    Action     = log.Action,
+                    ExpenseId  = log.ExpenseId,
+                    Amount     = log.Amount,
+                    OldAmount  = log.OldAmount,
+                    DocumentUrls    = log.DocumentUrls,
                     OldDocumentUrls = log.OldDocumentUrls,
-                    Date = DateTime.SpecifyKind(log.Date, DateTimeKind.Utc),
+                    Date        = DateTime.SpecifyKind(log.Date, DateTimeKind.Utc),
                     Description = $"Action performed: {log.Action}"
-
                 })
                 .ToList();
 

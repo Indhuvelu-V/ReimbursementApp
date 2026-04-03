@@ -102,6 +102,10 @@
             <span class="status-badge badge-Submitted">Submitted</span>
           </div>
           <div class="card-body">
+            <div *ngIf="e.userName" class="card-user-row" style="margin-bottom:8px">
+              <i class="bi bi-person-fill me-1" style="color:var(--accent)"></i>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">{{ e.userName }}</span>
+            </div>
             <div class="card-meta-row">
               <div class="card-meta-item">
                 <span class="meta-label">Amount</span>

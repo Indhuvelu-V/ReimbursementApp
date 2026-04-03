@@ -2,7 +2,7 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging; // ✅ add this
+using Microsoft.Extensions.Logging; 
 using ReimbursementTrackerApp.Interfaces;
 using ReimbursementTrackerApp.Models.Common;
 using ReimbursementTrackerApp.Models.DTOs;
@@ -14,11 +14,11 @@ namespace ReimbursementTrackerApp.Controllers
     public class ApprovalController : ControllerBase
     {
         private readonly IApprovalService _approvalService;
-        private readonly ILogger<ApprovalController> _logger; // ✅ logger
+        private readonly ILogger<ApprovalController> _logger;
 
         public ApprovalController(
             IApprovalService approvalService,
-            ILogger<ApprovalController> logger) // ✅ inject
+            ILogger<ApprovalController> logger) 
         {
             _approvalService = approvalService;
             _logger = logger;

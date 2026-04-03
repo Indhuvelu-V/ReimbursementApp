@@ -209,9 +209,10 @@ export class APIService {
     return this.http.get<PagedResponse<CreateAuditLogsResponseDto>>(`${this.baseUrl}/AuditLogs/paged`, { params });
   }
 
-  createAuditLog(data: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/AuditLogs`, data);
-  }
+  // createAuditLog — commented out (logs are created automatically by backend services)
+  // createAuditLog(data: any): Observable<any> {
+  //   return this.http.post(`${this.baseUrl}/AuditLogs`, data);
+  // }
 
   deleteLog(logId: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/AuditLogs/${logId}`);

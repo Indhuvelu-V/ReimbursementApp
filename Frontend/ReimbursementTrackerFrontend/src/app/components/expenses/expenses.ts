@@ -97,7 +97,7 @@ export class Expenses implements OnInit {
     const ms = new Date(today.getFullYear(), today.getMonth(), 1);
     const me = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     this.minDate           = this.toInputDate(ms);
-    this.maxDate           = this.toInputDate(me);
+    this.maxDate           = this.toInputDate(today);  // today — no future dates
     this.currentMonthLabel = today.toLocaleString('default', { month: 'long', year: 'numeric' });
   }
 
@@ -262,8 +262,10 @@ export class Expenses implements OnInit {
   onFileChange(event: any) {
     const selected: File[] = Array.from(event.target.files ?? []);
     if (!selected.length) return;
-    this.files = selected;
-    this.filePreviews = selected.map(f => ({
+
+    // Append new files to existing selection instead of replacing
+    this.files = [...this.files, ...selected];
+    this.filePreviews = this.files.map(f => ({
       url:     f.type.startsWith('image/') ? URL.createObjectURL(f) : '',
       name:    f.name,
       isImage: f.type.startsWith('image/')
@@ -343,6 +345,8 @@ export class Expenses implements OnInit {
         const eDate = new Date(this.parseDate(e.expenseDate));
         return eDate >= monthStart && eDate <= monthEnd && e.status !== 'Rejected';
       });
+
+      
       if (duplicate) {
         this.toast.showWarning(`You already have an expense for ${this.currentMonthLabel}.`);
         return;

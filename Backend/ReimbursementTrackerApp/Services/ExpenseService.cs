@@ -96,6 +96,7 @@ namespace ReimbursementTrackerApp.Services
             if (request.Amount > category.MaxLimit)
                 throw new InvalidOperationException($"Amount exceeds limit for {category.CategoryName}");
 
+            // ── RULE 2 + 3: check for existing expenses this month ────────────
             // ── RULE 2 + 3: check for existing expense this month ─────────────
             var allExpenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
 
@@ -109,26 +110,25 @@ namespace ReimbursementTrackerApp.Services
                 if (existingThisMonth.Status == ExpenseStatus.Rejected)
                 {
                     // ✅ RULE 3 — Rejected expense exists → UPDATE it in-place
-                    //    instead of creating a new one. User edits the same record.
                     var oldAmount = existingThisMonth.Amount;
-                    var oldDocs = existingThisMonth.DocumentUrls ?? new List<string>();
+                    var oldDocs   = existingThisMonth.DocumentUrls ?? new List<string>();
 
-                    existingThisMonth.CategoryId = category.CategoryId;
+                    existingThisMonth.CategoryId   = category.CategoryId;
                     existingThisMonth.CategoryName = category.CategoryName.ToString();
-                    existingThisMonth.Amount = request.Amount;
-                    existingThisMonth.ExpenseDate = request.ExpenseDate;
+                    existingThisMonth.Amount       = request.Amount;
+                    existingThisMonth.ExpenseDate  = request.ExpenseDate;
                     existingThisMonth.DocumentUrls = documentUrls;
-                    existingThisMonth.Status = ExpenseStatus.Draft; // back to Draft after edit
+                    existingThisMonth.Status       = ExpenseStatus.Draft;
 
                     await _expenseRepo.UpdateAsync(existingThisMonth.ExpenseId, existingThisMonth);
 
                     await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
                     {
-                        Action = $"Updated Rejected Expense {existingThisMonth.ExpenseId} (re-edit after rejection)",
+                        Action    = $"Updated Rejected Expense {existingThisMonth.ExpenseId} (re-edit after rejection)",
                         ExpenseId = existingThisMonth.ExpenseId,
-                        Amount = existingThisMonth.Amount,
+                        Amount    = existingThisMonth.Amount,
                         OldAmount = oldAmount,
-                        DocumentUrls = existingThisMonth.DocumentUrls,
+                        DocumentUrls    = existingThisMonth.DocumentUrls,
                         OldDocumentUrls = oldDocs,
                         Date = DateTime.UtcNow
                     });
@@ -138,6 +138,11 @@ namespace ReimbursementTrackerApp.Services
                 else
                 {
                     // ✅ RULE 2 — Active (non-rejected) expense already exists
+                    await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+                    {
+                        Action = $"Blocked Expense creation — already submitted an expense for {today:MMMM yyyy}",
+                        Date = DateTime.UtcNow
+                    });
                     throw new InvalidOperationException(
                         $"You have already submitted an expense for " +
                         $"{today:MMMM yyyy}. Only one expense is allowed per month.");

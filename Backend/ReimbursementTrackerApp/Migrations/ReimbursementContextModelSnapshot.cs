@@ -114,6 +114,9 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("Department")
+                        .HasColumnType("int");
+
                     b.Property<string>("DocumentUrlsJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");

@@ -72,6 +72,10 @@
           <span class="detail-val">{{ selectedUser.department || '—' }}</span>
         </div>
         <div class="user-detail-item">
+          <span class="detail-label">Email</span>
+          <span class="detail-val"><i class="bi bi-envelope me-1"></i>{{ selectedUser.email || '—' }}</span>
+        </div>
+        <div class="user-detail-item">
           <span class="detail-label">Status</span>
           <span *ngIf="selectedUser.status === 'Active'" class="status-active">
             <i class="bi bi-circle-fill" style="font-size:7px"></i>Active
@@ -137,6 +141,7 @@
           <tr>
             <th>User ID</th>
             <th>Name</th>
+            <th>Email</th>
             <th>Role</th>
             <th>Department</th>
             <th>Status</th>
@@ -152,6 +157,7 @@
                 <span>{{ user.userName }}</span>
               </div>
             </td>
+            <td>{{ user.email || '—' }}</td>
             <td><span class="role-badge">{{ user.role }}</span></td>
             <td>{{ user.department || '—' }}</td>
             <td>
@@ -165,7 +171,7 @@
             <td>{{ user.approvalLevel || '—' }}</td>
           </tr>
           <tr *ngIf="!users.length" class="no-data-row">
-            <td colspan="6"><i class="bi bi-inbox me-2"></i>No users found.</td>
+            <td colspan="7"><i class="bi bi-inbox me-2"></i>No users found.</td>
           </tr>
         </tbody>
       </table>

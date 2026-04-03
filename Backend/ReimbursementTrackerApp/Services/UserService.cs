@@ -85,6 +85,7 @@ namespace ReimbursementTrackerApp.Services
             {
                 UserId = user.UserId,
                 UserName = user.UserName,
+                Email = user.Email,
                 Role = user.Role,
                 Department = user.Department,
                 Status = user.Status,
@@ -112,6 +113,7 @@ namespace ReimbursementTrackerApp.Services
             {
                 UserId = user.UserId,
                 UserName = user.UserName,
+                Email = user.Email,
                 Role = user.Role,
                 Department = user.Department,
                 Status = user.Status,
@@ -146,6 +148,7 @@ namespace ReimbursementTrackerApp.Services
                     {
                         UserId = u.UserId,
                         UserName = u.UserName,
+                        Email = u.Email,
                         Role = u.Role,
                         Department = u.Department,
                         Status = u.Status,

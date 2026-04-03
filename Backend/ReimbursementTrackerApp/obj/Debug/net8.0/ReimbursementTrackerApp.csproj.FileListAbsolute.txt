@@ -290,7 +290,6 @@ C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\Reimbu
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\staticwebassets.build.endpoints.json
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\swae.build.ex.cache
-C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\Reimburs.926EEE9E.Up2Date
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\ReimbursementTrackerApp.dll
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\refint\ReimbursementTrackerApp.dll
@@ -298,3 +297,4 @@ C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\Reimbu
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\ReimbursementTrackerApp.genruntimeconfig.cache
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\ref\ReimbursementTrackerApp.dll
 C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\ReimbursementTrackerApp.sourcelink.json
+C:\Users\Indhu.V\OneDrive - New American Funding\ReimbursementApp\Backend\ReimbursementTrackerApp\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
