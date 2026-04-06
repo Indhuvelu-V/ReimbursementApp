@@ -1,1 +1,40 @@
-/* Admin Dashboard — layout handled in global styles */
+
+/* Admin Dashboard */
+
+.nav-right { position: relative; }
+
+.profile-dropdown {
+  position: absolute; top: 52px; right: 0; width: 180px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 6px 24px rgba(0,0,0,0.18);
+  z-index: 9999; overflow: hidden; padding: 6px 0;
+}
+.profile-menu-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 10px 16px; background: none; border: none;
+  font-size: 13px; font-weight: 500; color: var(--text);
+  cursor: pointer; text-align: left; transition: background 0.15s;
+}
+.profile-menu-btn:hover { background: var(--surface2); color: var(--accent); }
+.profile-menu-btn i { font-size: 15px; color: var(--accent); }
+
+.profile-view-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px; background: var(--accent, #0284c7);
+  border-radius: 8px; margin-bottom: 16px;
+}
+.profile-view-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,0.25); color: #fff;
+  font-size: 22px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.profile-view-grid { display: flex; flex-direction: column; gap: 2px; }
+.pv-row {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; color: var(--text);
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.pv-row:last-child { border-bottom: none; }
+.pv-row i { color: var(--accent, #0284c7); width: 16px; flex-shrink: 0; }
+.pv-row span { color: var(--text-muted); font-weight: 600; min-width: 100px; }

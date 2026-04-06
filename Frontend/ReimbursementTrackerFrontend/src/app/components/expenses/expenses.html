@@ -328,6 +328,16 @@
                 View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
               </button>
             </div>
+            <!-- Approval/Rejection comment from manager/admin -->
+            <div *ngIf="(e.status === 'Approved' || e.status === 'Rejected') && e.approvalComment !== null && e.approvalComment !== undefined"
+                 class="approval-comment-row"
+                 [ngClass]="e.status === 'Rejected' ? 'comment-rejected' : 'comment-approved'">
+              <i class="bi" [ngClass]="e.status === 'Rejected' ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+              <div>
+                <span class="comment-by" *ngIf="e.approverName">{{ e.approverName }}:</span>
+                <span class="comment-text">{{ e.approvalComment || 'No comment provided.' }}</span>
+              </div>
+            </div>
           </div>
           <div class="card-footer">
             <div class="card-actions">

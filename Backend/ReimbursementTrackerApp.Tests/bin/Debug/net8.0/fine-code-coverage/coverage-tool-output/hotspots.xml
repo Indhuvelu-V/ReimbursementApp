@@ -17,36 +17,6 @@
   </Hotspot>
   <Hotspot>
     <Assembly>ReimbursementTrackerApp</Assembly>
-    <Class>ReimbursementTrackerApp.Services.ExpenseService</Class>
-    <MethodName>MoveNext()</MethodName>
-    <ShortName />
-    <Line>332</Line>
-    <FileIndex>0</FileIndex>
-    <Metrics>
-      <Metric>
-        <Name>Cyclomatic complexity</Name>
-        <Exceeded>true</Exceeded>
-        <Value>38</Value>
-      </Metric>
-    </Metrics>
-  </Hotspot>
-  <Hotspot>
-    <Assembly>ReimbursementTrackerApp</Assembly>
-    <Class>ReimbursementTrackerApp.Services.PaymentService</Class>
-    <MethodName>MoveNext()</MethodName>
-    <ShortName />
-    <Line>138</Line>
-    <FileIndex>0</FileIndex>
-    <Metrics>
-      <Metric>
-        <Name>Cyclomatic complexity</Name>
-        <Exceeded>true</Exceeded>
-        <Value>36</Value>
-      </Metric>
-    </Metrics>
-  </Hotspot>
-  <Hotspot>
-    <Assembly>ReimbursementTrackerApp</Assembly>
     <Class>ReimbursementTrackerApp.Migrations.AddDepartmentToAuditLog</Class>
     <MethodName>BuildTargetModel(...)</MethodName>
     <ShortName />

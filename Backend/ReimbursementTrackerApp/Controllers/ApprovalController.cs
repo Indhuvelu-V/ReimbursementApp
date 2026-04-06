@@ -2,7 +2,7 @@
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging; 
+using Microsoft.Extensions.Logging;
 using ReimbursementTrackerApp.Interfaces;
 using ReimbursementTrackerApp.Models.Common;
 using ReimbursementTrackerApp.Models.DTOs;
@@ -18,7 +18,7 @@ namespace ReimbursementTrackerApp.Controllers
 
         public ApprovalController(
             IApprovalService approvalService,
-            ILogger<ApprovalController> logger) 
+            ILogger<ApprovalController> logger)
         {
             _approvalService = approvalService;
             _logger = logger;
@@ -68,7 +68,26 @@ namespace ReimbursementTrackerApp.Controllers
         }
 
         // ======================================================
-        // 2️⃣ Admin View All Approvals
+        // 2️⃣ Admin Approval / Rejection (for Manager/Finance expenses)
+        // ======================================================
+        [HttpPost("admin")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> AdminApproval([FromBody] CreateApprovalRequestDto request)
+        {
+            _logger.LogInformation("Admin approval request for Expense {ExpenseId}", request.ExpenseId);
+            try
+            {
+                var result = await _approvalService.AdminApproval(request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex) { return StatusCode(500, new { message = ex.Message }); }
+        }
+
+        // ======================================================
+        // 3️⃣ Admin View All Approvals
         // ======================================================
         [HttpGet("all")]
         [Authorize(Roles = "Admin,Manager")]

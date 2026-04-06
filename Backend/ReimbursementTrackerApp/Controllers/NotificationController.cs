@@ -37,6 +37,13 @@ namespace ReimbursementTrackerApp.Controllers
             {
                 // Inject sender ID from token so service doesn't need HttpContextAccessor
                 request.SenderId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+                // Use role from token if senderRole not explicitly provided
+                if (string.IsNullOrWhiteSpace(request.SenderRole) || request.SenderRole == "Manager")
+                {
+                    var tokenRole = User.FindFirstValue(ClaimTypes.Role);
+                    if (!string.IsNullOrEmpty(tokenRole))
+                        request.SenderRole = tokenRole;
+                }
 
                 var result = await _service.CreateNotification(request);
 

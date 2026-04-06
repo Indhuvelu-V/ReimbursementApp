@@ -15,6 +15,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class EmployeeDatas implements OnInit {
   users:        any[] = [];
+  allUsers:     any[] = [];
   selectedUser: any   = null;
   searchUserId  = '';
   page          = 1;
@@ -25,7 +26,18 @@ export class EmployeeDatas implements OnInit {
   filterRole = '';
   filterName = '';
 
-  // Tab state — same pattern as expenses
+  // Assign manager modal
+  showAssignModal = false;
+  assignTarget:   any = null;
+  availableManagers: any[] = [];
+  selectedManagerId = '';
+
+  // Status modal
+  showStatusModal = false;
+  statusTarget:   any = null;
+  selectedStatus  = '';
+  statusOptions   = ['Active', 'Inactive', 'Suspended'];
+
   activeTab: 'search' | 'all' = 'search';
   switchTab(tab: 'search' | 'all') {
     this.activeTab = tab;
@@ -33,7 +45,7 @@ export class EmployeeDatas implements OnInit {
   }
 
   constructor(
-    private userService:  APIService,
+    private api:          APIService,
     private toast:        ToastService,
     private loader:       LoaderService,
     private tokenService: TokenService
@@ -47,13 +59,20 @@ export class EmployeeDatas implements OnInit {
 
   loadUsers() {
     this.loader.show();
-    this.userService.getAllUsers(this.page, this.size, this.filterRole || undefined, this.filterName || undefined).subscribe({
+    this.api.getAllUsers(this.page, this.size, this.filterRole || undefined, this.filterName || undefined).subscribe({
       next: (res) => {
         this.users        = res.data ?? res.items ?? [];
         this.totalRecords = res.totalRecords ?? res.totalCount ?? 0;
         this.loader.hide();
       },
       error: () => { this.toast.showError('Failed to load users.'); this.loader.hide(); }
+    });
+  }
+
+  loadAllUsersForLookup(callback: () => void) {
+    this.api.getAllUsers(1, 500).subscribe({
+      next: (res) => { this.allUsers = res.data ?? res.items ?? []; callback(); },
+      error: () => { this.toast.showError('Failed to load users.'); }
     });
   }
 
@@ -66,11 +85,59 @@ export class EmployeeDatas implements OnInit {
   searchUser() {
     if (!this.searchUserId.trim()) { this.toast.showWarning('Please enter a User ID.'); return; }
     this.loader.show();
-    this.userService.getUserById(this.searchUserId).subscribe({
+    this.api.getUserById(this.searchUserId).subscribe({
       next: (res) => { this.selectedUser = res; this.toast.show('User found ✅'); this.loader.hide(); },
       error: () => { this.toast.showError('User not found.'); this.selectedUser = null; this.loader.hide(); }
     });
   }
 
   clearSearch() { this.selectedUser = null; this.searchUserId = ''; }
+
+  // ── Assign Manager ─────────────────────────────────────────────────────────
+  openAssignModal(user: any) {
+    this.assignTarget = user;
+    this.selectedManagerId = user.reportingManagerId ?? '';
+    this.loadAllUsersForLookup(() => {
+      this.availableManagers = this.allUsers.filter(
+        u => u.role === 'Manager' && u.department === user.department
+      );
+      this.showAssignModal = true;
+    });
+  }
+
+  confirmAssignManager() {
+    if (!this.selectedManagerId) { this.toast.showWarning('Please select a manager.'); return; }
+    this.api.assignManager(this.assignTarget.userId, this.selectedManagerId).subscribe({
+      next: (res) => {
+        this.toast.show(`Manager assigned to ${this.assignTarget.userName} ✅`);
+        this.showAssignModal = false;
+        const idx = this.users.findIndex(u => u.userId === this.assignTarget.userId);
+        if (idx > -1) {
+          this.users[idx].reportingManagerId   = res.reportingManagerId;
+          this.users[idx].reportingManagerName = res.reportingManagerName;
+        }
+      },
+      error: (err) => this.toast.showError(err?.error?.message || 'Failed to assign manager.')
+    });
+  }
+
+  // ── Update Status ──────────────────────────────────────────────────────────
+  openStatusModal(user: any) {
+    this.statusTarget   = user;
+    this.selectedStatus = user.status;
+    this.showStatusModal = true;
+  }
+
+  confirmUpdateStatus() {
+    if (!this.selectedStatus) { this.toast.showWarning('Please select a status.'); return; }
+    this.api.updateUserStatus(this.statusTarget.userId, this.selectedStatus).subscribe({
+      next: (res) => {
+        this.toast.show(`Status updated to ${this.selectedStatus} ✅`);
+        this.showStatusModal = false;
+        const idx = this.users.findIndex(u => u.userId === this.statusTarget.userId);
+        if (idx > -1) this.users[idx].status = res.status;
+      },
+      error: (err) => this.toast.showError(err?.error?.message || 'Failed to update status.')
+    });
+  }
 }

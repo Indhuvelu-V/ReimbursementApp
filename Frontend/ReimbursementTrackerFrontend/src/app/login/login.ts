@@ -50,7 +50,16 @@ export class Login {
     this.apiService.apiLogin(payload).subscribe({
       next: (res: any) => {
         sessionStorage.setItem('token', res.token);
+        // Store user info for profile display
+        if (res.reportingManagerName) {
+          sessionStorage.setItem('reportingManagerName', res.reportingManagerName);
+          sessionStorage.setItem('reportingManagerId', res.reportingManagerId ?? '');
+        } else {
+          sessionStorage.removeItem('reportingManagerName');
+          sessionStorage.removeItem('reportingManagerId');
+        }
         const role = this.tokenService.getRoleFromToken();
+        const userId = this.tokenService.getUserIdFromToken();
         this.loader.hide();
 
         switch (role?.toLowerCase()) {
@@ -62,7 +71,12 @@ export class Login {
             this.toast.showWarning('Invalid role: ' + role);
             this.router.navigate(['/login']);
         }
-        this.toast.show(`Welcome!  ${role ?? 'user'} ✅`);
+
+        if (res.reportingManagerName) {
+          this.toast.show(`Welcome! Your reporting manager is ${res.reportingManagerName} ✅`);
+        } else {
+          this.toast.show(`Welcome! ${role ?? 'user'} ✅`);
+        }
         this.password.setValue('');
       },
       error: (err) => {

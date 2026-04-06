@@ -1,6 +1,22 @@
 [
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
+    "Method": "AdminApproval",
+    "RelativePath": "api/Approval/admin",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.CreateApprovalRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
     "Method": "GetAllApprovals",
     "RelativePath": "api/Approval/all",
     "HttpMethod": "GET",
@@ -739,6 +755,22 @@
   },
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.UsersController",
+    "Method": "AssignManager",
+    "RelativePath": "api/Users/assign-manager",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.AssignManagerRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.UsersController",
     "Method": "Register",
     "RelativePath": "api/Users/register",
     "HttpMethod": "POST",
@@ -748,6 +780,38 @@
       {
         "Name": "request",
         "Type": "ReimbursementTrackerApp.Models.DTOs.CreateUserRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.UsersController",
+    "Method": "UpdateMyProfile",
+    "RelativePath": "api/Users/update-my-profile",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.UpdateMyProfileRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.UsersController",
+    "Method": "UpdateUserStatus",
+    "RelativePath": "api/Users/update-status",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.UpdateUserStatusRequestDto",
         "IsRequired": true
       }
     ],

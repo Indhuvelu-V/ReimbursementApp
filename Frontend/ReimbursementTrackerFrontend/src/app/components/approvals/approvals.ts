@@ -68,7 +68,8 @@ export class Approvals implements OnInit {
   ngOnInit(): void {
     this.role = this.token.getRoleFromToken() ?? '';
     this.loadApprovals();
-    if (this.role.toLowerCase() === 'manager') this.loadSubmittedExpenses();
+    if (this.role.toLowerCase() === 'manager' || this.role.toLowerCase() === 'admin')
+      this.loadSubmittedExpenses();
   }
 
   loadApprovals(): void {
@@ -79,6 +80,15 @@ export class Approvals implements OnInit {
       this.api.getAllApprovals({ pageNumber: 1, pageSize: 200 }).subscribe({
         next: (res) => {
           let data = res.data ?? [];
+
+          // 🔹 Manager: only show approvals made by this manager
+          if (r === 'manager') {
+            const managerName = this.token.getUsernameFromToken()?.toLowerCase() ?? '';
+            data = data.filter((a: any) =>
+              (a.approverName ?? '').toLowerCase() === managerName
+            );
+          }
+
           // Separate filters for user (employee) and approver
           if (this.filterUserName.trim()) {
             const q = this.filterUserName.trim().toLowerCase();
@@ -114,14 +124,22 @@ export class Approvals implements OnInit {
   }
 
   loadSubmittedExpenses(): void {
-    const managerId = this.token.getUserIdFromToken();
-    this.api.getAllExpenses(1, 200, 'Submitted', undefined, undefined, undefined, undefined, this.mgrFilterUserName || undefined).subscribe({
+    const myId = this.token.getUserIdFromToken();
+    this.api.getAllExpenses(1, 200, 'Submitted').subscribe({
       next: (res) => {
         const all = res.data ?? res ?? [];
-        this.submittedExpenses = all.filter((e: any) =>
-          e.status === 'Submitted' && e.userId !== managerId
-        );
-        this.submittedExpenses.forEach(e => {
+        if (this.role === 'Admin') {
+          // Admin sees only Manager and Finance submitted expenses
+          this.submittedExpenses = all.filter((e: any) =>
+            e.status === 'Submitted' &&
+            (e.userRole === 'Manager' || e.userRole === 'Finance')
+          );
+        } else {
+          // Manager sees only Employee submitted expenses (not their own)
+          this.submittedExpenses = all.filter((e: any) =>
+            e.status === 'Submitted' && e.userId !== myId
+          );
+        }        this.submittedExpenses.forEach((e: any) => {
           if (!(e.expenseId in this.cardComments)) this.cardComments[e.expenseId] = '';
         });
         this.applyManagerFilters();
@@ -193,18 +211,26 @@ export class Approvals implements OnInit {
 
   // Inline approve/reject directly from card
   decideInline(expenseId: string, status: 'approved' | 'rejected'): void {
-    const managerId = this.token.getUserIdFromToken();
-    if (!managerId) { this.toast.showError('User ID not found in token.'); return; }
+    const approverId = this.token.getUserIdFromToken();
+    if (!approverId) { this.toast.showError('User ID not found in token.'); return; }
+
     const request: CreateApprovalRequestDto = {
       expenseId,
-      managerId,
+      managerId: approverId,
       status,
       comments: this.cardComments[expenseId] ?? '',
-      level: 'Manager'
+      level: this.role === 'Admin' ? 'Admin' : 'Manager'
     };
+
     this.submittingId = expenseId;
     this.loader.show();
-    this.api.managerApproval(request).subscribe({
+
+    // Admin uses adminApproval endpoint, Manager uses managerApproval
+    const call$ = this.role === 'Admin'
+      ? this.api.adminApproval(request)
+      : this.api.managerApproval(request);
+
+    call$.subscribe({
       next: () => {
         this.toast.show(`Expense ${status === 'approved' ? 'Approved ✅' : 'Rejected ❌'} successfully`);
         delete this.cardComments[expenseId];

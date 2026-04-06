@@ -9,6 +9,7 @@ namespace ReimbursementTrackerApp.Models.DTOs
         public string ExpenseId { get; set; } = string.Empty;
         public string UserId { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
+        public string UserRole { get; set; } = string.Empty;
         public string CategoryId { get; set; } = string.Empty;
         public string CategoryName { get; set; } = string.Empty;
         public decimal Amount { get; set; }
@@ -18,6 +19,8 @@ namespace ReimbursementTrackerApp.Models.DTOs
         public bool CanEdit { get; set; }
         public string? Message { get; set; }
         public string? NotificationMessage { get; set; }
-        public string? AmountInRupees { get; set; } // For Rupees format
+        public string? AmountInRupees { get; set; }
+        public string? ApprovalComment { get; set; }
+        public string? ApproverName { get; set; }
     }
 }

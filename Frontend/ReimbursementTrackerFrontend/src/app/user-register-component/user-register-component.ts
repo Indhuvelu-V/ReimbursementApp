@@ -20,6 +20,7 @@ export class UserRegisterComponent {
   registrationModel: UserRegisterModel = new UserRegisterModel();
   roles       = Object.values(UserRole);
   departments = Object.values(DepartmentType);
+  showPassword = false;
 
   router       = inject(Router);
   loader       = inject(LoaderService);
@@ -28,13 +29,35 @@ export class UserRegisterComponent {
 
   constructor(private apiService: APIService) {}
 
+  get isAdminRole(): boolean {
+    return this.registrationModel.role === UserRole.Admin;
+  }
+
+  get isAllDeptRole(): boolean {
+    return this.registrationModel.role === UserRole.Admin ||
+           this.registrationModel.role === UserRole.Finance;
+  }
+
+  onRoleChange() {
+    if (this.isAllDeptRole) {
+      this.registrationModel.department = null as any;
+    }
+  }
+
   register(form: NgForm) {
     if (form.invalid) {
       this.toast.showWarning('Please fill in all required fields correctly.');
       return;
     }
     this.loader.show();
-    this.apiService.apiCreateUser(this.registrationModel).subscribe({
+
+    // Build payload — omit department entirely for Admin/Finance
+    const payload: any = { ...this.registrationModel };
+    if (this.isAllDeptRole) {
+      delete payload.department;
+    }
+
+    this.apiService.apiCreateUser(payload).subscribe({
       next: (res: CreateUserResponseDto) => {
         this.loader.hide();
         this.toast.show(`User "${res.userName}" registered successfully! Please log in. ✅`);

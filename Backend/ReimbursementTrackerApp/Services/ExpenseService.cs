@@ -16,24 +16,30 @@ namespace ReimbursementTrackerApp.Services
         private readonly IRepository<string, Expense> _expenseRepo;
         private readonly IRepository<string, ExpenseCategory> _categoryRepo;
         private readonly IRepository<string, User> _userRepo;
+        private readonly IRepository<string, Approval> _approvalRepo;
         private readonly IAuditLogService _auditLogService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IFileUploadService _fileUploadService;
+        private readonly INotificationService _notificationService;
 
         public ExpenseService(
             IRepository<string, Expense> expenseRepo,
             IRepository<string, ExpenseCategory> categoryRepo,
             IRepository<string, User> userRepo,
+            IRepository<string, Approval> approvalRepo,
             IAuditLogService auditLogService,
             IHttpContextAccessor httpContextAccessor,
-            IFileUploadService fileUploadService)
+            IFileUploadService fileUploadService,
+            INotificationService notificationService)
         {
+            _approvalRepo = approvalRepo;
             _expenseRepo = expenseRepo;
             _categoryRepo = categoryRepo;
             _userRepo = userRepo;
             _auditLogService = auditLogService;
             _httpContextAccessor = httpContextAccessor;
             _fileUploadService = fileUploadService;
+            _notificationService = notificationService;
         }
 
         // =====================================================
@@ -111,24 +117,24 @@ namespace ReimbursementTrackerApp.Services
                 {
                     // ✅ RULE 3 — Rejected expense exists → UPDATE it in-place
                     var oldAmount = existingThisMonth.Amount;
-                    var oldDocs   = existingThisMonth.DocumentUrls ?? new List<string>();
+                    var oldDocs = existingThisMonth.DocumentUrls ?? new List<string>();
 
-                    existingThisMonth.CategoryId   = category.CategoryId;
+                    existingThisMonth.CategoryId = category.CategoryId;
                     existingThisMonth.CategoryName = category.CategoryName.ToString();
-                    existingThisMonth.Amount       = request.Amount;
-                    existingThisMonth.ExpenseDate  = request.ExpenseDate;
+                    existingThisMonth.Amount = request.Amount;
+                    existingThisMonth.ExpenseDate = request.ExpenseDate;
                     existingThisMonth.DocumentUrls = documentUrls;
-                    existingThisMonth.Status       = ExpenseStatus.Draft;
+                    existingThisMonth.Status = ExpenseStatus.Draft;
 
                     await _expenseRepo.UpdateAsync(existingThisMonth.ExpenseId, existingThisMonth);
 
                     await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
                     {
-                        Action    = $"Updated Rejected Expense {existingThisMonth.ExpenseId} (re-edit after rejection)",
+                        Action = $"Updated Rejected Expense {existingThisMonth.ExpenseId} (re-edit after rejection)",
                         ExpenseId = existingThisMonth.ExpenseId,
-                        Amount    = existingThisMonth.Amount,
+                        Amount = existingThisMonth.Amount,
                         OldAmount = oldAmount,
-                        DocumentUrls    = existingThisMonth.DocumentUrls,
+                        DocumentUrls = existingThisMonth.DocumentUrls,
                         OldDocumentUrls = oldDocs,
                         Date = DateTime.UtcNow
                     });
@@ -250,10 +256,10 @@ namespace ReimbursementTrackerApp.Services
             if (string.IsNullOrWhiteSpace(resolvedCategoryName))
                 resolvedCategoryName = dto.CategoryId;
 
-            existingExpense.Amount       = dto.Amount;
-            existingExpense.CategoryId   = dto.CategoryId;
+            existingExpense.Amount = dto.Amount;
+            existingExpense.CategoryId = dto.CategoryId;
             existingExpense.CategoryName = resolvedCategoryName;
-            existingExpense.ExpenseDate  = dto.ExpenseDate;
+            existingExpense.ExpenseDate = dto.ExpenseDate;
             existingExpense.DocumentUrlsJson = System.Text.Json.JsonSerializer.Serialize(documentUrls);
 
             await _expenseRepo.UpdateAsync(expenseId, existingExpense);
@@ -337,11 +343,25 @@ namespace ReimbursementTrackerApp.Services
 
             // Build user name lookup
             var userMap = users.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().UserName);
+            var userRoleMap = users.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().Role.ToString());
 
             var query = expenses.AsEnumerable();
 
             if (role == UserRole.Employee)
                 query = query.Where(e => e.UserId == userId);
+            else if (role == UserRole.Manager)
+            {
+                // Manager sees only expenses from employees in their own department
+                var managerUser = users.FirstOrDefault(u => u.UserId == userId);
+                if (managerUser != null)
+                {
+                    var deptEmployeeIds = users
+                        .Where(u => u.Department == managerUser.Department && u.UserId != userId)
+                        .Select(u => u.UserId)
+                        .ToHashSet();
+                    query = query.Where(e => deptEmployeeIds.Contains(e.UserId));
+                }
+            }
 
             // Username filter
             if (!string.IsNullOrWhiteSpace(paginationParams.UserName))
@@ -380,7 +400,8 @@ namespace ReimbursementTrackerApp.Services
                 .Select(e =>
                 {
                     userMap.TryGetValue(e.UserId, out var ownerName);
-                    return MapToDto(e, ownerName);
+                    userRoleMap.TryGetValue(e.UserId, out var ownerRole);
+                    return MapToDto(e, ownerName, ownerRole);
                 })
                 .ToList();
 
@@ -389,22 +410,41 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // =====================================================
-        // GET MY EXPENSES — unchanged
+        // GET MY EXPENSES — includes approval comments
         // =====================================================
         public async Task<List<CreateExpenseResponseDto>> GetMyExpenses()
         {
             var (userId, userName, role) = GetUserFromToken();
 
             var expenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
+            var approvals = await _approvalRepo.GetAllAsync() ?? new List<Approval>();
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+
+            // Build approval lookup: expenseId → latest approval
+            var approvalMap = approvals
+                .GroupBy(a => a.ExpenseId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.ApprovedAt).First());
+
+            var userMap = users.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().UserName);
 
             return expenses
                 .Where(e => e.UserId == userId)
-                .Select(e => MapToDto(e, userName))
+                .Select(e =>
+                {
+                    var dto = MapToDto(e, userName);
+                    if (approvalMap.TryGetValue(e.ExpenseId, out var approval))
+                    {
+                        dto.ApprovalComment = approval.Comments ?? string.Empty;
+                        userMap.TryGetValue(approval.ManagerId ?? "", out var approverName);
+                        dto.ApproverName = approverName ?? string.Empty;
+                    }
+                    return dto;
+                })
                 .ToList();
         }
 
         // =====================================================
-        // SUBMIT EXPENSE — unchanged (Draft → Submitted)
+        // SUBMIT EXPENSE — auto-approves Admin expenses
         // =====================================================
         public async Task<CreateExpenseResponseDto?> SubmitExpense(string expenseId)
         {
@@ -415,9 +455,39 @@ namespace ReimbursementTrackerApp.Services
             if (expense.Status != ExpenseStatus.Draft)
                 throw new InvalidOperationException("Only Draft expenses can be submitted.");
 
-            expense.Status = ExpenseStatus.Submitted;
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+            var submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
 
-            await _expenseRepo.UpdateAsync(expenseId, expense);
+            if (submitter?.Role == UserRole.Admin)
+            {
+                // Admin expense → skip approval, go directly to Approved
+                expense.Status = ExpenseStatus.Approved;
+                await _expenseRepo.UpdateAsync(expenseId, expense);
+
+                // Notify Finance for payment
+                var financeUser = users.FirstOrDefault(u => u.Role == UserRole.Finance);
+                if (financeUser != null)
+                {
+                    try
+                    {
+                        await _notificationService.CreateNotification(new CreateNotificationRequestDto
+                        {
+                            UserId = financeUser.UserId,
+                            Message = $"Admin expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) is ready for payment.",
+                            Description = $"Category: {expense.CategoryName} | Submitted by Admin",
+                            SenderRole = "System"
+                        });
+                    }
+                    catch { }
+                }
+            }
+            else
+            {
+                // Non-admin → normal submit flow
+                expense.Status = ExpenseStatus.Submitted;
+                await _expenseRepo.UpdateAsync(expenseId, expense);
+                await NotifyApproverOnSubmit(expense);
+            }
 
             return MapToDto(expense);
         }
@@ -455,8 +525,10 @@ namespace ReimbursementTrackerApp.Services
                     $"Current status: {expense.Status}.");
 
             expense.Status = ExpenseStatus.Submitted;
-
             await _expenseRepo.UpdateAsync(expenseId, expense);
+
+            // 🔹 Notify the approver on resubmit
+            await NotifyApproverOnSubmit(expense);
 
             // ✅ Audit log for resubmission
             await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
@@ -471,11 +543,53 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // =====================================================
+        // NOTIFY APPROVER ON SUBMIT
+        // Employee → notify their reporting manager
+        // Manager/Finance → notify Admin
+        // =====================================================
+        private async Task NotifyApproverOnSubmit(Expense expense)
+        {
+            try
+            {
+                var users = await _userRepo.GetAllAsync() ?? new List<User>();
+                var submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
+                if (submitter == null) return;
+
+                string? approverId = null;
+                string approverRole = "Manager";
+
+                if (submitter.Role == UserRole.Manager || submitter.Role == UserRole.Finance)
+                {
+                    // Notify Admin
+                    var admin = users.FirstOrDefault(u => u.Role == UserRole.Admin);
+                    approverId = admin?.UserId;
+                    approverRole = "Admin";
+                }
+                else
+                {
+                    // Notify reporting manager
+                    approverId = submitter.ManagerId;
+                }
+
+                if (string.IsNullOrEmpty(approverId)) return;
+
+                await _notificationService.CreateNotification(new CreateNotificationRequestDto
+                {
+                    UserId = approverId,
+                    Message = $"Expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) submitted by {submitter.UserName} is awaiting your approval.",
+                    Description = $"Category: {expense.CategoryName} | Date: {expense.ExpenseDate:dd MMM yyyy}",
+                    SenderRole = "System"
+                });
+            }
+            catch { /* notification failure must not block submit */ }
+        }
+
+        // =====================================================
         // MAP TO DTO — unchanged
         // ✅ CanEdit now also includes Rejected (user can edit
         //    after rejection before resubmitting)
         // =====================================================
-        private CreateExpenseResponseDto MapToDto(Expense e, string? expenseOwnerName = null)
+        private CreateExpenseResponseDto MapToDto(Expense e, string? expenseOwnerName = null, string? expenseOwnerRole = null)
         {
             var (userId, userName, role) = GetUserFromToken();
 
@@ -484,6 +598,7 @@ namespace ReimbursementTrackerApp.Services
                 ExpenseId = e.ExpenseId ?? "",
                 UserId = e.UserId ?? "",
                 UserName = expenseOwnerName ?? "",
+                UserRole = expenseOwnerRole ?? "",
                 CategoryId = e.CategoryId ?? "",
                 CategoryName = string.IsNullOrWhiteSpace(e.CategoryName)
                     ? (e.Category?.CategoryName.ToString() ?? "")

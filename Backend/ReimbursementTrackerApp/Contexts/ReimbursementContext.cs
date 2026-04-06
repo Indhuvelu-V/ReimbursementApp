@@ -48,7 +48,8 @@ namespace ReimbursementTrackerApp.Contexts
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Department)
-                .HasConversion<int>();
+                .HasConversion<int?>()
+                .IsRequired(false);
 
             modelBuilder.Entity<User>()
                 .Property(u => u.Status)
@@ -79,7 +80,7 @@ namespace ReimbursementTrackerApp.Contexts
             modelBuilder.Entity<Notification>().HasKey(n => n.NotificationId);
             modelBuilder.Entity<AuditLog>().HasKey(a => a.LogId);
 
-          
+
 
             // =====================================================
             // RELATIONSHIPS
@@ -114,6 +115,14 @@ namespace ReimbursementTrackerApp.Contexts
                 .WithOne(a => a.User)
                 .HasForeignKey(a => a.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Self-referencing: User has a reporting Manager (same entity)
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Manager)
+                .WithMany()
+                .HasForeignKey(u => u.ManagerId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired(false);
 
             modelBuilder.Entity<Expense>()
                 .HasMany(e => e.Approvals)

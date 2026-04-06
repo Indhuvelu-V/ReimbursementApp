@@ -27,12 +27,28 @@ namespace ReimbursementTrackerApp.Services
             // 🔹 Get all users
             var users = await _userRepository.GetAllAsync();
 
-            // 🔹 Find user by username
-            var user = (users ?? Enumerable.Empty<User>())
-                .FirstOrDefault(u => u.UserName == request.UserName);
+            // 🔹 Find all users with matching username (same name allowed)
+            var matchingUsers = (users ?? Enumerable.Empty<User>())
+                .Where(u => u.UserName == request.UserName)
+                .ToList();
+
+            if (!matchingUsers.Any())
+                throw new UnAuthorizedException("User not found. Please register first.");
+
+            // 🔹 Among matching usernames, find the one whose password matches
+            User? user = null;
+            foreach (var candidate in matchingUsers)
+            {
+                var hash = _passwordService.HashPassword(request.Password, candidate.PasswordHash, out _);
+                if (hash.SequenceEqual(candidate.Password))
+                {
+                    user = candidate;
+                    break;
+                }
+            }
 
             if (user == null)
-                throw new UnAuthorizedException("Invalid username");
+                throw new UnAuthorizedException("Invalid password. Please register first if you don't have an account.");
 
             // 🔹 Validate password
             var computedHash = _passwordService.HashPassword(
@@ -41,7 +57,7 @@ namespace ReimbursementTrackerApp.Services
                 out byte[]? newHash);
 
             if (!computedHash.SequenceEqual(user.Password))
-                throw new UnAuthorizedException("Invalid password");
+                throw new UnAuthorizedException("Invalid password. Please register first if you don't have an account.");
 
             // 🔹 Create token
             var tokenPayload = new TokenPayloadDto
@@ -53,12 +69,22 @@ namespace ReimbursementTrackerApp.Services
 
             var token = _tokenService.CreateToken(tokenPayload);
 
+            // 🔹 Find reporting manager
+            string? managerName = null;
+            string? managerId = null;
+            if (!string.IsNullOrEmpty(user.ManagerId))
+            {
+                var manager = (users ?? Enumerable.Empty<User>())
+                    .FirstOrDefault(u => u.UserId == user.ManagerId);
+                managerName = manager?.UserName;
+                managerId = manager?.UserId;
+            }
+
             return new CheckUserResponseDto
             {
-                //UserId = user.UserId,
-                //UserName = user.UserName,
-                //Role = user.Role,
-                Token = token
+                Token = token,
+                ReportingManagerName = managerName,
+                ReportingManagerId = managerId
             };
         }
 

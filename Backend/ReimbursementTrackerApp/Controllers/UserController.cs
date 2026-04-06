@@ -23,7 +23,7 @@ namespace ReimbursementTrackerApp.Controllers
         // =====================================================
         // 🔹 1️⃣ REGISTER USER (Anyone)
         // =====================================================
-       
+
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] CreateUserRequestDto request)
@@ -35,11 +35,11 @@ namespace ReimbursementTrackerApp.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                return BadRequest(ex.Message); // ✅ Proper error for duplicate user
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ex.InnerException?.Message ?? ex.Message);
+                return StatusCode(500, new { message = ex.InnerException?.Message ?? ex.Message });
             }
         }
         // =====================================================
@@ -81,5 +81,81 @@ namespace ReimbursementTrackerApp.Controllers
             }
         }
 
+        // =====================================================
+        // 🔹 4️⃣ ASSIGN MANAGER (Admin Only)
+        // =====================================================
+        [Authorize(Roles = "Admin")]
+        [HttpPut("assign-manager")]
+        public async Task<IActionResult> AssignManager([FromBody] AssignManagerRequestDto request)
+        {
+            try
+            {
+                var result = await _userService.AssignManager(request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // =====================================================
+        // 🔹 5️⃣ UPDATE USER STATUS (Admin Only)
+        // =====================================================
+        [Authorize(Roles = "Admin")]
+        [HttpPut("update-status")]
+        public async Task<IActionResult> UpdateUserStatus([FromBody] UpdateUserStatusRequestDto request)
+        {
+            try
+            {
+                var result = await _userService.UpdateUserStatus(request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        // =====================================================
+        // 🔹 6️⃣ UPDATE MY PROFILE (any authenticated user)
+        // =====================================================
+        [Authorize]
+        [HttpPut("update-my-profile")]
+        public async Task<IActionResult> UpdateMyProfile([FromBody] UpdateMyProfileRequestDto request)
+        {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "User not identified." });
+            try
+            {
+                var result = await _userService.UpdateMyProfile(userId, request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
     }
 }

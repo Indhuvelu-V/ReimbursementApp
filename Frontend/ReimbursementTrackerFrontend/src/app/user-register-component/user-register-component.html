@@ -21,10 +21,10 @@
       </div>
 
       <div class="mb-3">
-        <label for="userName" class="form-label">Full Name</label>
+        <label for="userName" class="form-label">Username</label>
         <input type="text" id="userName" name="userName"
                [(ngModel)]="registrationModel.userName" #userName="ngModel"
-               required placeholder="Enter full name" class="form-control">
+               required placeholder="Enter username" class="form-control">
         <div *ngIf="userName.invalid && userName.touched" class="error-text">User Name is required</div>
       </div>
 
@@ -32,8 +32,11 @@
         <label for="email" class="form-label">Email</label>
         <input type="email" id="email" name="email"
                [(ngModel)]="registrationModel.email" #email="ngModel"
-               required placeholder="Enter email" class="form-control">
-        <div *ngIf="email.invalid && email.touched" class="error-text">Valid email is required</div>
+               required pattern="^[a-zA-Z0-9._%+\-]+@gmail\.com$"
+               placeholder="example@gmail.com" class="form-control">
+        <div *ngIf="email.invalid && email.touched" class="error-text">
+          Enter a valid email address (e.g. name&#64;gmail.com)
+        </div>
       </div>
 
       <div class="mb-3">
@@ -47,30 +50,76 @@
 
       <div class="mb-3">
         <label for="password" class="form-label">Password</label>
-        <input type="password" id="password" name="password"
-               [(ngModel)]="registrationModel.password" #password="ngModel"
-               minlength="6" required placeholder="Min 6 characters" class="form-control">
+        <div class="input-eye-wrap">
+          <input [type]="showPassword ? 'text' : 'password'" id="password" name="password"
+                 [(ngModel)]="registrationModel.password" #password="ngModel"
+                 minlength="6" required placeholder="Min 6 characters" class="form-control">
+          <button type="button" class="eye-btn" (click)="showPassword = !showPassword" tabindex="-1">
+            <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+          </button>
+        </div>
         <div *ngIf="password.invalid && password.touched" class="error-text">Password must be at least 6 characters</div>
       </div>
 
       <div class="mb-3">
         <label class="form-label">Department</label>
-        <select name="department" [(ngModel)]="registrationModel.department"
+        <!-- Admin/Finance: show all departments as selected chips -->
+        <div *ngIf="isAllDeptRole" class="all-dept-display">
+          <span *ngFor="let dept of departments" class="dept-chip">
+            <i class="bi bi-check-circle-fill"></i> {{ dept }}
+          </span>
+        </div>
+        <!-- Others: normal dropdown -->
+        <select *ngIf="!isAllDeptRole" name="department" [(ngModel)]="registrationModel.department"
                 #department="ngModel" required class="form-control">
           <option [ngValue]="null" disabled>Select Department</option>
           <option *ngFor="let dept of departments" [ngValue]="dept">{{ dept }}</option>
         </select>
-        <div *ngIf="department.invalid && department.touched" class="error-text">Department is required</div>
+        <div *ngIf="!isAllDeptRole && registerForm.controls['department']?.invalid && registerForm.controls['department']?.touched" class="error-text">Department is required</div>
       </div>
 
       <div class="mb-4">
         <label class="form-label">Role</label>
         <select name="role" [(ngModel)]="registrationModel.role"
-                #role="ngModel" required class="form-control">
+                #role="ngModel" required class="form-control" (ngModelChange)="onRoleChange()">
           <option [ngValue]="null" disabled>Select Role</option>
           <option *ngFor="let r of roles" [ngValue]="r">{{ r }}</option>
         </select>
         <div *ngIf="role.invalid && role.touched" class="error-text">Role is required</div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="mb-3">
+        <label for="bankName" class="form-label">Bank Name</label>
+        <input type="text" id="bankName" name="bankName"
+               [(ngModel)]="registrationModel.bankName" #bankName="ngModel"
+               required placeholder="e.g. Axis Bank" class="form-control">
+        <div *ngIf="bankName.invalid && bankName.touched" class="error-text">Bank name is required</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="accountNumber" class="form-label">Account Number</label>
+        <input type="text" id="accountNumber" name="accountNumber"
+               [(ngModel)]="registrationModel.accountNumber" #accountNumber="ngModel"
+               required pattern="^\d{9,18}$" placeholder="Enter account number" class="form-control">
+        <div *ngIf="accountNumber.invalid && accountNumber.touched" class="error-text">Enter a valid account number (9–18 digits)</div>
+      </div>
+
+      <div class="mb-3">
+        <label for="ifscCode" class="form-label">IFSC Code</label>
+        <input type="text" id="ifscCode" name="ifscCode"
+               [(ngModel)]="registrationModel.ifscCode" #ifscCode="ngModel"
+               required pattern="^[A-Z]{4}0[A-Z0-9]{6}$" placeholder="e.g. UTIB0001234" class="form-control"
+               style="text-transform:uppercase">
+        <div *ngIf="ifscCode.invalid && ifscCode.touched" class="error-text">Enter a valid IFSC code (e.g. UTIB0001234)</div>
+      </div>
+
+      <div class="mb-4">
+        <label for="branchName" class="form-label">Branch Name</label>
+        <input type="text" id="branchName" name="branchName"
+               [(ngModel)]="registrationModel.branchName" #branchName="ngModel"
+               required placeholder="e.g. Anna Nagar Branch" class="form-control">
+        <div *ngIf="branchName.invalid && branchName.touched" class="error-text">Branch name is required</div>
       </div>
 
       <div class="d-flex button-group gap-2 mb-2">

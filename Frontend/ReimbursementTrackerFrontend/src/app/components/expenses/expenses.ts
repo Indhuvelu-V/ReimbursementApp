@@ -54,6 +54,7 @@ export class Expenses implements OnInit {
   editExpenseId:  string | null = null;
   lastCreatedExpenseId: string | null = null;
   role = '';
+  approverName = ''; // reporting manager (employee) or admin name (manager/finance)
 
   // ── Filters ────────────────────────────────────────────────────────────────
   filterStatus      = '';
@@ -105,6 +106,19 @@ export class Expenses implements OnInit {
 
   ngOnInit() {
     this.role = this.tokenService.getRoleFromToken() ?? '';
+
+    // Load approver name for toast message
+    const r = this.role.toLowerCase();
+    const myId = this.tokenService.getUserIdFromToken();
+    if (r === 'employee' && myId) {
+      // Employee → fetch own profile to get reporting manager name
+      this.api.getUserById(myId).subscribe({
+        next: (user: any) => { this.approverName = user?.reportingManagerName ?? ''; },
+        error: () => {}
+      });
+    } else if (r === 'manager' || r === 'finance') {
+      this.approverName = 'Admin';
+    }
 
     this.form = this.fb.group({
       categoryId:  ['', Validators.required],
@@ -361,8 +375,8 @@ export class Expenses implements OnInit {
             this.lastCreatedExpenseId = created?.expenseId ?? null;
             this.toast.show(
               this.lastCreatedExpenseId
-                ? `Expense created! ID: ${this.lastCreatedExpenseId} ✅`
-                : 'Expense created ✅'
+                ? `Expense saved as Draft (ID: ${this.lastCreatedExpenseId}). Submit it for approval${this.approverName ? ' to ' + this.approverName : ''}. ✅`
+                : `Expense saved as Draft. Submit it for approval${this.approverName ? ' to ' + this.approverName : ''}. ✅`
             );
             this.resetForm();
             this.loadExpenses();
@@ -406,7 +420,19 @@ export class Expenses implements OnInit {
   submitExpense(id: string) {
     this.loader.show();
     this.api.submitExpense(id).subscribe({
-      next:  () => { this.toast.show('Expense submitted for approval ✅'); this.loadExpenses(); },
+      next: (res: any) => {
+        const r = this.role.toLowerCase();
+        let msg: string;
+        if (r === 'admin') {
+          msg = 'Expense auto-approved and sent for payment ✅';
+        } else {
+          msg = this.approverName
+            ? `Expense submitted for approval to ${this.approverName} ✅`
+            : 'Expense submitted for approval ✅';
+        }
+        this.toast.show(msg);
+        this.loadExpenses();
+      },
       error: (err) => { this.toast.showError(err?.error?.message || 'Failed to submit.'); this.loader.hide(); }
     });
   }
@@ -414,7 +440,13 @@ export class Expenses implements OnInit {
   resubmit(id: string) {
     this.loader.show();
     this.api.resubmitExpense(id).subscribe({
-      next:  () => { this.toast.show('Expense resubmitted ✅'); this.loadExpenses(); },
+      next: () => {
+        const msg = this.approverName
+          ? `Expense resubmitted for approval to ${this.approverName} ✅`
+          : 'Expense resubmitted ✅';
+        this.toast.show(msg);
+        this.loadExpenses();
+      },
       error: (err) => { this.toast.showError(err?.error?.message || 'Failed to resubmit.'); this.loader.hide(); }
     });
   }

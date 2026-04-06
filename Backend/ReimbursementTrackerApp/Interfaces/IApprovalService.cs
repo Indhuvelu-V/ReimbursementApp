@@ -6,8 +6,7 @@ namespace ReimbursementTrackerApp.Interfaces
     public interface IApprovalService
     {
         Task<CreateApprovalResponseDto?> ManagerApproval(CreateApprovalRequestDto request);
-        //Task<CreateApprovalResponseDto?> FinanceApproval(string expenseId, string financeId);
-      
+        Task<CreateApprovalResponseDto?> AdminApproval(CreateApprovalRequestDto request);
         Task<PagedResponse<CreateApprovalResponseDto>> GetAllApprovals(PaginationParams paginationParams);
     }
 }

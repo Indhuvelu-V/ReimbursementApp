@@ -114,9 +114,6 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("datetime2");
 
-                    b.Property<int?>("Department")
-                        .HasColumnType("int");
-
                     b.Property<string>("DocumentUrlsJson")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -339,15 +336,34 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("ApprovalLevel")
                         .HasColumnType("int");
 
-                    b.Property<int>("Department")
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BranchName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Department")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IfscCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ManagerId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<byte[]>("Password")
                         .IsRequired()
@@ -372,6 +388,8 @@ namespace ReimbursementTrackerApp.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
+
+                    b.HasIndex("ManagerId");
 
                     b.ToTable("Users");
                 });
@@ -462,6 +480,16 @@ namespace ReimbursementTrackerApp.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ReimbursementTrackerApp.User", b =>
+                {
+                    b.HasOne("ReimbursementTrackerApp.User", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Manager");
                 });
 
             modelBuilder.Entity("Expense", b =>
