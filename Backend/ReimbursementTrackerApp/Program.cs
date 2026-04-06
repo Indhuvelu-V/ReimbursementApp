@@ -76,7 +76,12 @@ builder.Services.AddSwaggerGen(c =>
 // =====================================================
 #region Contexts
 builder.Services.AddDbContext<ReimbursementContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null)));
 #endregion
 
 // =====================================================
@@ -163,11 +168,19 @@ if (!Directory.Exists(uploadsPath))
     Console.WriteLine($"[Startup] Created uploads folder at: {uploadsPath}");
 }
 
-// ?? Seed categories
+// Seed categories
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ReimbursementContext>();
-    await CategorySeeder.SeedCategoriesAsync(context);
+    try
+    {
+        await CategorySeeder.SeedCategoriesAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogWarning(ex, "Category seeding skipped due to a transient DB error. Will retry on next startup.");
+    }
 }
 
 // ?? HTTP Pipeline

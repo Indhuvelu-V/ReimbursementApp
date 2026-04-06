@@ -186,3 +186,106 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
     }
 }
+
+namespace ReimbursementTrackerApp.Tests.Services
+{
+    public class ExpenseCategoryServiceCoverageTests
+    {
+        private readonly Mock<IRepository<string, ExpenseCategory>> _repo         = new();
+        private readonly Mock<IAuditLogService>                      _auditService = new();
+        private readonly Mock<ILogger<ExpenseCategoryService>>       _logger       = new();
+
+        private ExpenseCategoryService Svc() =>
+            new(_repo.Object, _auditService.Object, _logger.Object);
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        private List<ExpenseCategory> Cats() => new()
+        {
+            new() { CategoryId = "C1", CategoryName = ExpenseCategoryType.Travel,  MaxLimit = 5000 },
+            new() { CategoryId = "C2", CategoryName = ExpenseCategoryType.Food,    MaxLimit = 1000 },
+            new() { CategoryId = "C3", CategoryName = ExpenseCategoryType.Medical, MaxLimit = 10000 }
+        };
+
+        // ── UpdateCategoryLimit: null categories list → throws ────────────────
+        [Fact]
+        public async Task UpdateCategoryLimit_NullRepo_ThrowsKeyNotFound()
+        {
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<ExpenseCategory>?)null);
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                Svc().UpdateCategoryLimit(new CreateExpenseCategoryRequestDto
+                { CategoryName = ExpenseCategoryType.Travel, MaxLimit = 5000 }));
+        }
+
+        // ── UpdateCategoryLimit: returns correct CategoryId ───────────────────
+        [Fact]
+        public async Task UpdateCategoryLimit_ReturnsCorrectCategoryId()
+        {
+            var cats = Cats();
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(cats);
+            _repo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<ExpenseCategory>()))
+                .ReturnsAsync((string k, ExpenseCategory c) => c);
+            SetupAudit();
+
+            var result = await Svc().UpdateCategoryLimit(new CreateExpenseCategoryRequestDto
+            { CategoryName = ExpenseCategoryType.Food, MaxLimit = 2000 });
+
+            result.CategoryId.Should().Be("C2");
+            result.MaxLimit.Should().Be(2000);
+        }
+
+        // ── UpdateCategoryLimit: MaxLimit = 1 (boundary) → succeeds ──────────
+        [Fact]
+        public async Task UpdateCategoryLimit_MinValidLimit_Succeeds()
+        {
+            var cats = Cats();
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(cats);
+            _repo.Setup(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<ExpenseCategory>()))
+                .ReturnsAsync((string k, ExpenseCategory c) => c);
+            SetupAudit();
+
+            var result = await Svc().UpdateCategoryLimit(new CreateExpenseCategoryRequestDto
+            { CategoryName = ExpenseCategoryType.Travel, MaxLimit = 1 });
+
+            result.MaxLimit.Should().Be(1);
+        }
+
+        // ── GetCategoryByType: null repo → throws ─────────────────────────────
+        [Fact]
+        public async Task GetCategoryByType_NullRepo_ThrowsKeyNotFound()
+        {
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync((IEnumerable<ExpenseCategory>?)null);
+            await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                Svc().GetCategoryByType(ExpenseCategoryType.Travel));
+        }
+
+        // ── GetCategoryByType: all category types covered ─────────────────────
+        [Theory]
+        [InlineData(ExpenseCategoryType.Travel)]
+        [InlineData(ExpenseCategoryType.Food)]
+        [InlineData(ExpenseCategoryType.Medical)]
+        public async Task GetCategoryByType_AllTypes_ReturnsCorrectDto(ExpenseCategoryType type)
+        {
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(Cats());
+            SetupAudit();
+
+            var result = await Svc().GetCategoryByType(type);
+            result.CategoryName.Should().Be(type);
+        }
+
+        // ── GetAllCategories: maps all fields correctly ───────────────────────
+        [Fact]
+        public async Task GetAllCategories_MapsAllFields()
+        {
+            _repo.Setup(r => r.GetAllAsync()).ReturnsAsync(Cats());
+            SetupAudit();
+
+            var result = await Svc().GetAllCategories();
+            result.Should().HaveCount(3);
+            result.All(c => c.CategoryId != null).Should().BeTrue();
+            result.All(c => c.MaxLimit > 0).Should().BeTrue();
+        }
+    }
+}

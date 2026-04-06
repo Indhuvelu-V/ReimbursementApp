@@ -379,3 +379,196 @@ namespace ReimbursementTrackerApp.Tests.Services
         }
     }
 }
+
+namespace ReimbursementTrackerApp.Tests.Services
+{
+    public class AuditLogServiceCoverageTests
+    {
+        private readonly Mock<IRepository<string, AuditLog>> _logRepo     = new();
+        private readonly Mock<IHttpContextAccessor>           _httpContext = new();
+
+        private AuditLogService Svc(string userId = "U1", string userName = "Alice", string role = "Admin")
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, userId),
+                new(ClaimTypes.Name, userName),
+                new(ClaimTypes.Role, role)
+            };
+            var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
+            _httpContext.Setup(h => h.HttpContext).Returns(ctx);
+            return new AuditLogService(_logRepo.Object, _httpContext.Object);
+        }
+
+        private void SetupAdd() =>
+            _logRepo.Setup(r => r.AddAsync(It.IsAny<AuditLog>())).ReturnsAsync((AuditLog l) => l);
+
+        // ── CreateLog: null HttpContext → throws ──────────────────────────────
+        [Fact]
+        public async Task CreateLog_NullHttpContext_ThrowsUnauthorized()
+        {
+            _httpContext.Setup(h => h.HttpContext).Returns((HttpContext?)null);
+            var svc = new AuditLogService(_logRepo.Object, _httpContext.Object);
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                svc.CreateLog(new CreateAuditLogsRequestDto { Action = "Test" }));
+        }
+
+        // ── CreateLog: missing claims → throws ────────────────────────────────
+        [Fact]
+        public async Task CreateLog_MissingUserIdClaim_ThrowsUnauthorized()
+        {
+            // Only Name and Role — no NameIdentifier
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.Name, "Alice"),
+                new(ClaimTypes.Role, "Admin")
+            };
+            var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
+            _httpContext.Setup(h => h.HttpContext).Returns(ctx);
+            var svc = new AuditLogService(_logRepo.Object, _httpContext.Object);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                svc.CreateLog(new CreateAuditLogsRequestDto { Action = "Test" }));
+        }
+
+        // ── CreateLog: invalid role string → throws ───────────────────────────
+        [Fact]
+        public async Task CreateLog_InvalidRoleClaim_ThrowsUnauthorized()
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, "U1"),
+                new(ClaimTypes.Name, "Alice"),
+                new(ClaimTypes.Role, "NotARealRole")
+            };
+            var ctx = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) };
+            _httpContext.Setup(h => h.HttpContext).Returns(ctx);
+            var svc = new AuditLogService(_logRepo.Object, _httpContext.Object);
+
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+                svc.CreateLog(new CreateAuditLogsRequestDto { Action = "Test" }));
+        }
+
+        // ── CreateLog: DocumentUrls null → defaults to empty list ─────────────
+        [Fact]
+        public async Task CreateLog_NullDocumentUrls_DefaultsToEmpty()
+        {
+            SetupAdd();
+            var result = await Svc().CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = "Test", DocumentUrls = null, OldDocumentUrls = null
+            });
+            result.DocumentUrls.Should().NotBeNull().And.BeEmpty();
+            result.OldDocumentUrls.Should().NotBeNull().And.BeEmpty();
+        }
+
+        // ── CreateLog: explicit UserId but empty UserName → falls back to token
+        [Fact]
+        public async Task CreateLog_ExplicitUserIdOnlyNoRole_FallsBackToToken()
+        {
+            SetupAdd();
+            var result = await Svc("U1", "Alice", "Employee").CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = "Test", UserId = "EX1", UserName = null, Role = null
+            });
+            result.UserName.Should().Be("Alice"); // from token
+        }
+
+        // ── GetAllLogs: empty action string → no action filter applied ─────────
+        [Fact]
+        public async Task GetAllLogs_EmptyActionFilter_ReturnsAll()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense E1", Date = DateTime.UtcNow, UserName = "A" },
+                new() { LogId = "L2", Action = "Deleted Expense E2", Date = DateTime.UtcNow, UserName = "A" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10, Action = "" });
+            result.Data.Should().HaveCount(2);
+        }
+
+        // ── GetAllLogs: null action → no filter ───────────────────────────────
+        [Fact]
+        public async Task GetAllLogs_NullAction_ReturnsAll()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense E1", Date = DateTime.UtcNow, UserName = "A" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10, Action = null });
+            result.Data.Should().HaveCount(1);
+        }
+
+        // ── GetAllLogs: userId filter match ───────────────────────────────────
+        [Fact]
+        public async Task GetAllLogs_UserIdFilter_MatchesUserId()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "Created Expense", Date = DateTime.UtcNow, UserName = "alice", UserId = "U1" },
+                new() { LogId = "L2", Action = "Deleted Expense", Date = DateTime.UtcNow, UserName = "bob",   UserId = "U2" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10, UserName = "U1" });
+            result.Data.Should().HaveCount(1);
+            result.Data.First().UserId.Should().Be("U1");
+        }
+
+        // ── GetAllLogs: "viewed" action excluded ──────────────────────────────
+        [Fact]
+        public async Task GetAllLogs_ViewedAction_Excluded()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "viewed notifications for user U1", Date = DateTime.UtcNow, UserName = "A" },
+                new() { LogId = "L2", Action = "Created Expense E1",               Date = DateTime.UtcNow, UserName = "A" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().HaveCount(1);
+            result.Data.First().LogId.Should().Be("L2");
+        }
+
+        // ── GetAllLogs: "getby" action excluded ───────────────────────────────
+        [Fact]
+        public async Task GetAllLogs_GetByAction_Excluded()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = "getby expense id E1", Date = DateTime.UtcNow, UserName = "A" },
+                new() { LogId = "L2", Action = "Updated Expense E1",  Date = DateTime.UtcNow, UserName = "A" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().HaveCount(1);
+        }
+
+        // ── GetAllLogs: null action on log → excluded ─────────────────────────
+        [Fact]
+        public async Task GetAllLogs_NullActionOnLog_Excluded()
+        {
+            _logRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<AuditLog>
+            {
+                new() { LogId = "L1", Action = null!, Date = DateTime.UtcNow, UserName = "A" },
+                new() { LogId = "L2", Action = "Created Expense E1", Date = DateTime.UtcNow, UserName = "A" }
+            });
+            var result = await Svc().GetAllLogs(new PaginationParams { PageNumber = 1, PageSize = 10 });
+            result.Data.Should().HaveCount(1);
+        }
+
+        // ── DeleteLog: null HttpContext → throws ──────────────────────────────
+        [Fact]
+        public async Task DeleteLog_NullHttpContext_ThrowsUnauthorized()
+        {
+            _httpContext.Setup(h => h.HttpContext).Returns((HttpContext?)null);
+            var svc = new AuditLogService(_logRepo.Object, _httpContext.Object);
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => svc.DeleteLog("L1"));
+        }
+
+        // ── DeleteLog: log null from GetByIdAsync → returns false ─────────────
+        [Fact]
+        public async Task DeleteLog_GetByIdReturnsNull_ReturnsFalse()
+        {
+            _logRepo.Setup(r => r.GetByIdAsync("L1")).ReturnsAsync((AuditLog?)null);
+            var result = await Svc("U1", "Alice", "Admin").DeleteLog("L1");
+            result.Should().BeFalse();
+        }
+    }
+}

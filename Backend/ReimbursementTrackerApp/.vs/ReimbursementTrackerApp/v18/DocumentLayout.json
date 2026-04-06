@@ -145,8 +145,7 @@
               "RelativeToolTip": "Controllers\\NotificationController.cs",
               "ViewState": "AgIAAL0AAAAAAAAAAAAwwOkAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:11:00.725Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:11:00.725Z"
             },
             {
               "$type": "Document",
@@ -158,8 +157,7 @@
               "RelativeToolTip": "Controllers\\UserController.cs",
               "ViewState": "AgIAAHUAAAAAAAAAAAAwwKEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:10:50.356Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:10:50.356Z"
             },
             {
               "$type": "Document",
@@ -171,8 +169,7 @@
               "RelativeToolTip": "Interfaces\\IApprovalService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:10:33.865Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:10:33.865Z"
             },
             {
               "$type": "Document",
@@ -184,8 +181,7 @@
               "RelativeToolTip": "Controllers\\ApprovalController.cs",
               "ViewState": "AgIAAEkAAAAAAAAAAAAwwFgAAABBAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-27T06:22:10.26Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-27T06:22:10.26Z"
             },
             {
               "$type": "Document",
@@ -208,7 +204,7 @@
               "RelativeDocumentMoniker": "Models\\DTOs\\CreateUserResponseDto.cs",
               "ToolTip": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\Models\\DTOs\\CreateUserResponseDto.cs",
               "RelativeToolTip": "Models\\DTOs\\CreateUserResponseDto.cs",
-              "ViewState": "AgIAAAcAAAAAAAAAAAAAABYAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-04-06T04:08:41.379Z",
               "EditorCaption": ""
@@ -223,8 +219,7 @@
               "RelativeToolTip": "Interfaces\\IUserService.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:10:04.171Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:10:04.171Z"
             },
             {
               "$type": "Document",
@@ -236,8 +231,7 @@
               "RelativeToolTip": "Models\\DTOs\\CheckUserResponseDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:09:21.005Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:09:21.005Z"
             },
             {
               "$type": "Document",
@@ -249,8 +243,7 @@
               "RelativeToolTip": "Models\\DTOs\\CreateExpenseResponseDto.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABkAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:09:05.817Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:09:05.817Z"
             },
             {
               "$type": "Document",
@@ -262,8 +255,7 @@
               "RelativeToolTip": "Models\\DTOs\\CreateUserRequestDto.cs",
               "ViewState": "AgIAAAUAAAAAAAAAAAAwwDEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:08:52.495Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:08:52.495Z"
             },
             {
               "$type": "Document",
@@ -275,8 +267,7 @@
               "RelativeToolTip": "Models\\User.cs",
               "ViewState": "AgIAAAIAAAAAAAAAAAAwwC4AAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:08:16.155Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:08:16.155Z"
             },
             {
               "$type": "Document",
@@ -288,8 +279,7 @@
               "RelativeToolTip": "Models\\Enums\\Enum.cs",
               "ViewState": "AgIAABUAAAAAAAAAAAAwwEEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:08:04.33Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:08:04.33Z"
             },
             {
               "$type": "Document",
@@ -301,8 +291,7 @@
               "RelativeToolTip": "Services\\NotificationService.cs",
               "ViewState": "AgIAANkAAAAAAAAAAAAwwAUBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:07:00.466Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:07:00.466Z"
             },
             {
               "$type": "Document",
@@ -314,8 +303,7 @@
               "RelativeToolTip": "Services\\UserService.cs",
               "ViewState": "AgIAAIQBAAAAAAAAAAAwwLABAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-04-06T04:06:05.794Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-04-06T04:06:05.794Z"
             },
             {
               "$type": "Document",
@@ -327,8 +315,7 @@
               "RelativeToolTip": "Services\\ExpenseService.cs",
               "ViewState": "AgIAAD4CAAAAAAAAAAAwwGoCAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:06:15.535Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-24T16:06:15.535Z"
             },
             {
               "$type": "Document",
@@ -340,8 +327,7 @@
               "RelativeToolTip": "Services\\AuthenticationService.cs",
               "ViewState": "AgIAADAAAAAAAAAAAAAwwFwAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-31T01:21:29.59Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-31T01:21:29.59Z"
             },
             {
               "$type": "Document",
@@ -353,8 +339,7 @@
               "RelativeToolTip": "Services\\ApprovalService.cs",
               "ViewState": "AgIAADEBAAAAAAAAAAAwwF0BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:09:22.803Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-24T16:09:22.803Z"
             },
             {
               "$type": "Document",
@@ -378,8 +363,7 @@
               "RelativeToolTip": "Services\\PaymentService.cs",
               "ViewState": "AgIAABEBAAAAAAAAAAAwwD0BAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:11:24.931Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-24T16:11:24.931Z"
             },
             {
               "$type": "Document",
@@ -403,8 +387,7 @@
               "RelativeToolTip": "Program.cs",
               "ViewState": "AgIAAJ4AAAAAAAAAAAAwwLoAAAA3AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-03-24T16:00:27.601Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-24T16:00:27.601Z"
             },
             {
               "$type": "Document",

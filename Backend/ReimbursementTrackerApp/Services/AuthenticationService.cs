@@ -50,15 +50,6 @@ namespace ReimbursementTrackerApp.Services
             if (user == null)
                 throw new UnAuthorizedException("Invalid password. Please register first if you don't have an account.");
 
-            // 🔹 Validate password
-            var computedHash = _passwordService.HashPassword(
-                request.Password,
-                user.PasswordHash,
-                out byte[]? newHash);
-
-            if (!computedHash.SequenceEqual(user.Password))
-                throw new UnAuthorizedException("Invalid password. Please register first if you don't have an account.");
-
             // 🔹 Create token
             var tokenPayload = new TokenPayloadDto
             {
