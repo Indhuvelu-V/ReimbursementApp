@@ -1,0 +1,153 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Hotspots>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Filters.AuditLogActionFilter</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>24</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>74</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.UserService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>31</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>70</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.ApprovalService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>46</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>44</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.ApprovalService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>159</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>42</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.ExpenseService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>338</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>38</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Migrations.AddUserBankAndManagerFields</Class>
+    <MethodName>BuildTargetModel(...)</MethodName>
+    <ShortName />
+    <Line>20</Line>
+    <FileIndex>1</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>36</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Migrations.ReimbursementContextModelSnapshot</Class>
+    <MethodName>BuildModel(...)</MethodName>
+    <ShortName />
+    <Line>17</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>36</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.ExpenseService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>195</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>34</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Migrations.AddUserBankAndManagerFields</Class>
+    <MethodName>Up(...)</MethodName>
+    <ShortName />
+    <Line>15</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>32</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+  <Hotspot>
+    <Assembly>ReimbursementTrackerApp</Assembly>
+    <Class>ReimbursementTrackerApp.Services.PaymentService</Class>
+    <MethodName>MoveNext()</MethodName>
+    <ShortName />
+    <Line>53</Line>
+    <FileIndex>0</FileIndex>
+    <Metrics>
+      <Metric>
+        <Name>Cyclomatic complexity</Name>
+        <Exceeded>true</Exceeded>
+        <Value>32</Value>
+      </Metric>
+    </Metrics>
+  </Hotspot>
+</Hotspots>

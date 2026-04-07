@@ -53,6 +53,13 @@ namespace ReimbursementTrackerApp.Services
             if (expense.Status != ExpenseStatus.Submitted)
                 throw new InvalidOperationException("Expense must be in Submitted state.");
 
+            // ✅ Block: Manager cannot approve expenses created by Manager or Finance — Admin must handle those
+            var expenseOwner = (await _userRepo.GetAllAsync())?.FirstOrDefault(u => u.UserId == expense.UserId);
+            if (expenseOwner != null &&
+                (expenseOwner.Role == UserRole.Manager || expenseOwner.Role == UserRole.Finance))
+                throw new InvalidOperationException(
+                    "Expenses created by Manager or Finance roles must be approved by Admin, not a Manager.");
+
             // ✅ Self-approval restriction: a manager cannot approve their own expense
             if (expense.UserId == request.ManagerId)
                 throw new InvalidOperationException("You cannot approve your own expense. Another manager must review it.");
@@ -102,6 +109,22 @@ namespace ReimbursementTrackerApp.Services
                 SenderRole = "System"
             });
 
+            // 🔹 If approved, notify Finance for payment processing
+            if (approval.Status == ApprovalStatus.Approved)
+            {
+                var financeUser = users?.FirstOrDefault(u => u.Role == UserRole.Finance);
+                if (financeUser != null)
+                {
+                    await _notificationService.CreateNotification(new CreateNotificationRequestDto
+                    {
+                        UserId = financeUser.UserId,
+                        Message = $"Expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) by {expense.User?.UserName ?? expense.UserId} has been approved and is ready for payment.",
+                        Description = $"Category: {expense.CategoryName} | Approved by: {managerUser?.UserName ?? "Manager"}",
+                        SenderRole = "System"
+                    });
+                }
+            }
+
             await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
             {
                 Action = $"Manager {approval.Status} expense {expense.ExpenseId}",
@@ -130,6 +153,113 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // ======================================================
+        // ADMIN APPROVAL — for Manager/Finance expenses
+        // ======================================================
+        public async Task<CreateApprovalResponseDto?> AdminApproval(CreateApprovalRequestDto request)
+        {
+            var expenses = await _expenseRepo.GetAllAsync();
+            var expense = expenses?.FirstOrDefault(e => e.ExpenseId == request.ExpenseId);
+
+            if (expense == null)
+                throw new KeyNotFoundException($"Expense {request.ExpenseId} not found.");
+
+            if (expense.Status != ExpenseStatus.Submitted)
+                throw new InvalidOperationException("Expense must be in Submitted state.");
+
+            var users = await _userRepo.GetAllAsync();
+            var expenseOwner = users?.FirstOrDefault(u => u.UserId == expense.UserId);
+
+            // Only allow admin to approve Manager/Finance expenses
+            if (expenseOwner == null ||
+                (expenseOwner.Role != UserRole.Manager && expenseOwner.Role != UserRole.Finance))
+                throw new InvalidOperationException(
+                    "Admin approval is only for expenses created by Manager or Finance roles.");
+
+            var approval = new Approval
+            {
+                ApprovalId = Guid.NewGuid().ToString(),
+                ExpenseId = expense.ExpenseId,
+                ManagerId = request.ManagerId, // Admin's userId
+                Level = "Admin",
+                Comments = request.Comments,
+                ApprovedAt = DateTime.Now
+            };
+
+            string notificationMessage;
+
+            if (request.Status.Equals("approved", StringComparison.OrdinalIgnoreCase))
+            {
+                approval.Status = ApprovalStatus.Approved;
+                expense.Status = ExpenseStatus.Approved;
+                notificationMessage = $"Your expense {expense.ExpenseId} has been APPROVED by Admin.";
+            }
+            else if (request.Status.Equals("rejected", StringComparison.OrdinalIgnoreCase))
+            {
+                approval.Status = ApprovalStatus.Rejected;
+                expense.Status = ExpenseStatus.Rejected;
+                notificationMessage = $"Your expense {expense.ExpenseId} has been REJECTED by Admin.";
+            }
+            else
+            {
+                throw new ArgumentException("Invalid status. Must be 'approved' or 'rejected'.");
+            }
+
+            await _approvalRepo.AddAsync(approval);
+            await _expenseRepo.UpdateAsync(expense.ExpenseId, expense);
+
+            var adminUser = users?.FirstOrDefault(u => u.UserId == request.ManagerId);
+
+            await _notificationService.CreateNotification(new CreateNotificationRequestDto
+            {
+                UserId = expense.UserId,
+                Message = notificationMessage,
+                Description = string.IsNullOrWhiteSpace(request.Comments)
+                                  ? string.Empty
+                                  : $"Admin comments: {request.Comments}",
+                SenderRole = "System"
+            });
+
+            // 🔹 If approved, notify Finance for payment processing
+            if (approval.Status == ApprovalStatus.Approved)
+            {
+                var allUsers = await _userRepo.GetAllAsync() ?? new List<User>();
+                var financeUser = allUsers.FirstOrDefault(u => u.Role == UserRole.Finance);
+                if (financeUser != null)
+                {
+                    await _notificationService.CreateNotification(new CreateNotificationRequestDto
+                    {
+                        UserId = financeUser.UserId,
+                        Message = $"Expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) by {adminUser?.UserName ?? expense.UserId} has been approved by Admin and is ready for payment.",
+                        Description = $"Category: {expense.CategoryName} | Approved by: {adminUser?.UserName ?? "Admin"}",
+                        SenderRole = "System"
+                    });
+                }
+            }
+
+            await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = $"Admin {approval.Status} expense {expense.ExpenseId}",
+                ExpenseId = expense.ExpenseId,
+                Amount = expense.Amount,
+                Date = DateTime.UtcNow
+            });
+
+            return new CreateApprovalResponseDto
+            {
+                ApprovalId = approval.ApprovalId,
+                ExpenseId = expense.ExpenseId,
+                Status = approval.Status.ToString(),
+                Comments = approval.Comments,
+                Level = approval.Level,
+                ApprovedAt = approval.ApprovedAt,
+                ApproverName = adminUser?.UserName ?? "",
+                DocumentUrls = expense.DocumentUrls ?? new List<string>(),
+                ExpenseAmount = expense.Amount,
+                AmountInRupees = CurrencyHelper.FormatRupees(expense.Amount)
+            };
+        }
+
+        // ======================================================
         // GET ALL APPROVALS (Admin)
         // ✅ CHANGE: joins expense to get DocumentUrls + Amount
         //            so admin view also has image access.
@@ -145,7 +275,7 @@ namespace ReimbursementTrackerApp.Services
             var expensesList = expenses ?? new List<Expense>();
 
             // Build fast lookup dictionaries (safe against duplicates)
-            var userMap    = usersList.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().UserName);
+            var userMap = usersList.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().UserName);
             var expenseMap = expensesList.GroupBy(e => e.ExpenseId).ToDictionary(g => g.Key, g => g.First());
 
             // Map each approval to its expense and employee name

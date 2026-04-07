@@ -55,6 +55,7 @@ export class Payments implements OnInit {
   // Inline complete-payment modal (triggered from awaiting list)
   showCompleteModal = false;
   completeExp: any = null;
+  expenseUserBankDetails: any = null;
   referenceNo = '';
   paymentMode = 'BankTransfer';
 
@@ -125,14 +126,28 @@ export class Payments implements OnInit {
   // Open inline modal for a specific expense
   openCompleteModal(exp: any) {
     this.completeExp = exp;
-    this.referenceNo = '';
+    // Auto-generate unique reference number: REF-YYYYMMDD-NNNNN
+    const now = new Date();
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const datePart = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}`;
+    const uniquePart = (Date.now() % 100000).toString().padStart(5, '0');
+    this.referenceNo = `REF-${datePart}-${uniquePart}`;
     this.paymentMode = 'BankTransfer';
+    this.expenseUserBankDetails = null;
     this.showCompleteModal = true;
+    // Fetch bank details of the expense owner
+    if (exp.userId) {
+      this.api.getUserById(exp.userId).subscribe({
+        next: (user: any) => { this.expenseUserBankDetails = user; },
+        error: () => {}
+      });
+    }
   }
 
   closeCompleteModal() {
     this.showCompleteModal = false;
     this.completeExp = null;
+    this.expenseUserBankDetails = null;
     this.referenceNo = '';
   }
 
@@ -147,7 +162,24 @@ export class Payments implements OnInit {
         this.closeCompleteModal();
         this.loadPayments(); this.loadApprovedExpenses(); this.loader.hide();
       },
-      error: (err) => { this.toast.showError(err?.error?.message || 'Failed to complete payment.'); this.loader.hide(); }
+      error: (err) => {
+        const msg = err?.error?.message || 'Failed to complete payment.';
+        this.toast.showError(msg);
+        this.loader.hide();
+      }
+    });
+  }
+
+  notifyUserBankDetails() {
+    const userId = this.completeExp?.userId;
+    if (!userId) { this.toast.showWarning('Cannot identify the expense owner.'); return; }
+    this.api.createNotification({
+      userId,
+      senderRole: 'Finance',
+      message: `Action Required: Your bank details are incomplete. To make the payment successful, please update your Bank Name, Account Number, IFSC Code, and Branch Name in your profile settings.`
+    }).subscribe({
+      next: () => this.toast.show('Notification sent to the user ✅'),
+      error: () => this.toast.showError('Failed to send notification.')
     });
   }
 
@@ -210,15 +242,58 @@ export class Payments implements OnInit {
 
   searchPaymentByExpenseId() {
     if (!this.searchExpenseId.trim()) { this.toast.showWarning('Please enter an Expense ID.'); return; }
+    const expenseId = this.searchExpenseId.trim();
     this.searching = true; this.loader.show();
-    this.api.getPaymentByExpenseId(this.searchExpenseId.trim()).subscribe({
-      next: (res: any) => {
-        this.loader.hide(); this.searching = false;
-        const payment = res?.data ?? res;
-        if (payment) { this.searchResults = [payment]; this.toast.show('Payment found ✅'); }
-        else { this.searchResults = []; }
+
+    // First fetch the user's own expenses to get the status
+    this.api.getMyExpenses().subscribe({
+      next: (myExpenses: any) => {
+        const all: any[] = Array.isArray(myExpenses) ? myExpenses : (myExpenses.data ?? []);
+        const expense = all.find((e: any) => e.expenseId === expenseId);
+
+        if (!expense) {
+          this.loader.hide(); this.searching = false; this.searchResults = [];
+          this.toast.showError('No expense found with this ID. Please check and try again.');
+          return;
+        }
+
+        const status = expense.status;
+
+        if (status === 'Paid') {
+          // Fetch payment details
+          this.api.getPaymentByExpenseId(expenseId).subscribe({
+            next: (res: any) => {
+              this.loader.hide(); this.searching = false;
+              const payment = res?.data ?? res;
+              if (payment) {
+                this.searchResults = [payment];
+                this.toast.show('Payment details found ✅');
+              } else {
+                this.searchResults = [];
+                this.toast.showWarning('Expense is Paid but payment record not found.');
+              }
+            },
+            error: () => {
+              this.loader.hide(); this.searching = false; this.searchResults = [];
+              this.toast.showWarning('Expense is Paid but payment record not found.');
+            }
+          });
+        } else {
+          // Not paid — show status toast
+          this.loader.hide(); this.searching = false; this.searchResults = [];
+          const msgs: Record<string, string> = {
+            'Draft':     'Your expense is in Draft state. Please submit it for approval.',
+            'Submitted': 'Your expense is submitted and awaiting Manager approval.',
+            'Approved':  'Your expense is approved and awaiting Finance payment.',
+            'Rejected':  'Your expense has been Rejected. Please check the comments and resubmit.',
+          };
+          this.toast.showWarning(msgs[status] ?? `Expense status: ${status}`);
+        }
       },
-      error: (err) => { this.loader.hide(); this.searching = false; this.searchResults = []; this.toast.showError(err?.status === 404 ? 'No payment found.' : 'Failed to fetch payment.'); }
+      error: () => {
+        this.loader.hide(); this.searching = false; this.searchResults = [];
+        this.toast.showError('Failed to fetch expense details. Please try again.');
+      }
     });
   }
 

@@ -20,25 +20,24 @@ namespace ReimbursementTrackerApp.Models.Enums
 
     public enum DepartmentType
     {
-        HR,
         IT,
-        Sales,
-        Marketing,
-        Finance
+        HR,
+        FinanceAnalyst,
+        Sales
     }
 
     public enum ApprovalStatus
-     {
-            Pending,
-            Approved,
-            Rejected
-     }
-     public enum PaymentStatusEnum
-     {
+    {
+        Pending,
+        Approved,
+        Rejected
+    }
+    public enum PaymentStatusEnum
+    {
         Pending,
         Paid,
         Approved
-     }
+    }
 
     public enum ExpenseCategoryType
     {

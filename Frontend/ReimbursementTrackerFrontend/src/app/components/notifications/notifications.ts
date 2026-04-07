@@ -46,13 +46,15 @@ export class Notifications implements OnInit {
   }
 
   isManager(): boolean { return this.role?.toLowerCase() === 'manager'; }
+  isFinance(): boolean { return this.role?.toLowerCase() === 'finance'; }
+  canSendMessages(): boolean { return this.isManager() || this.isFinance(); }
   isSystem(n: CreateNotificationResponseDto): boolean {
     return n.senderRole?.toLowerCase() === 'system';
   }
 
   loadAll() {
     this.loadReceived();
-    if (this.isManager()) this.loadSent();
+    if (this.canSendMessages()) this.loadSent();
   }
 
   loadReceived() {
@@ -77,7 +79,7 @@ export class Notifications implements OnInit {
 
   setMainTab(tab: 'inbox' | 'sent') {
     this.mainTab = tab;
-    if (tab === 'sent' && this.isManager()) this.loadSent();
+    if (tab === 'sent' && this.canSendMessages()) this.loadSent();
   }
 
   setRecvTab(tab: string) { this.recvTab = tab; this.applyRecvTab(); }

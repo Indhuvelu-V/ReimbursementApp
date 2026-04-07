@@ -88,6 +88,7 @@
         <div class="quick-pay-list" *ngIf="approvedExpenses.length > 0">
           <div *ngFor="let exp of approvedExpenses" class="quick-pay-row">
             <div class="quick-pay-info">
+              <span class="qp-username" *ngIf="exp.userName"><i class="bi bi-person-fill me-1"></i>{{ exp.userName }}</span>
               <code>{{ exp.expenseId }}</code>
               <span>{{ exp.categoryName }}</span>
               <span class="amount-pill">{{ exp.amountInRupees || ('&#8377;' + exp.amount) }}</span>
@@ -399,6 +400,64 @@
           <button class="pay-mode-btn" [class.active]="paymentMode === 'Cash'" (click)="paymentMode = 'Cash'"><i class="bi bi-cash"></i>Cash</button>
           <button class="pay-mode-btn" [class.active]="paymentMode === 'Cheque'" (click)="paymentMode = 'Cheque'"><i class="bi bi-file-earmark-text"></i>Cheque</button>
         </div>
+      </div>
+
+      <!-- Bank details shown when BankTransfer is selected -->
+      <div *ngIf="paymentMode === 'BankTransfer'" style="margin-top:12px;padding:12px;border-radius:8px;background:var(--surface2);border:1px solid var(--border)">
+        <p style="font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">
+          <i class="bi bi-bank me-1"></i>Recipient Bank Details
+        </p>
+
+        <!-- All details present -->
+        <ng-container *ngIf="expenseUserBankDetails?.bankName && expenseUserBankDetails?.accountNumber && expenseUserBankDetails?.ifscCode && expenseUserBankDetails?.branchName">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+            <div><span style="color:var(--text-muted)">Bank:</span> <strong>{{ expenseUserBankDetails.bankName }}</strong></div>
+            <div><span style="color:var(--text-muted)">Account:</span> <strong>{{ expenseUserBankDetails.accountNumber }}</strong></div>
+            <div><span style="color:var(--text-muted)">IFSC:</span> <strong>{{ expenseUserBankDetails.ifscCode }}</strong></div>
+            <div><span style="color:var(--text-muted)">Branch:</span> <strong>{{ expenseUserBankDetails.branchName }}</strong></div>
+          </div>
+        </ng-container>
+
+        <!-- No bank details at all -->
+        <ng-container *ngIf="expenseUserBankDetails && !expenseUserBankDetails?.bankName && !expenseUserBankDetails?.accountNumber && !expenseUserBankDetails?.ifscCode && !expenseUserBankDetails?.branchName">
+          <p style="color:var(--status-rejected);font-size:13px;margin:0 0 10px 0">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Bank details are not available for this user. To make the payment, the user must provide their Bank Name, Account Number, IFSC Code, and Branch Name.
+          </p>
+          <button class="btn-notify-user" (click)="notifyUserBankDetails()">
+            <i class="bi bi-bell-fill"></i> Notify User
+          </button>
+        </ng-container>
+
+        <!-- Some fields missing -->
+        <ng-container *ngIf="expenseUserBankDetails && (expenseUserBankDetails?.bankName || expenseUserBankDetails?.accountNumber || expenseUserBankDetails?.ifscCode || expenseUserBankDetails?.branchName) && !(expenseUserBankDetails?.bankName && expenseUserBankDetails?.accountNumber && expenseUserBankDetails?.ifscCode && expenseUserBankDetails?.branchName)">
+          <p style="color:var(--status-rejected);font-size:13px;margin:0 0 8px 0">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Some bank details are missing. All fields are required to make the payment. Please ask the user to complete their bank details.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px;margin-bottom:10px">
+            <div [style.color]="expenseUserBankDetails?.bankName ? 'var(--text)' : 'var(--status-rejected)'">
+              <span style="color:var(--text-muted)">Bank:</span> <strong>{{ expenseUserBankDetails?.bankName || '⚠ Missing' }}</strong>
+            </div>
+            <div [style.color]="expenseUserBankDetails?.accountNumber ? 'var(--text)' : 'var(--status-rejected)'">
+              <span style="color:var(--text-muted)">Account:</span> <strong>{{ expenseUserBankDetails?.accountNumber || '⚠ Missing' }}</strong>
+            </div>
+            <div [style.color]="expenseUserBankDetails?.ifscCode ? 'var(--text)' : 'var(--status-rejected)'">
+              <span style="color:var(--text-muted)">IFSC:</span> <strong>{{ expenseUserBankDetails?.ifscCode || '⚠ Missing' }}</strong>
+            </div>
+            <div [style.color]="expenseUserBankDetails?.branchName ? 'var(--text)' : 'var(--status-rejected)'">
+              <span style="color:var(--text-muted)">Branch:</span> <strong>{{ expenseUserBankDetails?.branchName || '⚠ Missing' }}</strong>
+            </div>
+          </div>
+          <button class="btn-notify-user" (click)="notifyUserBankDetails()">
+            <i class="bi bi-bell-fill"></i> Notify User
+          </button>
+        </ng-container>
+
+        <!-- Still loading -->
+        <ng-container *ngIf="!expenseUserBankDetails">
+          <p style="color:var(--text-muted);font-size:13px;margin:0"><i class="bi bi-hourglass-split me-1"></i>Loading bank details...</p>
+        </ng-container>
       </div>
     </div>
     <div class="form-actions" style="margin-top:20px">

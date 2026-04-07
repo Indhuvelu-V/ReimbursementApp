@@ -9,15 +9,18 @@ namespace ReimbursementTrackerApp.Services
     public class NotificationService : INotificationService
     {
         private readonly IRepository<string, Notification> _notificationRepo;
+        private readonly IRepository<string, User> _userRepo;
         private readonly IAuditLogService _auditLogService;
-        private readonly ILogger<NotificationService> _logger; // Added ILogger
+        private readonly ILogger<NotificationService> _logger;
 
         public NotificationService(
             IRepository<string, Notification> notificationRepo,
+            IRepository<string, User> userRepo,
             IAuditLogService auditLogService,
-            ILogger<NotificationService> logger) // Inject ILogger
+            ILogger<NotificationService> logger)
         {
             _notificationRepo = notificationRepo;
+            _userRepo = userRepo;
             _auditLogService = auditLogService;
             _logger = logger;
         }
@@ -34,13 +37,13 @@ namespace ReimbursementTrackerApp.Services
             var notification = new Notification
             {
                 NotificationId = Guid.NewGuid().ToString(),
-                UserId         = request.UserId,
-                SenderId       = request.SenderId ?? string.Empty,
-                Message        = request.Message,
-                Description    = request.Description ?? string.Empty,
-                ReadStatus     = "Unread",
-                SenderRole     = request.SenderRole ?? "Manager",
-                CreatedAt      = DateTime.UtcNow
+                UserId = request.UserId,
+                SenderId = request.SenderId ?? string.Empty,
+                Message = request.Message,
+                Description = request.Description ?? string.Empty,
+                ReadStatus = "Unread",
+                SenderRole = request.SenderRole ?? "Manager",
+                CreatedAt = DateTime.UtcNow
             };
 
             await _notificationRepo.AddAsync(notification);
@@ -162,6 +165,39 @@ namespace ReimbursementTrackerApp.Services
 
             await _notificationRepo.UpdateAsync(notification.NotificationId, notification);
 
+            // 🔹 Notify the original sender about the reply (if SenderId is set)
+            if (!string.IsNullOrEmpty(notification.SenderId))
+            {
+                try
+                {
+                    // Get replying user's name
+                    string replyerName = employeeId;
+                    try
+                    {
+                        var replyUser = await _userRepo.GetByIdAsync(employeeId);
+                        if (replyUser != null) replyerName = replyUser.UserName;
+                    }
+                    catch { }
+
+                    var replyNotification = new Notification
+                    {
+                        NotificationId = Guid.NewGuid().ToString(),
+                        UserId = notification.SenderId,
+                        SenderId = employeeId,
+                        Message = $"Reply from {replyerName} (ID: {employeeId}): {request.Reply}",
+                        Description = $"Original message: \"{notification.Message}\"",
+                        ReadStatus = "Unread",
+                        SenderRole = "System",
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _notificationRepo.AddAsync(replyNotification);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to send reply notification to sender {SenderId}", notification.SenderId);
+                }
+            }
+
             try
             {
                 await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
@@ -212,14 +248,14 @@ namespace ReimbursementTrackerApp.Services
         private static CreateNotificationResponseDto MapToDto(Notification n) => new()
         {
             NotificationId = n.NotificationId,
-            UserId         = n.UserId,
-            SenderId       = n.SenderId,
-            Message        = n.Message,
-            Reply          = n.Reply,
-            Description    = n.Description,
-            ReadStatus     = n.ReadStatus,
-            SenderRole     = n.SenderRole,
-            CreatedAt      = DateTime.SpecifyKind(n.CreatedAt, DateTimeKind.Utc)
+            UserId = n.UserId,
+            SenderId = n.SenderId,
+            Message = n.Message,
+            Reply = n.Reply,
+            Description = n.Description,
+            ReadStatus = n.ReadStatus,
+            SenderRole = n.SenderRole,
+            CreatedAt = DateTime.SpecifyKind(n.CreatedAt, DateTimeKind.Utc)
         };
     }
 }

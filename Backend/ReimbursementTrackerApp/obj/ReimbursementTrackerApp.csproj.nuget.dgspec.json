@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\PK\\Project\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj": {}
+    "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj": {}
   },
   "projects": {
-    "C:\\PK\\Project\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj": {
+    "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\PK\\Project\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj",
+        "projectUniqueName": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj",
         "projectName": "ReimbursementTrackerApp",
-        "projectPath": "C:\\PK\\Project\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj",
-        "packagesPath": "C:\\Users\\PadmaKumar.C\\.nuget\\packages\\",
-        "outputPath": "C:\\PK\\Project\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\obj\\",
+        "projectPath": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\ReimbursementTrackerApp.csproj",
+        "packagesPath": "C:\\Users\\Indhu.V\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\Indhu.V\\OneDrive - New American Funding\\ReimbursementApp\\Backend\\ReimbursementTrackerApp\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\PadmaKumar.C\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\Indhu.V\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -83,19 +83,19 @@
           "downloadDependencies": [
             {
               "name": "Microsoft.AspNetCore.App.Ref",
-              "version": "[8.0.24, 8.0.24]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Host.win-x64",
-              "version": "[8.0.24, 8.0.24]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.NETCore.App.Ref",
-              "version": "[8.0.24, 8.0.24]"
+              "version": "[8.0.23, 8.0.23]"
             },
             {
               "name": "Microsoft.WindowsDesktop.App.Ref",
-              "version": "[8.0.24, 8.0.24]"
+              "version": "[8.0.23, 8.0.23]"
             }
           ],
           "frameworkReferences": {
@@ -106,7 +106,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.102/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -12,11 +12,12 @@ namespace ReimbursementTrackerApp.Tests.Services
     public class NotificationServiceTests
     {
         private readonly Mock<IRepository<string, Notification>> _notifRepo    = new();
+        private readonly Mock<IRepository<string, User>>         _userRepo     = new();
         private readonly Mock<IAuditLogService>                   _auditService = new();
         private readonly Mock<ILogger<NotificationService>>       _logger       = new();
 
         private NotificationService CreateService() =>
-            new(_notifRepo.Object, _auditService.Object, _logger.Object);
+            new(_notifRepo.Object, _userRepo.Object, _auditService.Object, _logger.Object);
 
         private void SetupAudit() =>
             _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
@@ -231,10 +232,11 @@ namespace ReimbursementTrackerApp.Tests.Services
     public class NotificationServiceBranchTests
     {
         private readonly Mock<IRepository<string, Notification>> _notifRepo    = new();
+        private readonly Mock<IRepository<string, User>>         _userRepo     = new();
         private readonly Mock<IAuditLogService>                   _auditService = new();
         private readonly Mock<ILogger<NotificationService>>       _logger       = new();
 
-        private NotificationService Svc() => new(_notifRepo.Object, _auditService.Object, _logger.Object);
+        private NotificationService Svc() => new(_notifRepo.Object, _userRepo.Object, _auditService.Object, _logger.Object);
 
         private void SetupAudit() =>
             _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
@@ -330,6 +332,136 @@ namespace ReimbursementTrackerApp.Tests.Services
             { UserId = "U1", Message = "Test", Description = "Some detail" });
 
             result.Description.Should().Be("Some detail");
+        }
+    }
+}
+
+namespace ReimbursementTrackerApp.Tests.Services
+{
+    public class NotificationServiceReplyTests
+    {
+        private readonly Mock<IRepository<string, Notification>> _notifRepo    = new();
+        private readonly Mock<IRepository<string, User>>         _userRepo     = new();
+        private readonly Mock<IAuditLogService>                   _auditService = new();
+        private readonly Mock<ILogger<NotificationService>>       _logger       = new();
+
+        private NotificationService Svc() =>
+            new(_notifRepo.Object, _userRepo.Object, _auditService.Object, _logger.Object);
+
+        private void SetupAudit() =>
+            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
+                .ReturnsAsync(new CreateAuditLogsResponseDto());
+
+        // Branch: ReplyNotification — SenderId set → creates back-notification to sender
+        [Fact]
+        public async Task ReplyNotification_WithSenderId_CreatesBackNotification()
+        {
+            var notif = new Notification
+            {
+                NotificationId = "N1", UserId = "EMP1", SenderId = "MGR1",
+                Message = "Please clarify", SenderRole = "Manager", ReadStatus = "Unread"
+            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ReturnsAsync((Notification n) => n);
+            _userRepo.Setup(r => r.GetByIdAsync("EMP1")).ReturnsAsync(new User { UserId = "EMP1", UserName = "Alice" });
+            SetupAudit();
+
+            var result = await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Here is the clarification" }, "EMP1");
+
+            result.Should().NotBeNull();
+            // Back-notification should be created for the sender (MGR1)
+            _notifRepo.Verify(r => r.AddAsync(
+                It.Is<Notification>(n => n.UserId == "MGR1" && n.SenderId == "EMP1")), Times.Once);
+        }
+
+        [Fact]
+        public async Task ReplyNotification_WithSenderId_BackNotificationContainsReplyText()
+        {
+            var notif = new Notification
+            {
+                NotificationId = "N1", UserId = "EMP1", SenderId = "MGR1",
+                Message = "Clarify expense", SenderRole = "Manager", ReadStatus = "Unread"
+            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ReturnsAsync((Notification n) => n);
+            _userRepo.Setup(r => r.GetByIdAsync("EMP1")).ReturnsAsync(new User { UserId = "EMP1", UserName = "Alice" });
+            SetupAudit();
+
+            Notification? captured = null;
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>()))
+                .Callback<Notification>(n => captured = n)
+                .ReturnsAsync((Notification n) => n);
+
+            await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "Receipt attached" }, "EMP1");
+
+            captured.Should().NotBeNull();
+            captured!.Message.Should().Contain("Receipt attached");
+            captured.Description.Should().Contain("Clarify expense");
+        }
+
+        [Fact]
+        public async Task ReplyNotification_WithSenderId_UserLookupFails_StillCompletes()
+        {
+            var notif = new Notification
+            {
+                NotificationId = "N1", UserId = "EMP1", SenderId = "MGR1",
+                Message = "Clarify", SenderRole = "Manager", ReadStatus = "Unread"
+            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ReturnsAsync((Notification n) => n);
+            // User lookup throws — should fall back to userId as name
+            _userRepo.Setup(r => r.GetByIdAsync("EMP1")).ThrowsAsync(new Exception("DB error"));
+            SetupAudit();
+
+            var result = await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "ok" }, "EMP1");
+
+            result.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task ReplyNotification_NoSenderId_DoesNotCreateBackNotification()
+        {
+            var notif = new Notification
+            {
+                NotificationId = "N1", UserId = "EMP1", SenderId = "", // empty
+                Message = "System message", SenderRole = "System", ReadStatus = "Unread"
+            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            SetupAudit();
+
+            await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "ok" }, "EMP1");
+
+            // AddAsync should NOT be called since SenderId is empty
+            _notifRepo.Verify(r => r.AddAsync(It.IsAny<Notification>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ReplyNotification_BackNotificationFails_StillReturnsDto()
+        {
+            var notif = new Notification
+            {
+                NotificationId = "N1", UserId = "EMP1", SenderId = "MGR1",
+                Message = "Clarify", SenderRole = "Manager", ReadStatus = "Unread"
+            };
+            _notifRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Notification> { notif });
+            _notifRepo.Setup(r => r.UpdateAsync("N1", It.IsAny<Notification>())).ReturnsAsync(notif);
+            _notifRepo.Setup(r => r.AddAsync(It.IsAny<Notification>())).ThrowsAsync(new Exception("DB error"));
+            _userRepo.Setup(r => r.GetByIdAsync("EMP1")).ReturnsAsync(new User { UserId = "EMP1", UserName = "Alice" });
+            SetupAudit();
+
+            // Should not throw — back-notification failure is swallowed
+            var result = await Svc().ReplyNotification(
+                new ReplyNotificationRequestDto { NotificationId = "N1", Reply = "ok" }, "EMP1");
+
+            result.Should().NotBeNull();
         }
     }
 }

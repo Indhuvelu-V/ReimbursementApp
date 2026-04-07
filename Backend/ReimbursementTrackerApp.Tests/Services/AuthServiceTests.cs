@@ -114,6 +114,53 @@ namespace ReimbursementTrackerApp.Tests.Services
             await Assert.ThrowsAsync<UnAuthorizedException>(() =>
                 CreateService().CheckUser(new CheckUserRequestDto { UserName = "x", Password = "y" }));
         }
+
+        // ── Multi-user same username ───────────────────────────────────────
+
+        [Fact]
+        public async Task CheckUser_MultipleUsersWithSameName_MatchesByPassword()
+        {
+            var user1 = MakeUser("alice");
+            var user2 = new User
+            {
+                UserId = "U2", UserName = "alice", Role = UserRole.Manager,
+                Password = new byte[] { 9, 8, 7 }, PasswordHash = new byte[] { 6, 5, 4 }
+            };
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { user1, user2 });
+
+            // user1 password does NOT match
+            _passwordService
+                .Setup(p => p.HashPassword("pass_u2", user1.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(new byte[] { 99, 99 });
+            // user2 password matches
+            _passwordService
+                .Setup(p => p.HashPassword("pass_u2", user2.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(user2.Password);
+
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>())).Returns("tok-u2");
+
+            var result = await CreateService().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "pass_u2" });
+            result.Token.Should().Be("tok-u2");
+        }
+
+        [Fact]
+        public async Task CheckUser_MultipleUsersWithSameName_WrongPassword_ThrowsUnAuthorized()
+        {
+            var user1 = MakeUser("alice");
+            var user2 = new User
+            {
+                UserId = "U2", UserName = "alice", Role = UserRole.Manager,
+                Password = new byte[] { 9, 8, 7 }, PasswordHash = new byte[] { 6, 5, 4 }
+            };
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { user1, user2 });
+
+            _passwordService
+                .Setup(p => p.HashPassword(It.IsAny<string>(), It.IsAny<byte[]>(), out It.Ref<byte[]?>.IsAny))
+                .Returns(new byte[] { 99, 99, 99 });
+
+            await Assert.ThrowsAsync<UnAuthorizedException>(() =>
+                CreateService().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "wrong" }));
+        }
     }
 
     // ── Additional branch coverage ────────────────────────────────────────────
@@ -150,6 +197,136 @@ namespace ReimbursementTrackerApp.Tests.Services
 
             var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "bob", Password = "pass" });
             result.Token.Should().Be("tok");
+        }
+    }
+}
+
+namespace ReimbursementTrackerApp.Tests.Services
+{
+    public class AuthServiceNewLogicTests
+    {
+        private readonly Mock<IRepository<string, User>> _userRepo        = new();
+        private readonly Mock<IPasswordService>          _passwordService = new();
+        private readonly Mock<ITokenService>             _tokenService    = new();
+
+        private AuthService Svc() => new(_userRepo.Object, _passwordService.Object, _tokenService.Object);
+
+        private User MakeUser(string id, string name, byte[] pwd, byte[] salt, string? managerId = null) =>
+            new() { UserId = id, UserName = name, Role = UserRole.Employee, Password = pwd, PasswordHash = salt, ManagerId = managerId };
+
+        // ── Manager name/id resolved in response ──────────────────────────────
+
+        [Fact]
+        public async Task CheckUser_WithManager_ReturnsManagerNameAndId()
+        {
+            var mgr = new User { UserId = "M1", UserName = "Manager One", Role = UserRole.Manager, Password = new byte[]{9}, PasswordHash = new byte[]{9} };
+            var emp = MakeUser("E1", "alice", new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 }, managerId: "M1");
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { emp, mgr });
+            _passwordService.Setup(p => p.HashPassword("pass", emp.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(emp.Password);
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>())).Returns("tok");
+
+            var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "pass" });
+
+            result.ReportingManagerName.Should().Be("Manager One");
+            result.ReportingManagerId.Should().Be("M1");
+        }
+
+        [Fact]
+        public async Task CheckUser_NoManager_ManagerNameAndIdNull()
+        {
+            var emp = MakeUser("E1", "alice", new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 }, managerId: null);
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { emp });
+            _passwordService.Setup(p => p.HashPassword("pass", emp.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(emp.Password);
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>())).Returns("tok");
+
+            var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "pass" });
+
+            result.ReportingManagerName.Should().BeNull();
+            result.ReportingManagerId.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task CheckUser_ManagerIdSetButManagerNotFound_ManagerNameNull()
+        {
+            // ManagerId set but no matching user in list
+            var emp = MakeUser("E1", "alice", new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 }, managerId: "MISSING_MGR");
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { emp });
+            _passwordService.Setup(p => p.HashPassword("pass", emp.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(emp.Password);
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>())).Returns("tok");
+
+            var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "pass" });
+
+            result.ReportingManagerName.Should().BeNull();
+            result.ReportingManagerId.Should().BeNull();
+        }
+
+        // ── Token payload correctness ─────────────────────────────────────────
+
+        [Fact]
+        public async Task CheckUser_TokenPayload_HasCorrectRole()
+        {
+            var mgr = new User
+            {
+                UserId = "M1", UserName = "mgr", Role = UserRole.Manager,
+                Password = new byte[] { 5, 6, 7 }, PasswordHash = new byte[] { 8, 9, 10 }
+            };
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { mgr });
+            _passwordService.Setup(p => p.HashPassword("pass", mgr.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(mgr.Password);
+
+            TokenPayloadDto? captured = null;
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>()))
+                .Callback<TokenPayloadDto>(p => captured = p)
+                .Returns("tok");
+
+            await Svc().CheckUser(new CheckUserRequestDto { UserName = "mgr", Password = "pass" });
+
+            captured!.Role.Should().Be(UserRole.Manager);
+            captured.UserId.Should().Be("M1");
+        }
+
+        // ── Same username, first user matches ─────────────────────────────────
+
+        [Fact]
+        public async Task CheckUser_SameUsername_FirstUserMatches_ReturnsFirstUserToken()
+        {
+            var u1 = MakeUser("U1", "alice", new byte[] { 1, 2, 3 }, new byte[] { 4, 5, 6 });
+            var u2 = MakeUser("U2", "alice", new byte[] { 7, 8, 9 }, new byte[] { 10, 11, 12 });
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User> { u1, u2 });
+
+            // u1 password matches
+            _passwordService.Setup(p => p.HashPassword("pass_u1", u1.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(u1.Password);
+            // u2 password does NOT match
+            _passwordService.Setup(p => p.HashPassword("pass_u1", u2.PasswordHash, out It.Ref<byte[]?>.IsAny))
+                .Returns(new byte[] { 99 });
+
+            TokenPayloadDto? captured = null;
+            _tokenService.Setup(t => t.CreateToken(It.IsAny<TokenPayloadDto>()))
+                .Callback<TokenPayloadDto>(p => captured = p)
+                .Returns("tok-u1");
+
+            var result = await Svc().CheckUser(new CheckUserRequestDto { UserName = "alice", Password = "pass_u1" });
+
+            result.Token.Should().Be("tok-u1");
+            captured!.UserId.Should().Be("U1");
+        }
+
+        // ── Edge: empty username ──────────────────────────────────────────────
+
+        [Fact]
+        public async Task CheckUser_EmptyUsername_ThrowsUnAuthorized()
+        {
+            _userRepo.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<User>
+            {
+                MakeUser("U1", "alice", new byte[]{1}, new byte[]{2})
+            });
+
+            await Assert.ThrowsAsync<UnAuthorizedException>(() =>
+                Svc().CheckUser(new CheckUserRequestDto { UserName = "", Password = "pass" }));
         }
     }
 }

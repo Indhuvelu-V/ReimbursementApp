@@ -67,6 +67,46 @@ namespace ReimbursementTrackerApp.Services
             if (expense.Status != ExpenseStatus.Approved)
                 throw new InvalidOperationException("Expense must be approved by manager before payment.");
 
+            // 🔹 Validate bank details for BankTransfer mode
+            if (paymentMode.Equals("BankTransfer", StringComparison.OrdinalIgnoreCase))
+            {
+                User? expenseUser = null;
+                try { expenseUser = await _userRepo.GetByIdAsync(expense.UserId); } catch { }
+                // Fallback: search from all users if GetByIdAsync throws
+                if (expenseUser == null)
+                {
+                    var allUsers = await _userRepo.GetAllAsync();
+                    expenseUser = allUsers?.FirstOrDefault(u => u.UserId == expense.UserId);
+                }
+
+                bool bankIncomplete = expenseUser == null ||
+                    string.IsNullOrWhiteSpace(expenseUser.BankName) ||
+                    string.IsNullOrWhiteSpace(expenseUser.AccountNumber) ||
+                    string.IsNullOrWhiteSpace(expenseUser.IfscCode) ||
+                    string.IsNullOrWhiteSpace(expenseUser.BranchName);
+
+                if (bankIncomplete)
+                {
+                    // Always notify the expense owner regardless of role
+                    try
+                    {
+                        await _notificationService.CreateNotification(new CreateNotificationRequestDto
+                        {
+                            UserId = expense.UserId,
+                            SenderId = userId,   // Finance user's ID — so reply shows in Finance Sent tab
+                            Message = $"Action Required: Your payment for expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) could not be processed.",
+                            Description = "To make the payment successful, all bank details are required. Please update your Bank Name, Account Number, IFSC Code, and Branch Name in your profile settings.",
+                            SenderRole = "Finance"
+                        });
+                    }
+                    catch { /* notification failure must not block the error response */ }
+
+                    throw new InvalidOperationException(
+                        "Bank details are incomplete for this user. " +
+                        "The user has been notified to update their bank details.");
+                }
+            }
+
             if (payment == null)
             {
                 payment = new Payment
@@ -128,7 +168,7 @@ namespace ReimbursementTrackerApp.Services
         {
             var allPayments = await _paymentRepo.GetAllAsync() ?? new List<Payment>();
             var allExpenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
-            var allUsers    = await _userRepo.GetAllAsync() ?? new List<User>();
+            var allUsers = await _userRepo.GetAllAsync() ?? new List<User>();
 
             // Build a user lookup dictionary for safe O(1) access
             var userMap = allUsers.ToDictionary(u => u.UserId, u => u);

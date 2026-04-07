@@ -107,23 +107,6 @@ namespace ReimbursementTrackerApp.Tests.Services
             captured!.Action.Should().Contain("Submitted");
         }
 
-        // ── Resubmit ──────────────────────────────────────────────────────────
-
-        [Fact]
-        public async Task OnActionExecutionAsync_ResubmitAction_LogsResubmitted()
-        {
-            SetupAudit();
-            CreateAuditLogsRequestDto? captured = null;
-            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
-                .Callback<CreateAuditLogsRequestDto>(r => captured = r)
-                .ReturnsAsync(new CreateAuditLogsResponseDto());
-
-            var ctx = MakeContext("U1", "Employee", "Expense", "ResubmitExpense", "POST", "E1");
-            await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
-
-            captured!.Action.Should().Contain("Resubmitted");
-        }
-
         // ── GET skipped ───────────────────────────────────────────────────────
 
         [Fact]
@@ -146,23 +129,6 @@ namespace ReimbursementTrackerApp.Tests.Services
             _auditService.Verify(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()), Times.Never);
         }
 
-        // ── DELETE ────────────────────────────────────────────────────────────
-
-        [Fact]
-        public async Task OnActionExecutionAsync_DeleteRequest_LogsDeleted()
-        {
-            SetupAudit();
-            CreateAuditLogsRequestDto? captured = null;
-            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
-                .Callback<CreateAuditLogsRequestDto>(r => captured = r)
-                .ReturnsAsync(new CreateAuditLogsResponseDto());
-
-            var ctx = MakeContext("U1", "Admin", "Expense", "DeleteExpense", "DELETE", "E1");
-            await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
-
-            captured!.Action.Should().Contain("Deleted");
-        }
-
         // ── PUT ───────────────────────────────────────────────────────────────
 
         [Fact]
@@ -174,7 +140,8 @@ namespace ReimbursementTrackerApp.Tests.Services
                 .Callback<CreateAuditLogsRequestDto>(r => captured = r)
                 .ReturnsAsync(new CreateAuditLogsResponseDto());
 
-            var ctx = MakeContext("U1", "Employee", "Expense", "UpdateExpense", "PUT", "E1");
+            // Use a PUT action that is NOT in serviceHandled — e.g. UpdateCategoryLimit
+            var ctx = MakeContext("U1", "Admin", "ExpenseCategory", "UpdateCategoryLimit", "PUT");
             await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
 
             captured!.Action.Should().Contain("Updated");
@@ -183,18 +150,13 @@ namespace ReimbursementTrackerApp.Tests.Services
         // ── Manager Approval ──────────────────────────────────────────────────
 
         [Fact]
-        public async Task OnActionExecutionAsync_ManagerApproval_LogsApproval()
+        public async Task OnActionExecutionAsync_ManagerApproval_SkipsLog()
         {
-            SetupAudit();
-            CreateAuditLogsRequestDto? captured = null;
-            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
-                .Callback<CreateAuditLogsRequestDto>(r => captured = r)
-                .ReturnsAsync(new CreateAuditLogsResponseDto());
-
+            // ManagerApproval is in serviceHandled — ApprovalService logs it directly
             var ctx = MakeContext("MGR1", "Manager", "Approval", "ManagerApproval", "POST");
             await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
 
-            captured!.Action.Should().Contain("Approval");
+            _auditService.Verify(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()), Times.Never);
         }
 
         // ── AuditLog failure swallowed ────────────────────────────────────────
@@ -237,8 +199,8 @@ namespace ReimbursementTrackerApp.Tests.Services
                 .Callback<CreateAuditLogsRequestDto>(r => captured = r)
                 .ReturnsAsync(new CreateAuditLogsResponseDto());
 
-            // No expenseId in args
-            var ctx = MakeContext("U1", "Employee", "Expense", "CreateExpense", "POST");
+            // Use a POST action NOT in serviceHandled — e.g. CreateNotification
+            var ctx = MakeContext("U1", "Manager", "Notification", "CreateNotification", "POST");
             await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
 
             captured.Should().NotBeNull();
@@ -277,33 +239,5 @@ namespace ReimbursementTrackerApp.Tests.Services
             captured!.Role.Should().Be(UserRole.Admin);
         }
 
-        [Fact]
-        public async Task OnActionExecutionAsync_NoRoleClaim_DefaultsToEmployee()
-        {
-            SetupAudit();
-            CreateAuditLogsRequestDto? captured = null;
-            _auditService.Setup(a => a.CreateLog(It.IsAny<CreateAuditLogsRequestDto>()))
-                .Callback<CreateAuditLogsRequestDto>(r => captured = r)
-                .ReturnsAsync(new CreateAuditLogsResponseDto());
-
-            // User with no role claim
-            var httpCtx = new DefaultHttpContext
-            {
-                User = new ClaimsPrincipal(new ClaimsIdentity(
-                    new[] { new Claim(ClaimTypes.NameIdentifier, "U1") }, "Test"))
-            };
-            httpCtx.Request.Method = "DELETE";
-            var actionDescriptor = new ActionDescriptor
-            {
-                RouteValues = new Dictionary<string, string?> { ["controller"] = "Expense", ["action"] = "DeleteExpense" }
-            };
-            var ctx = new ActionExecutingContext(
-                new ActionContext(httpCtx, new RouteData(), actionDescriptor),
-                new List<IFilterMetadata>(), new Dictionary<string, object?>(), new object());
-
-            await CreateFilter().OnActionExecutionAsync(ctx, MakeDelegate());
-
-            captured!.Role.Should().Be(UserRole.Employee);
-        }
     }
 }

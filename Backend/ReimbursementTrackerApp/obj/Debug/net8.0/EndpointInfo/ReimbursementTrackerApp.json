@@ -36,6 +36,37 @@
         }
       }
     },
+    "/api/Approval/admin": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Approval/all": {
       "get": {
         "tags": [
@@ -124,37 +155,6 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/AuditLogs": {
-      "post": {
-        "tags": [
-          "AuditLogs"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAuditLogsRequestDto"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAuditLogsRequestDto"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateAuditLogsRequestDto"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK"
@@ -1200,10 +1200,117 @@
           }
         }
       }
+    },
+    "/api/Users/assign-manager": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignManagerRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignManagerRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignManagerRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Users/update-status": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserStatusRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Users/update-my-profile": {
+      "put": {
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMyProfileRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMyProfileRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMyProfileRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AssignManagerRequestDto": {
+        "type": "object",
+        "properties": {
+          "employeeId": {
+            "type": "string",
+            "nullable": true
+          },
+          "managerId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "CheckUserRequestDto": {
         "required": [
           "password",
@@ -1271,83 +1378,6 @@
         },
         "additionalProperties": false
       },
-      "CreateAuditLogsRequestDto": {
-        "required": [
-          "action",
-          "userId"
-        ],
-        "type": "object",
-        "properties": {
-          "userId": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "userName": {
-            "type": "string",
-            "nullable": true
-          },
-          "role": {
-            "$ref": "#/components/schemas/UserRole"
-          },
-          "action": {
-            "minLength": 1,
-            "type": "string"
-          },
-          "expenseId": {
-            "type": "string",
-            "nullable": true
-          },
-          "amount": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "oldAmount": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "documentUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "oldDocumentUrls": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "date": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "maxLimit": {
-            "type": "number",
-            "format": "double"
-          },
-          "oldMaxLimit": {
-            "type": "number",
-            "format": "double"
-          },
-          "categoryId": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "amountInRupees": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "additionalProperties": false
-      },
       "CreateExpenseCategoryRequestDto": {
         "required": [
           "categoryName"
@@ -1397,8 +1427,11 @@
       },
       "CreateUserRequestDto": {
         "required": [
-          "department",
+          "accountNumber",
+          "bankName",
+          "branchName",
           "email",
+          "ifscCode",
           "password",
           "phone",
           "role",
@@ -1417,8 +1450,8 @@
           },
           "email": {
             "minLength": 1,
-            "type": "string",
-            "format": "email"
+            "pattern": "^[a-zA-Z0-9._%+-]+@gmail\\.com$",
+            "type": "string"
           },
           "phone": {
             "minLength": 1,
@@ -1434,17 +1467,34 @@
           },
           "department": {
             "$ref": "#/components/schemas/DepartmentType"
+          },
+          "bankName": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "accountNumber": {
+            "minLength": 1,
+            "pattern": "^\\d{9,18}$",
+            "type": "string"
+          },
+          "ifscCode": {
+            "minLength": 1,
+            "pattern": "^[A-Z]{4}0[A-Z0-9]{6}$",
+            "type": "string"
+          },
+          "branchName": {
+            "minLength": 1,
+            "type": "string"
           }
         },
         "additionalProperties": false
       },
       "DepartmentType": {
         "enum": [
-          "HR",
           "IT",
-          "Sales",
-          "Marketing",
-          "Finance"
+          "HR",
+          "FinanceAnalyst",
+          "Sales"
         ],
         "type": "string"
       },
@@ -1475,12 +1525,59 @@
         },
         "additionalProperties": false
       },
+      "UpdateMyProfileRequestDto": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "bankName": {
+            "type": "string",
+            "nullable": true
+          },
+          "accountNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "ifscCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateUserStatusRequestDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "$ref": "#/components/schemas/UserStatus"
+          }
+        },
+        "additionalProperties": false
+      },
       "UserRole": {
         "enum": [
           "Admin",
           "Employee",
           "Manager",
           "Finance"
+        ],
+        "type": "string"
+      },
+      "UserStatus": {
+        "enum": [
+          "Active",
+          "Inactive",
+          "Suspended"
         ],
         "type": "string"
       }

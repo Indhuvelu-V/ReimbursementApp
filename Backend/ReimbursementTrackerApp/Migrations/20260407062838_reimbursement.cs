@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ReimbursementTrackerApp.Migrations
 {
     /// <inheritdoc />
-    public partial class Reimbursement : Migration
+    public partial class reimbursement : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -34,16 +34,27 @@ namespace ReimbursementTrackerApp.Migrations
                     UserName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Role = table.Column<int>(type: "int", nullable: false),
-                    Department = table.Column<int>(type: "int", nullable: false),
+                    Department = table.Column<int>(type: "int", nullable: true),
                     Phone = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Password = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
                     PasswordHash = table.Column<byte[]>(type: "varbinary(max)", nullable: false),
                     Status = table.Column<int>(type: "int", nullable: false),
-                    ApprovalLevel = table.Column<int>(type: "int", nullable: true)
+                    ApprovalLevel = table.Column<int>(type: "int", nullable: true),
+                    BankName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AccountNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IfscCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    BranchName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ManagerId = table.Column<string>(type: "nvarchar(450)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.UserId);
+                    table.ForeignKey(
+                        name: "FK_Users_Users_ManagerId",
+                        column: x => x.ManagerId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -129,9 +140,10 @@ namespace ReimbursementTrackerApp.Migrations
                 {
                     NotificationId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    SenderId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Message = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Reply = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     ReadStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SenderRole = table.Column<string>(type: "nvarchar(max)", nullable: false, defaultValue: "Manager"),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
@@ -183,6 +195,8 @@ namespace ReimbursementTrackerApp.Migrations
                     PaymentId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ExpenseId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    ProcessedByUserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ProcessedByName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     AmountPaid = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false),
                     PaymentStatus = table.Column<int>(type: "int", nullable: false),
                     PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -272,6 +286,11 @@ namespace ReimbursementTrackerApp.Migrations
                 name: "IX_Policies_CategoryId",
                 table: "Policies",
                 column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_ManagerId",
+                table: "Users",
+                column: "ManagerId");
         }
 
         /// <inheritdoc />

@@ -3,9 +3,7 @@
   <!-- Page Header -->
   <div class="page-header">
     <div class="page-header-left">
-      <div class="page-icon">
-        <i class="bi bi-people-fill"></i>
-      </div>
+      <div class="page-icon"><i class="bi bi-people-fill"></i></div>
       <div>
         <h1 class="page-title">Employee Data</h1>
         <p class="page-sub">{{ isAdmin() ? 'Search users or view all registered users' : 'Search for a user by ID' }}</p>
@@ -28,11 +26,8 @@
     </button>
   </div>
 
-  <!-- ══════════════════════════════════════════════════════
-       SEARCH TAB (default for all roles)
-  ═══════════════════════════════════════════════════════ -->
+  <!-- SEARCH TAB -->
   <ng-container *ngIf="activeTab === 'search' || !isAdmin()">
-
     <div class="search-card">
       <div class="search-card-title">
         <div class="search-card-icon"><i class="bi bi-search"></i></div>
@@ -44,16 +39,11 @@
           <input type="text" [(ngModel)]="searchUserId" class="dark-input"
             placeholder="Enter User ID..." (keyup.enter)="searchUser()" />
         </div>
-        <button class="btn-search" (click)="searchUser()">
-          <i class="bi bi-search"></i>Search
-        </button>
-        <button *ngIf="selectedUser" class="btn-clear" (click)="clearSearch()">
-          <i class="bi bi-x-circle"></i>Clear
-        </button>
+        <button class="btn-search" (click)="searchUser()"><i class="bi bi-search"></i>Search</button>
+        <button *ngIf="selectedUser" class="btn-clear" (click)="clearSearch()"><i class="bi bi-x-circle"></i>Clear</button>
       </div>
     </div>
 
-    <!-- User Result Card -->
     <div *ngIf="selectedUser" class="user-result-card">
       <div class="user-result-header">
         <div class="user-avatar-lg">{{ selectedUser.userName?.charAt(0)?.toUpperCase() }}</div>
@@ -72,6 +62,10 @@
           <span class="detail-val">{{ selectedUser.department || '—' }}</span>
         </div>
         <div class="user-detail-item">
+          <span class="detail-label">Email</span>
+          <span class="detail-val"><i class="bi bi-envelope me-1"></i>{{ selectedUser.email || '—' }}</span>
+        </div>
+        <div class="user-detail-item">
           <span class="detail-label">Status</span>
           <span *ngIf="selectedUser.status === 'Active'" class="status-active">
             <i class="bi bi-circle-fill" style="font-size:7px"></i>Active
@@ -80,10 +74,6 @@
             <i class="bi bi-circle-fill" style="font-size:7px"></i>{{ selectedUser.status }}
           </span>
         </div>
-        <div class="user-detail-item">
-          <span class="detail-label">Approval Level</span>
-          <span class="detail-val">{{ selectedUser.approvalLevel || '—' }}</span>
-        </div>
       </div>
     </div>
 
@@ -91,15 +81,10 @@
       <i class="bi bi-info-circle-fill"></i>
       Use the search above to look up a user by their ID.
     </div>
-
   </ng-container>
 
-  <!-- ══════════════════════════════════════════════════════
-       ALL USERS TAB (Admin only)
-  ═══════════════════════════════════════════════════════ -->
+  <!-- ALL USERS TAB (Admin only) -->
   <ng-container *ngIf="activeTab === 'all' && isAdmin()">
-
-    <!-- Filter bar -->
     <div class="filter-bar-card">
       <div class="admin-filter-row">
         <div class="filter-group">
@@ -124,9 +109,7 @@
           <button class="btn-search" style="padding:10px 16px" (click)="applyFilters()">
             <i class="bi bi-funnel-fill"></i>Apply
           </button>
-          <button class="btn-clear" (click)="clearFilters()">
-            <i class="bi bi-x-circle"></i>Reset
-          </button>
+          <button class="btn-clear" (click)="clearFilters()"><i class="bi bi-x-circle"></i>Reset</button>
         </div>
       </div>
     </div>
@@ -135,12 +118,8 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>User ID</th>
-            <th>Name</th>
-            <th>Role</th>
-            <th>Department</th>
-            <th>Status</th>
-            <th>Approval Level</th>
+            <th>User ID</th><th>Name</th><th>Email</th><th>Role</th>
+            <th>Department</th><th>Reporting Manager</th><th>Status</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -152,8 +131,10 @@
                 <span>{{ user.userName }}</span>
               </div>
             </td>
+            <td>{{ user.email || '—' }}</td>
             <td><span class="role-badge">{{ user.role }}</span></td>
             <td>{{ user.department || '—' }}</td>
+            <td>{{ user.reportingManagerName || '—' }}</td>
             <td>
               <span *ngIf="user.status === 'Active'" class="status-active">
                 <i class="bi bi-circle-fill" style="font-size:7px"></i>Active
@@ -162,10 +143,20 @@
                 <i class="bi bi-circle-fill" style="font-size:7px"></i>{{ user.status }}
               </span>
             </td>
-            <td>{{ user.approvalLevel || '—' }}</td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn-action-sm" (click)="openAssignModal(user)" title="Assign Manager"
+                  *ngIf="user.role !== 'Manager' && user.role !== 'Admin'">
+                  <i class="bi bi-person-check"></i> Manager
+                </button>
+                <button class="btn-action-sm btn-status" (click)="openStatusModal(user)" title="Change Status">
+                  <i class="bi bi-toggle-on"></i> Status
+                </button>
+              </div>
+            </td>
           </tr>
           <tr *ngIf="!users.length" class="no-data-row">
-            <td colspan="6"><i class="bi bi-inbox me-2"></i>No users found.</td>
+            <td colspan="8"><i class="bi bi-inbox me-2"></i>No users found.</td>
           </tr>
         </tbody>
       </table>
@@ -176,16 +167,58 @@
           &nbsp;·&nbsp; <strong>{{ totalRecords }}</strong> total users
         </span>
         <div class="pg-buttons">
-          <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
-            <i class="bi bi-chevron-left"></i>Prev
-          </button>
-          <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
-            Next<i class="bi bi-chevron-right"></i>
-          </button>
+          <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+          <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next<i class="bi bi-chevron-right"></i></button>
         </div>
       </div>
     </div>
-
   </ng-container>
 
+</div>
+
+<!-- Assign Manager Modal -->
+<div class="modal-backdrop" *ngIf="showAssignModal" (click)="showAssignModal=false"></div>
+<div class="modal-box" *ngIf="showAssignModal">
+  <div class="modal-head">
+    <h4><i class="bi bi-person-check me-2"></i>Assign Manager</h4>
+    <button class="modal-close-btn" (click)="showAssignModal=false"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" style="padding:20px 24px">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+      Assigning manager for <strong>{{ assignTarget?.userName }}</strong> ({{ assignTarget?.department }} dept.)
+    </p>
+    <div *ngIf="availableManagers.length === 0" style="color:var(--status-rejected);font-size:13px;margin-bottom:12px">
+      <i class="bi bi-exclamation-triangle me-1"></i>
+      No manager found for the {{ assignTarget?.department }} department. Please register a manager first.
+    </div>
+    <select [(ngModel)]="selectedManagerId" class="field-input" *ngIf="availableManagers.length > 0">
+      <option value="" disabled>Select a manager</option>
+      <option *ngFor="let m of availableManagers" [value]="m.userId">{{ m.userName }} ({{ m.department }})</option>
+    </select>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button class="btn-ghost" (click)="showAssignModal=false">Cancel</button>
+      <button class="btn-primary" (click)="confirmAssignManager()" [disabled]="availableManagers.length === 0">Assign</button>
+    </div>
+  </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal-backdrop" *ngIf="showStatusModal" (click)="showStatusModal=false"></div>
+<div class="modal-box" *ngIf="showStatusModal">
+  <div class="modal-head">
+    <h4><i class="bi bi-toggle-on me-2"></i>Update User Status</h4>
+    <button class="modal-close-btn" (click)="showStatusModal=false"><i class="bi bi-x-lg"></i></button>
+  </div>
+  <div class="modal-body" style="padding:20px 24px">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px">
+      Change status for <strong>{{ statusTarget?.userName }}</strong>
+    </p>
+    <select [(ngModel)]="selectedStatus" class="field-input">
+      <option *ngFor="let s of statusOptions" [value]="s">{{ s }}</option>
+    </select>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button class="btn-ghost" (click)="showStatusModal=false">Cancel</button>
+      <button class="btn-primary" (click)="confirmUpdateStatus()">Update</button>
+    </div>
+  </div>
 </div>

@@ -12,8 +12,8 @@ using ReimbursementTrackerApp.Contexts;
 namespace ReimbursementTrackerApp.Migrations
 {
     [DbContext(typeof(ReimbursementContext))]
-    [Migration("20260316161442_Reimbursement")]
-    partial class Reimbursement
+    [Migration("20260407062838_reimbursement")]
+    partial class reimbursement
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -214,6 +214,12 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<int>("PaymentStatus")
                         .HasColumnType("int");
 
+                    b.Property<string>("ProcessedByName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ProcessedByUserId")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("ReferenceNo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -293,6 +299,7 @@ namespace ReimbursementTrackerApp.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Message")
@@ -304,6 +311,10 @@ namespace ReimbursementTrackerApp.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Reply")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SenderRole")
@@ -328,15 +339,34 @@ namespace ReimbursementTrackerApp.Migrations
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("AccountNumber")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("ApprovalLevel")
                         .HasColumnType("int");
 
-                    b.Property<int>("Department")
+                    b.Property<string>("BankName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BranchName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Department")
                         .HasColumnType("int");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IfscCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ManagerId")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<byte[]>("Password")
                         .IsRequired()
@@ -361,6 +391,8 @@ namespace ReimbursementTrackerApp.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
+
+                    b.HasIndex("ManagerId");
 
                     b.ToTable("Users");
                 });
@@ -451,6 +483,16 @@ namespace ReimbursementTrackerApp.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ReimbursementTrackerApp.User", b =>
+                {
+                    b.HasOne("ReimbursementTrackerApp.User", "Manager")
+                        .WithMany()
+                        .HasForeignKey("ManagerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Manager");
                 });
 
             modelBuilder.Entity("Expense", b =>

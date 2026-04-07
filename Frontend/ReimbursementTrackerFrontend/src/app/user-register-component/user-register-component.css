@@ -205,3 +205,44 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+.all-dept-display {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 4px;
+}
+.dept-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #7dd3fc;
+}
+.dept-chip i { font-size: 12px; color: #0284c7; }
+
+.input-eye-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.input-eye-wrap .form-control {
+  padding-right: 42px;
+}
+.eye-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--text-muted, #6b7280);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+.eye-btn:hover { color: var(--text, #111); }

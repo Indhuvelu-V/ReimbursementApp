@@ -29,7 +29,7 @@ export class APIService {
 
   // ============================= USERS =============================
 
-  apiCreateUser(user: UserRegisterModel): Observable<CreateUserResponseDto> {
+  apiCreateUser(user: any): Observable<CreateUserResponseDto> {
     return this.http.post<CreateUserResponseDto>(`${this.baseUrl}/Users/register`, user);
   }
 
@@ -42,6 +42,24 @@ export class APIService {
 
   getUserById(userId: string): Observable<User> {
     return this.http.get<User>(`${this.baseUrl}/Users/${userId}`);
+  }
+
+  assignManager(employeeId: string, managerId: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Users/assign-manager`, { employeeId, managerId });
+  }
+
+  updateUserStatus(userId: string, status: string): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Users/update-status`, { userId, status });
+  }
+
+  updateMyProfile(data: { phone?: string; bankName?: string; accountNumber?: string; ifscCode?: string; branchName?: string }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/Users/update-my-profile`, data);
+  }
+
+  getUsersByDepartment(department: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/Users/allusers`, {
+      params: new HttpParams().set('pageNumber', 1).set('pageSize', 200)
+    });
   }
 
   // ============================= EXPENSES =============================
@@ -115,6 +133,10 @@ export class APIService {
     return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/manager`, request);
   }
 
+  adminApproval(request: CreateApprovalRequestDto): Observable<CreateApprovalResponseDto> {
+    return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/admin`, request);
+  }
+
   getAllApprovals(pagination: PaginationParams): Observable<PagedResponse<CreateApprovalResponseDto>> {
     let params = new HttpParams()
       .set('pageNumber', pagination.pageNumber)
@@ -175,7 +197,7 @@ export class APIService {
     return this.http.post<CreateNotificationResponseDto>(`${this.baseUrl}/Notification/Users/read/${notificationId}`, {});
   }
 
-  createNotification(data: { userId: string; message: string }): Observable<CreateNotificationResponseDto> {
+  createNotification(data: { userId: string; message: string; senderRole?: string }): Observable<CreateNotificationResponseDto> {
     return this.http.post<CreateNotificationResponseDto>(`${this.baseUrl}/Notification/AllUsersCreate`, data);
   }
 
@@ -209,9 +231,10 @@ export class APIService {
     return this.http.get<PagedResponse<CreateAuditLogsResponseDto>>(`${this.baseUrl}/AuditLogs/paged`, { params });
   }
 
-  createAuditLog(data: any): Observable<any> {
-    return this.http.post(`${this.baseUrl}/AuditLogs`, data);
-  }
+  // createAuditLog — commented out (logs are created automatically by backend services)
+  // createAuditLog(data: any): Observable<any> {
+  //   return this.http.post(`${this.baseUrl}/AuditLogs`, data);
+  // }
 
   deleteLog(logId: string): Observable<any> {
     return this.http.delete(`${this.baseUrl}/AuditLogs/${logId}`);

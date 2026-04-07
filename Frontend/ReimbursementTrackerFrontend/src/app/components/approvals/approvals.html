@@ -7,21 +7,20 @@
       </div>
       <div>
         <h1 class="page-title">Approvals</h1>
-        <p class="page-sub">{{ role === 'Manager' ? 'Review and track expense approvals' : 'All approval records' }}</p>
+        <p class="page-sub">{{ role === 'Manager' ? 'Review and track expense approvals' : role === 'Admin' ? 'Approve Manager & Finance expenses' : 'All approval records' }}</p>
       </div>
     </div>
     <div *ngIf="role === 'Admin'" class="stat-chip" style="background:var(--gold-dim);border-color:var(--gold-glow);">
-      <span class="stat-chip-num" style="color:var(--gold)">{{ filteredApprovals.length }}</span>
-      <span class="stat-chip-label">Records</span>
+      <span class="stat-chip-num" style="color:var(--gold)">{{ mgrTab === 'pending' ? filteredSubmitted.length : filteredApprovals.length }}</span>
+      <span class="stat-chip-label">{{ mgrTab === 'pending' ? 'Pending' : 'Records' }}</span>
     </div>
     <div *ngIf="role === 'Manager'" class="stat-chip" style="background:var(--accent-dim);border-color:var(--accent-glow);">
       <span class="stat-chip-num" style="color:var(--accent)">{{ mgrTab === 'pending' ? filteredSubmitted.length : filteredApprovals.length }}</span>
       <span class="stat-chip-label">{{ mgrTab === 'pending' ? 'Pending' : 'Records' }}</span>
-    </div>
-  </div>
+    </div>  </div>
 
-  <!-- MANAGER -->
-  <ng-container *ngIf="role === 'Manager'">
+  <!-- MANAGER / ADMIN -->
+  <ng-container *ngIf="role === 'Manager' || role === 'Admin'">
     <div class="view-tabs">
       <button class="view-tab" [class.active]="mgrTab === 'pending'" (click)="switchMgrTab('pending')">
         <i class="bi bi-inbox-fill"></i>Pending Approvals
@@ -29,7 +28,7 @@
       </button>
       <button class="view-tab" [class.active]="mgrTab === 'history'" (click)="switchMgrTab('history')">
         <i class="bi bi-clock-history"></i>Approval History
-        <span class="tab-badge history-badge" *ngIf="approvals.length > 0">{{ approvals.length }}</span>
+        <span class="tab-badge history-badge" *ngIf="filteredApprovals.length > 0">{{ filteredApprovals.length }}</span>
       </button>
     </div>
 
@@ -102,6 +101,10 @@
             <span class="status-badge badge-Submitted">Submitted</span>
           </div>
           <div class="card-body">
+            <div *ngIf="e.userName" class="card-user-row" style="margin-bottom:8px">
+              <i class="bi bi-person-fill me-1" style="color:var(--accent)"></i>
+              <span style="font-size:13px;font-weight:600;color:var(--text)">{{ e.userName }}</span>
+            </div>
             <div class="card-meta-row">
               <div class="card-meta-item">
                 <span class="meta-label">Amount</span>
@@ -243,8 +246,8 @@
 
   </ng-container>
 
-  <!-- ADMIN -->
-  <ng-container *ngIf="role === 'Admin' && !loading">
+  <!-- ADMIN flat list (approval history only — pending handled in tabbed view above) -->
+  <ng-container *ngIf="role === 'Admin' && false">
     <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
       <div class="admin-filter-row">
         <div class="filter-group">

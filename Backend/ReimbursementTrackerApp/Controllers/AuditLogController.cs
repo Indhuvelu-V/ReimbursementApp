@@ -27,37 +27,21 @@ namespace ReimbursementTrackerApp.Controllers
         }
 
         // =====================================================
-        // CREATE AUDIT LOG
+        // CREATE AUDIT LOG — commented out (logs are created
+        // automatically by AuditLogActionFilter and services)
         // =====================================================
-        [HttpPost]
-        [Authorize]
-        public async Task<IActionResult> CreateLog(CreateAuditLogsRequestDto request)
-        {
-            _logger.LogInformation("Request to create audit log for Expense {ExpenseId}", request.ExpenseId);
-
-            try
-            {
-                var result = await _auditLogService.CreateLog(request);
-
-                _logger.LogInformation("Audit log created successfully for Expense {ExpenseId}", request.ExpenseId);
-
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized attempt to create audit log for Expense {ExpenseId}", request.ExpenseId);
-                return Forbid(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating audit log for Expense {ExpenseId}", request.ExpenseId);
-                return StatusCode(500, new
-                {
-                    message = "Failed to create audit log.",
-                    details = ex.Message
-                });
-            }
-        }
+        // [HttpPost]
+        // [Authorize]
+        // public async Task<IActionResult> CreateLog(CreateAuditLogsRequestDto request)
+        // {
+        //     try
+        //     {
+        //         var result = await _auditLogService.CreateLog(request);
+        //         return Ok(result);
+        //     }
+        //     catch (UnauthorizedAccessException ex) { return Forbid(ex.Message); }
+        //     catch (Exception ex) { return StatusCode(500, new { message = "Failed to create audit log.", details = ex.Message }); }
+        // }
 
         // =====================================================
         // GET PAGED LOGS

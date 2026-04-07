@@ -32,9 +32,67 @@ namespace ReimbursementTrackerApp.Services
             var users = await _userRepo.GetAllAsync();
             var existingUser = (users ?? Enumerable.Empty<User>()).FirstOrDefault(u => u.UserId == request.UserId);
 
-
             if (existingUser != null)
                 throw new InvalidOperationException("User already exists.");
+
+            // 🔹 Check duplicate email
+            var emailTaken = (users ?? Enumerable.Empty<User>())
+                .Any(u => u.Email.Equals(request.Email, StringComparison.OrdinalIgnoreCase));
+            if (emailTaken)
+                throw new InvalidOperationException("Email already exists.");
+
+            // 🔹 Check duplicate password (compare against each user's stored hash)
+            var passwordDuplicate = (users ?? Enumerable.Empty<User>()).Any(u =>
+            {
+                byte[]? _;
+                var hash = _passwordService.HashPassword(request.Password, u.PasswordHash, out _);
+                return hash.SequenceEqual(u.Password);
+            });
+            if (passwordDuplicate)
+                throw new InvalidOperationException("Password already in use. Please choose a different password.");
+
+            // 🔹 Check duplicate phone
+            var phoneTaken = (users ?? Enumerable.Empty<User>())
+                .Any(u => u.Phone == request.Phone);
+            if (phoneTaken)
+                throw new InvalidOperationException("Mobile number already in use. Please use a different number.");
+
+            // 🔹 Check duplicate account number
+            if (!string.IsNullOrWhiteSpace(request.AccountNumber))
+            {
+                var accountTaken = (users ?? Enumerable.Empty<User>())
+                    .Any(u => u.AccountNumber == request.AccountNumber);
+                if (accountTaken)
+                    throw new InvalidOperationException("Account number already in use. Please use a different account number.");
+            }
+
+            // 🔹 Enforce: only one Admin
+            if (request.Role == UserRole.Admin)
+            {
+                var adminExists = (users ?? Enumerable.Empty<User>())
+                    .Any(u => u.Role == UserRole.Admin);
+                if (adminExists)
+                    throw new InvalidOperationException("An Admin already exists. Only one Admin is allowed in the system.");
+            }
+
+            // 🔹 Enforce: only one Finance
+            if (request.Role == UserRole.Finance)
+            {
+                var financeExists = (users ?? Enumerable.Empty<User>())
+                    .Any(u => u.Role == UserRole.Finance);
+                if (financeExists)
+                    throw new InvalidOperationException("A Finance user already exists. Only one Finance role is allowed in the system.");
+            }
+
+            // 🔹 Enforce: only one Manager per department
+            if (request.Role == UserRole.Manager)
+            {
+                var deptManagerExists = (users ?? Enumerable.Empty<User>())
+                    .Any(u => u.Role == UserRole.Manager && u.Department == request.Department);
+
+                if (deptManagerExists)
+                    throw new InvalidOperationException($"A Manager already exists for the {request.Department} department. Please choose your role correctly.");
+            }
 
             byte[]? hashKey;
             var passwordHash = _passwordService.HashPassword(request.Password, null, out hashKey);
@@ -56,6 +114,15 @@ namespace ReimbursementTrackerApp.Services
                     break;
             }
 
+            // 🔹 Auto-assign reporting manager from same department
+            string? managerId = null;
+            if (request.Role != UserRole.Manager)
+            {
+                var deptManager = (users ?? Enumerable.Empty<User>())
+                    .FirstOrDefault(u => u.Role == UserRole.Manager && u.Department == request.Department);
+                managerId = deptManager?.UserId;
+            }
+
             var user = new User
             {
                 UserId = request.UserId,
@@ -67,7 +134,12 @@ namespace ReimbursementTrackerApp.Services
                 Password = passwordHash,
                 PasswordHash = hashKey ?? Array.Empty<byte>(),
                 Status = UserStatus.Active,
-                ApprovalLevel = approvalLevel
+                ApprovalLevel = approvalLevel,
+                ManagerId = managerId,
+                BankName = request.BankName ?? string.Empty,
+                AccountNumber = request.AccountNumber ?? string.Empty,
+                IfscCode = !string.IsNullOrWhiteSpace(request.IfscCode) ? request.IfscCode.ToUpper() : string.Empty,
+                BranchName = request.BranchName ?? string.Empty
             };
 
             await _userRepo.AddAsync(user);
@@ -81,17 +153,32 @@ namespace ReimbursementTrackerApp.Services
                 Role = user.Role
             });
 
+            // 🔹 Resolve manager name for response
+            string? managerName = null;
+            if (!string.IsNullOrEmpty(user.ManagerId))
+            {
+                var mgr = (users ?? Enumerable.Empty<User>()).FirstOrDefault(u => u.UserId == user.ManagerId);
+                managerName = mgr?.UserName;
+            }
+
             return new CreateUserResponseDto
             {
                 UserId = user.UserId,
                 UserName = user.UserName,
+                Email = user.Email,
+                Phone = user.Phone,
                 Role = user.Role,
                 Department = user.Department,
                 Status = user.Status,
-                ApprovalLevel = user.ApprovalLevel
+                ApprovalLevel = user.ApprovalLevel,
+                ReportingManagerId = user.ManagerId,
+                ReportingManagerName = managerName,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode,
+                BranchName = user.BranchName
             };
         }
-
         // =====================================================
         // 2️⃣ GET USER BY ID
         // =====================================================
@@ -108,14 +195,29 @@ namespace ReimbursementTrackerApp.Services
                 Action = $"Fetched User {userId}"
             });
 
+            string? managerName = null;
+            if (!string.IsNullOrEmpty(user.ManagerId))
+            {
+                var mgr = (users ?? Enumerable.Empty<User>()).FirstOrDefault(u => u.UserId == user.ManagerId);
+                managerName = mgr?.UserName;
+            }
+
             return new CreateUserResponseDto
             {
                 UserId = user.UserId,
                 UserName = user.UserName,
+                Email = user.Email,
+                Phone = user.Phone,
                 Role = user.Role,
                 Department = user.Department,
                 Status = user.Status,
-                ApprovalLevel = user.ApprovalLevel
+                ApprovalLevel = user.ApprovalLevel,
+                ReportingManagerId = user.ManagerId,
+                ReportingManagerName = managerName,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode,
+                BranchName = user.BranchName
             };
         }
 
@@ -142,14 +244,23 @@ namespace ReimbursementTrackerApp.Services
                 var pagedUsers = filtered
                     .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
                     .Take(paginationParams.PageSize)
-                    .Select(u => new CreateUserResponseDto
+                    .Select(u =>
                     {
-                        UserId = u.UserId,
-                        UserName = u.UserName,
-                        Role = u.Role,
-                        Department = u.Department,
-                        Status = u.Status,
-                        ApprovalLevel = u.ApprovalLevel
+                        var mgr = !string.IsNullOrEmpty(u.ManagerId)
+                            ? users.FirstOrDefault(m => m.UserId == u.ManagerId)
+                            : null;
+                        return new CreateUserResponseDto
+                        {
+                            UserId = u.UserId,
+                            UserName = u.UserName,
+                            Email = u.Email,
+                            Role = u.Role,
+                            Department = u.Department,
+                            Status = u.Status,
+                            ApprovalLevel = u.ApprovalLevel,
+                            ReportingManagerId = u.ManagerId,
+                            ReportingManagerName = mgr?.UserName
+                        };
                     })
                     .ToList();
 
@@ -168,5 +279,154 @@ namespace ReimbursementTrackerApp.Services
         }
 
 
+        // =====================================================
+        // 4️⃣ ASSIGN MANAGER (Admin only — same department)
+        // =====================================================
+        public async Task<CreateUserResponseDto> AssignManager(AssignManagerRequestDto request)
+        {
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+
+            var employee = users.FirstOrDefault(u => u.UserId == request.EmployeeId)
+                ?? throw new KeyNotFoundException($"Employee {request.EmployeeId} not found.");
+
+            var manager = users.FirstOrDefault(u => u.UserId == request.ManagerId)
+                ?? throw new KeyNotFoundException($"Manager {request.ManagerId} not found.");
+
+            if (manager.Role != UserRole.Manager)
+                throw new InvalidOperationException($"{manager.UserName} is not a Manager.");
+
+            if (manager.Department != employee.Department)
+                throw new InvalidOperationException(
+                    $"Manager {manager.UserName} belongs to {manager.Department} department. " +
+                    $"You can only assign a manager from the same department ({employee.Department}).");
+
+            employee.ManagerId = manager.UserId;
+            await _userRepo.UpdateAsync(employee.UserId, employee);
+
+            await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = $"Admin assigned Manager {manager.UserId} to Employee {employee.UserId}",
+                UserId = employee.UserId,
+                UserName = employee.UserName,
+                Role = employee.Role
+            });
+
+            return new CreateUserResponseDto
+            {
+                UserId = employee.UserId,
+                UserName = employee.UserName,
+                Email = employee.Email,
+                Role = employee.Role,
+                Department = employee.Department,
+                Status = employee.Status,
+                ApprovalLevel = employee.ApprovalLevel,
+                ReportingManagerId = employee.ManagerId,
+                ReportingManagerName = manager.UserName
+            };
+        }
+
+        // =====================================================
+        // 5️⃣ UPDATE USER STATUS (Admin only)
+        // =====================================================
+        public async Task<CreateUserResponseDto> UpdateUserStatus(UpdateUserStatusRequestDto request)
+        {
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+
+            var user = users.FirstOrDefault(u => u.UserId == request.UserId)
+                ?? throw new KeyNotFoundException($"User {request.UserId} not found.");
+
+            user.Status = request.Status;
+            await _userRepo.UpdateAsync(user.UserId, user);
+
+            await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = $"Admin updated status of User {user.UserId} to {request.Status}",
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Role = user.Role
+            });
+
+            var mgr = !string.IsNullOrEmpty(user.ManagerId)
+                ? users.FirstOrDefault(m => m.UserId == user.ManagerId)
+                : null;
+
+            return new CreateUserResponseDto
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Email = user.Email,
+                Role = user.Role,
+                Department = user.Department,
+                Status = user.Status,
+                ApprovalLevel = user.ApprovalLevel,
+                ReportingManagerId = user.ManagerId,
+                ReportingManagerName = mgr?.UserName
+            };
+        }
+
+        // =====================================================
+        // 6️⃣ UPDATE MY PROFILE (any authenticated user)
+        // =====================================================
+        public async Task<CreateUserResponseDto> UpdateMyProfile(string userId, UpdateMyProfileRequestDto request)
+        {
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+
+            var user = users.FirstOrDefault(u => u.UserId == userId)
+                ?? throw new KeyNotFoundException($"User {userId} not found.");
+
+            // Validate duplicate phone if changed
+            if (!string.IsNullOrWhiteSpace(request.Phone) && request.Phone != user.Phone)
+            {
+                var phoneTaken = users.Any(u => u.UserId != userId && u.Phone == request.Phone);
+                if (phoneTaken)
+                    throw new InvalidOperationException("Mobile number already in use by another user.");
+                user.Phone = request.Phone;
+            }
+
+            // Validate duplicate account number if changed
+            if (!string.IsNullOrWhiteSpace(request.AccountNumber) && request.AccountNumber != user.AccountNumber)
+            {
+                var accountTaken = users.Any(u => u.UserId != userId && u.AccountNumber == request.AccountNumber);
+                if (accountTaken)
+                    throw new InvalidOperationException("Account number already in use by another user.");
+                user.AccountNumber = request.AccountNumber;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.BankName)) user.BankName = request.BankName;
+            if (!string.IsNullOrWhiteSpace(request.IfscCode)) user.IfscCode = request.IfscCode.ToUpper();
+            if (!string.IsNullOrWhiteSpace(request.BranchName)) user.BranchName = request.BranchName;
+
+            await _userRepo.UpdateAsync(user.UserId, user);
+
+            await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
+            {
+                Action = $"User {userId} updated their profile",
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Role = user.Role
+            });
+
+            var mgr2 = !string.IsNullOrEmpty(user.ManagerId)
+                ? users.FirstOrDefault(m => m.UserId == user.ManagerId)
+                : null;
+
+            return new CreateUserResponseDto
+            {
+                UserId = user.UserId,
+                UserName = user.UserName,
+                Email = user.Email,
+                Phone = user.Phone,
+                Role = user.Role,
+                Department = user.Department,
+                Status = user.Status,
+                ApprovalLevel = user.ApprovalLevel,
+                ReportingManagerId = user.ManagerId,
+                ReportingManagerName = mgr2?.UserName,
+                BankName = user.BankName,
+                AccountNumber = user.AccountNumber,
+                IfscCode = user.IfscCode,
+                BranchName = user.BranchName
+            };
+        }
     }
 }

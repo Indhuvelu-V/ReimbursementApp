@@ -131,3 +131,18 @@
   background: rgba(255,255,255,0.25); color: inherit;
 }
 .view-tab:not(.active) .tab-badge { background: var(--teal-dim); color: var(--teal); }
+
+.btn-notify-user {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border: none; border-radius: 8px;
+  background: #f59e0b; color: #fff;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.btn-notify-user:hover { opacity: 0.85; }
+.btn-notify-user i { font-size: 13px; }
+
+.qp-username {
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  display: inline-flex; align-items: center;
+}
