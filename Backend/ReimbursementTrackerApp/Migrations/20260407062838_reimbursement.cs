@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ReimbursementTrackerApp.Migrations
 {
     /// <inheritdoc />
-    public partial class AddUserBankAndManagerFields : Migration
+    public partial class reimbursement : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

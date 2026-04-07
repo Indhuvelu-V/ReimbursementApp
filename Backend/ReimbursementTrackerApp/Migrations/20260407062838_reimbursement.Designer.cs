@@ -12,8 +12,8 @@ using ReimbursementTrackerApp.Contexts;
 namespace ReimbursementTrackerApp.Migrations
 {
     [DbContext(typeof(ReimbursementContext))]
-    [Migration("20260406050431_AddUserBankAndManagerFields")]
-    partial class AddUserBankAndManagerFields
+    [Migration("20260407062838_reimbursement")]
+    partial class reimbursement
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

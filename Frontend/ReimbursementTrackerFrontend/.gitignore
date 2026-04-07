@@ -1,42 +1,110 @@
-# See http://help.github.com/ignore-files/ for more about ignoring files.
+#######################################
+# .NET / ASP.NET Core
+#######################################
 
-# Compiled output
-/dist
-/tmp
-/out-tsc
-/bazel-out
+# Build output
+bin/
+obj/
 
-# Node
-/node_modules
-npm-debug.log
-yarn-error.log
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
 
-# IDEs and editors
+# Visual Studio cache
+.vs/
+
+# Rider / JetBrains
 .idea/
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
 
-# Visual Studio Code
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# Build logs
+*.log
+
+# Generated files
+*.cache
+*.bin
+
+#######################################
+# VS Code
+#######################################
+
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/*
 
-# Misc
-/.angular/cache
-.sass-cache/
-/connect.lock
-/coverage
-/libpeerconnection.log
-testem.log
-/typings
+#######################################
+# Node / Angular
+#######################################
 
-# System files
+node_modules/
+dist/
+tmp/
+out-tsc/
+bazel-out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Angular cache
+.angular/cache
+
+#######################################
+# Environment files
+#######################################
+
+.env
+.env.local
+.env.*.local
+
+#######################################
+# OS files
+#######################################
+
 .DS_Store
 Thumbs.db
+
+#######################################
+# Testing
+#######################################
+
+coverage/
+*.coverage
+*.coveragexml
+TestResults/
+
+#######################################
+# Misc
+#######################################
+
+*.swp
+*.lock.json
+libpeerconnection.log
+connect.lock
+testem.log
+typings/
+.sass-cache/
+
+#######################################
+# IMPORTANT: Never ignore these
+#######################################
+
+# Keep configs and source
+!*.cs
+!*.json
+!*.csproj
+!*.sln
+!*.ts
+!*.html
+!*.scss
