@@ -1,5 +1,4 @@
 ﻿
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -25,49 +24,57 @@ namespace ReimbursementTrackerApp.Controllers
         }
 
         // ======================================================
-        // 1️⃣ Manager Approval / Rejection
+        // 1️⃣ Team Lead Approval / Rejection (Level1)
+        //    Employee/TeamLead expenses in Submitted state.
+        //    Approved → moves to Pending (awaiting Manager).
+        // ======================================================
+        [HttpPost("teamlead")]
+        [Authorize(Roles = "TeamLead")]
+        public async Task<IActionResult> TeamLeadApproval([FromBody] CreateApprovalRequestDto request)
+        {
+            _logger.LogInformation("TeamLead approval request for Expense {ExpenseId}", request.ExpenseId);
+            try
+            {
+                var result = await _approvalService.TeamLeadApproval(request);
+                return Ok(result);
+            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error during TeamLead approval for Expense {ExpenseId}", request.ExpenseId);
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+            }
+        }
+
+        // ======================================================
+        // 2️⃣ Manager Approval / Rejection (Level2)
+        //    Pending (post-TeamLead) or Submitted (Manager's own).
+        //    Approved → ExpenseStatus.Approved (ready for Finance).
         // ======================================================
         [HttpPost("manager")]
         [Authorize(Roles = "Manager")]
         public async Task<IActionResult> ManagerApproval([FromBody] CreateApprovalRequestDto request)
         {
-            _logger.LogInformation("Manager approval request received for Expense {ExpenseId}", request.ExpenseId);
-
+            _logger.LogInformation("Manager approval request for Expense {ExpenseId}", request.ExpenseId);
             try
             {
                 var result = await _approvalService.ManagerApproval(request);
-
-                _logger.LogInformation("Manager approval processed successfully for Expense {ExpenseId}", request.ExpenseId);
-
                 return Ok(result);
             }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Expense {ExpenseId} not found during approval", request.ExpenseId);
-                return NotFound(new { message = ex.Message });
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Invalid operation during approval for Expense {ExpenseId}", request.ExpenseId);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid request data for Expense {ExpenseId}", request.ExpenseId);
-                return BadRequest(new { message = ex.Message });
-            }
+            catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
+            catch (ArgumentException ex) { return BadRequest(new { message = ex.Message }); }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected error during manager approval for Expense {ExpenseId}", request.ExpenseId);
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred.",
-                    details = ex.Message
-                });
+                _logger.LogError(ex, "Unexpected error during Manager approval for Expense {ExpenseId}", request.ExpenseId);
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
             }
         }
 
         // ======================================================
+<<<<<<< HEAD
         // 2️⃣ Admin Approval / Rejection (for Manager/Finance expenses)
         // ======================================================
         [HttpPost("admin")]
@@ -88,30 +95,63 @@ namespace ReimbursementTrackerApp.Controllers
 
         // ======================================================
         // 3️⃣ Admin View All Approvals
+=======
+        // 3️⃣ Get expenses awaiting TeamLead review
+        //    Returns Submitted expenses from Employee/TeamLead roles
+        // ======================================================
+        [HttpGet("pending/teamlead")]
+        [Authorize(Roles = "TeamLead,Admin")]
+        public async Task<IActionResult> GetPendingTeamLeadExpenses()
+        {
+            try
+            {
+                var result = await _approvalService.GetExpensesPendingTeamLeadApproval();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching pending TeamLead expenses");
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+            }
+        }
+
+        // ======================================================
+        // 4️⃣ Get expenses awaiting Manager review
+        //    Returns Pending (post-TeamLead) + Manager's own Submitted
+        // ======================================================
+        [HttpGet("pending/manager")]
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> GetPendingManagerExpenses()
+        {
+            try
+            {
+                var result = await _approvalService.GetExpensesPendingManagerApproval();
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching pending Manager expenses");
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
+            }
+        }
+
+        // ======================================================
+        // 5️⃣ Admin View All Approvals
+>>>>>>> eba5464 (Feature added)
         // ======================================================
         [HttpGet("all")]
         [Authorize(Roles = "Admin,Manager")]
         public async Task<IActionResult> GetAllApprovals([FromQuery] PaginationParams paginationParams)
         {
-            _logger.LogInformation("Request to fetch all approvals. Page {Page}, Size {Size}",
-                paginationParams.PageNumber, paginationParams.PageSize);
-
             try
             {
                 var approvals = await _approvalService.GetAllApprovals(paginationParams);
-
-                _logger.LogInformation("Approvals fetched successfully");
-
                 return Ok(approvals);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching approvals");
-                return StatusCode(500, new
-                {
-                    message = "An unexpected error occurred.",
-                    details = ex.Message
-                });
+                return StatusCode(500, new { message = "An unexpected error occurred.", details = ex.Message });
             }
         }
     }

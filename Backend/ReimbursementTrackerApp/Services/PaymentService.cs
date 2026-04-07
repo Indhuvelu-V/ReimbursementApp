@@ -246,8 +246,9 @@ namespace ReimbursementTrackerApp.Services
 
             role = (role ?? string.Empty).Trim();
 
-            // Employee & Manager → only own payments
+            // Employee, TeamLead & Manager → only own payments
             if ((role.Equals("Employee", StringComparison.OrdinalIgnoreCase) ||
+                 role.Equals("TeamLead", StringComparison.OrdinalIgnoreCase) ||
                  role.Equals("Manager", StringComparison.OrdinalIgnoreCase)) &&
                 payment.UserId != userId)
             {

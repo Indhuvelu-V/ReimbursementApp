@@ -13,7 +13,11 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+<<<<<<< HEAD
 [assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68c7a07954972652fd61dece97bb1d21ba6b7ffb")]
+=======
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+51a613d0fa8c5eb8f63a584d9ff8a92041a2945e")]
+>>>>>>> eba5464 (Feature added)
 [assembly: System.Reflection.AssemblyProductAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ReimbursementTrackerApp")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -68,7 +68,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 🔹 Get Payment by ExpenseId
         // =====================================================
         [HttpGet("{expenseId}")]
-        [Authorize(Roles = "Employee,Finance,Admin,Manager")]
+        [Authorize(Roles = "Employee,TeamLead,Finance,Admin,Manager")]
         public async Task<IActionResult> GetPaymentByExpenseId(string expenseId)
         {
             _logger.LogInformation("Request to fetch payment for Expense {ExpenseId}", expenseId);

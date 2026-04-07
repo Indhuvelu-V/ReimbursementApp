@@ -14,6 +14,7 @@ namespace ReimbursementTrackerApp.Models.Enums
     {
         Admin,
         Employee,
+        TeamLead,
         Manager,
         Finance
     }

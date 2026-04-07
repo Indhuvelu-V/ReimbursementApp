@@ -7,18 +7,42 @@
       </div>
       <div>
         <h1 class="page-title">Approvals</h1>
+<<<<<<< HEAD
         <p class="page-sub">{{ role === 'Manager' ? 'Review and track expense approvals' : role === 'Admin' ? 'Approve Manager & Finance expenses' : 'All approval records' }}</p>
       </div>
     </div>
     <div *ngIf="role === 'Admin'" class="stat-chip" style="background:var(--gold-dim);border-color:var(--gold-glow);">
       <span class="stat-chip-num" style="color:var(--gold)">{{ mgrTab === 'pending' ? filteredSubmitted.length : filteredApprovals.length }}</span>
       <span class="stat-chip-label">{{ mgrTab === 'pending' ? 'Pending' : 'Records' }}</span>
+=======
+        <p class="page-sub">
+          <ng-container *ngIf="role === 'TeamLead'">Review and approve submitted employee expenses (Level 1)</ng-container>
+          <ng-container *ngIf="role === 'Manager'">Review and approve expenses (Level 2)</ng-container>
+          <ng-container *ngIf="role === 'Admin'">All approval records</ng-container>
+        </p>
+      </div>
+    </div>
+
+    <!-- Role stat chips -->
+    <div *ngIf="role === 'TeamLead'" class="stat-chip" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.25);">
+      <span class="stat-chip-num" style="color:var(--sky)">{{ pendingExpenses.length }}</span>
+      <span class="stat-chip-label">Pending</span>
+    </div>
+    <div *ngIf="role === 'Manager'" class="stat-chip" style="background:rgba(168,85,247,0.1);border-color:rgba(168,85,247,0.25);">
+      <span class="stat-chip-num" style="color:#a855f7">{{ pendingExpenses.length }}</span>
+      <span class="stat-chip-label">Pending</span>
+    </div>
+    <div *ngIf="role === 'Admin'" class="stat-chip" style="background:rgba(245,158,11,0.1);border-color:rgba(245,158,11,0.25);">
+      <span class="stat-chip-num" style="color:var(--gold)">{{ filteredApprovals.length }}</span>
+      <span class="stat-chip-label">Records</span>
+>>>>>>> eba5464 (Feature added)
     </div>
     <div *ngIf="role === 'Manager'" class="stat-chip" style="background:var(--accent-dim);border-color:var(--accent-glow);">
       <span class="stat-chip-num" style="color:var(--accent)">{{ mgrTab === 'pending' ? filteredSubmitted.length : filteredApprovals.length }}</span>
       <span class="stat-chip-label">{{ mgrTab === 'pending' ? 'Pending' : 'Records' }}</span>
     </div>  </div>
 
+<<<<<<< HEAD
   <!-- MANAGER / ADMIN -->
   <ng-container *ngIf="role === 'Manager' || role === 'Admin'">
     <div class="view-tabs">
@@ -71,9 +95,39 @@
             <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearMgrFilters()">
               <i class="bi bi-x-circle"></i>Reset
             </button>
+=======
+  <!-- TEAM LEAD / MANAGER: Approval Panel -->
+  <div *ngIf="role === 'TeamLead' || role === 'Manager'">
+
+    <!-- Workflow info banner -->
+    <div class="form-card" style="padding:14px 20px;margin-bottom:16px;background:rgba(14,165,233,0.05);border-color:rgba(14,165,233,0.2)" *ngIf="role === 'TeamLead'">
+      <p style="margin:0;font-size:13px;color:var(--text-muted)">
+        <i class="bi bi-info-circle me-2" style="color:var(--sky)"></i>
+        <strong>Workflow:</strong> <strong>Team Lead (you)</strong> &rarr; Manager &rarr; Finance Team
+        &nbsp;|&nbsp; Approving moves the expense to Manager review.
+      </p>
+    </div>
+    <div class="form-card" style="padding:14px 20px;margin-bottom:16px;background:rgba(168,85,247,0.05);border-color:rgba(168,85,247,0.2)" *ngIf="role === 'Manager'">
+      <p style="margin:0;font-size:13px;color:var(--text-muted)">
+        <i class="bi bi-info-circle me-2" style="color:#a855f7"></i>
+        <strong>Workflow:</strong> Team Lead &rarr; <strong>Manager (you)</strong> &rarr; Finance Team
+        &nbsp;|&nbsp; Approving marks the expense ready for Finance payment.
+      </p>
+    </div>
+
+    <!-- Approval Form Card -->
+    <div class="form-card">
+      <div class="form-card-header">
+        <div class="form-card-title">
+          <div class="form-card-icon"
+               [style.background]="role === 'TeamLead' ? 'rgba(14,165,233,0.12)' : 'rgba(245,158,11,0.12)'"
+               [style.color]="role === 'TeamLead' ? 'var(--sky)' : 'var(--gold)'">
+            <i class="bi bi-person-check"></i>
+>>>>>>> eba5464 (Feature added)
           </div>
         </div>
       </div>
+<<<<<<< HEAD
 
       <div *ngIf="submittedExpenses.length === 0" class="empty-state">
         <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
@@ -90,6 +144,47 @@
 
       <div class="cards-grid" *ngIf="filteredSubmitted.length > 0">
         <div class="approval-expense-card" *ngFor="let e of pagedSubmitted">
+=======
+      <form [formGroup]="approvalForm" (ngSubmit)="approve()">
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label">Expense ID</label>
+            <input formControlName="expenseId" placeholder="Enter or select Expense ID" class="field-input" />
+            <span class="field-error" *ngIf="approvalForm.get('expenseId')?.invalid && approvalForm.get('expenseId')?.touched">
+              <i class="bi bi-exclamation-circle me-1"></i>Expense ID is required
+            </span>
+          </div>
+          <div class="field">
+            <label class="field-label">Decision</label>
+            <select formControlName="status" class="field-input">
+              <option value="approved">&#x2705; Approve</option>
+              <option value="rejected">&#x274C; Reject</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Comments <span class="field-optional">(optional)</span></label>
+            <input formControlName="comments" placeholder="Add comments..." class="field-input" />
+          </div>
+        </div>
+        <div class="form-actions" style="margin-top:20px">
+          <button type="submit" class="btn-primary"
+                  [style.background]="role === 'TeamLead' ? 'linear-gradient(135deg,var(--sky),#0284c7)' : 'linear-gradient(135deg,var(--gold),#f97316)'"
+                  [disabled]="approvalForm.invalid">
+            <i class="bi bi-send"></i> Submit Decision
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Pending Expense Cards -->
+    <div *ngIf="pendingExpenses.length > 0">
+      <h3 class="section-heading">
+        <i class="bi bi-inbox-fill me-2" [style.color]="role === 'TeamLead' ? 'var(--sky)' : '#a855f7'"></i>
+        Pending Submissions ({{ pendingExpenses.length }})
+      </h3>
+      <div class="cards-grid">
+        <div class="approval-expense-card" *ngFor="let e of pendingExpenses">
+>>>>>>> eba5464 (Feature added)
           <div class="card-header">
             <div class="card-header-left">
               <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
@@ -98,7 +193,12 @@
                 <span class="card-expid">{{ e.expenseId }}</span>
               </div>
             </div>
-            <span class="status-badge badge-Submitted">Submitted</span>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="status-badge badge-Submitted">{{ e.status }}</span>
+              <span *ngIf="e.isAdvance" class="status-badge" style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);font-size:10px">
+                <i class="bi bi-clock-history me-1"></i>Advance
+              </span>
+            </div>
           </div>
           <div class="card-body">
             <div *ngIf="e.userName" class="card-user-row" style="margin-bottom:8px">
@@ -125,22 +225,39 @@
             </div>
           </div>
           <div class="card-footer">
+<<<<<<< HEAD
             <button class="action-btn btn-approve" [disabled]="submittingId === e.expenseId" (click)="decideInline(e.expenseId, 'approved')">
               <i class="bi bi-check-circle"></i>Approve
             </button>
             <button class="action-btn btn-reject" [disabled]="submittingId === e.expenseId" (click)="decideInline(e.expenseId, 'rejected')">
               <i class="bi bi-x-circle"></i>Reject
+=======
+            <button class="action-btn btn-approve" (click)="approvalForm.patchValue({expenseId: e.expenseId, status: 'approved'})">
+              <i class="bi bi-check-circle"></i> Approve
+            </button>
+            <button class="action-btn btn-reject" (click)="approvalForm.patchValue({expenseId: e.expenseId, status: 'rejected'})">
+              <i class="bi bi-x-circle"></i> Reject
+>>>>>>> eba5464 (Feature added)
             </button>
           </div>
         </div>
       </div>
 
+<<<<<<< HEAD
       <div class="pagination-bar" *ngIf="mgrTotalPages() > 1">
         <button class="pg-btn" (click)="mgrPrevPage()" [disabled]="mgrPage === 1"><i class="bi bi-chevron-left"></i>Prev</button>
         <span class="pg-info">Page <strong>{{ mgrPage }}</strong> of <strong>{{ mgrTotalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredSubmitted.length }} records</span>
         <button class="pg-btn" (click)="mgrNextPage()" [disabled]="mgrPage >= mgrTotalPages()">Next <i class="bi bi-chevron-right"></i></button>
       </div>
     </ng-container>
+=======
+    <div *ngIf="pendingExpenses.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
+      <h3 class="empty-title">All caught up!</h3>
+      <p class="empty-sub">No pending submissions awaiting your approval.</p>
+    </div>
+  </div>
+>>>>>>> eba5464 (Feature added)
 
     <!-- HISTORY TAB -->
     <ng-container *ngIf="mgrTab === 'history'">
@@ -193,6 +310,7 @@
         </div>
       </div>
 
+<<<<<<< HEAD
       <div *ngIf="!filteredApprovals.length" class="empty-state">
         <div class="empty-icon"><i class="bi bi-inbox"></i></div>
         <h3 class="empty-title">No history yet</h3>
@@ -249,6 +367,10 @@
   <!-- ADMIN flat list (approval history only — pending handled in tabbed view above) -->
   <ng-container *ngIf="role === 'Admin' && false">
     <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
+=======
+    <!-- Filter Bar -->
+    <div class="form-card" style="margin-bottom:16px">
+>>>>>>> eba5464 (Feature added)
       <div class="admin-filter-row">
         <div class="filter-group">
           <label class="field-label">Status</label>
@@ -260,6 +382,7 @@
           </select>
         </div>
         <div class="filter-group">
+<<<<<<< HEAD
           <label class="field-label">User Name</label>
           <input type="text" [(ngModel)]="filterUserName" placeholder="Search by user..." class="field-input filter-select" />
         </div>
@@ -273,6 +396,13 @@
         </div>
         <div class="filter-group">
           <label class="field-label">Max Amount</label>
+=======
+          <label class="field-label">Min Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="filterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Max Amount (&#8377;)</label>
+>>>>>>> eba5464 (Feature added)
           <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
         </div>
         <div class="filter-group">
@@ -284,14 +414,28 @@
           <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
         </div>
         <div class="filter-group filter-actions-group">
+<<<<<<< HEAD
           <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()"><i class="bi bi-funnel-fill"></i>Apply</button>
           <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')">
+=======
+          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyFilters()">
+            <i class="bi bi-funnel-fill"></i> Apply Filters
+          </button>
+          <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')" title="Sort by Amount">
+>>>>>>> eba5464 (Feature added)
             <i class="bi bi-currency-rupee"></i>
             <i class="bi" [ngClass]="sortBy==='amount' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
           </button>
           <button class="btn-sort" [class.active]="sortBy==='date'" (click)="toggleSort('date')">
             <i class="bi bi-calendar3"></i>
+<<<<<<< HEAD
             <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+=======
+            <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc'?'bi-sort-up':'bi-sort-down') : 'bi-arrow-down-up'"></i>
+          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()">
+            <i class="bi bi-x-circle"></i> Reset
+>>>>>>> eba5464 (Feature added)
           </button>
           <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()"><i class="bi bi-x-circle"></i>Reset</button>
         </div>
@@ -309,21 +453,37 @@
         <div class="approval-record-card" *ngFor="let a of pagedApprovals">
           <div class="arc-header">
             <div>
+<<<<<<< HEAD
               <span class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</span>
               <span class="arc-approver"><i class="bi bi-person-check me-1"></i>Approver: {{ a.approverName || '&mdash;' }}</span>
               <span class="arc-approver" *ngIf="a.employeeName" style="display:block"><i class="bi bi-person me-1"></i>User: {{ a.employeeName }}</span>
             </div>
             <span class="status-badge" [ngClass]="{'badge-Approved': a.status === 'Approved', 'badge-Rejected': a.status === 'Rejected', 'badge-Submitted': a.status === 'Pending'}">{{ a.status }}</span>
+=======
+              <p class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</p>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span class="status-badge" [ngClass]="{
+                'badge-Approved': a.status==='Approved',
+                'badge-Rejected': a.status==='Rejected',
+                'badge-Submitted': a.status==='Pending'
+              }">{{ a.status }}</span>
+              <span class="level-badge">{{ a.level || '&mdash;' }}</span>
+            </div>
+>>>>>>> eba5464 (Feature added)
           </div>
           <div class="arc-body">
             <div class="arc-meta">
               <div class="arc-meta-item" *ngIf="a.expenseAmount">
                 <span class="meta-label">Amount</span>
                 <span class="amount-value" style="font-size:16px">{{ a.amountInRupees || ('&#8377;' + a.expenseAmount) }}</span>
+<<<<<<< HEAD
               </div>
               <div class="arc-meta-item">
                 <span class="meta-label">Level</span>
                 <span class="level-badge">{{ a.level || '&mdash;' }}</span>
+=======
+>>>>>>> eba5464 (Feature added)
               </div>
               <div class="arc-meta-item">
                 <span class="meta-label">Date</span>
@@ -342,15 +502,31 @@
         </div>
       </div>
       <div class="pagination-bar">
+<<<<<<< HEAD
         <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
         <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredApprovals.length }} records</span>
         <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next <i class="bi bi-chevron-right"></i></button>
+=======
+        <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1">
+          <i class="bi bi-chevron-left"></i> Prev
+        </button>
+        <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredApprovals.length }} records</span>
+        <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">
+          Next <i class="bi bi-chevron-right"></i>
+        </button>
+>>>>>>> eba5464 (Feature added)
       </div>
     </div>
   </ng-container>
 
+<<<<<<< HEAD
   <div *ngIf="role !== 'Manager' && role !== 'Admin'" class="alert-msg">
     <i class="bi bi-lock"></i>You are not authorized to access approvals.
+=======
+  <!-- Not authorized -->
+  <div *ngIf="role !== 'Manager' && role !== 'Admin' && role !== 'TeamLead'" class="alert-msg">
+    <i class="bi bi-lock"></i> You are not authorized to access approvals.
+>>>>>>> eba5464 (Feature added)
   </div>
 
 </div>

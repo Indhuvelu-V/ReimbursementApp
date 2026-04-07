@@ -39,6 +39,7 @@ export class APIService {
     if (name) params = params.set('Name', name);
     return this.http.get(`${this.baseUrl}/Users/allusers`, { params });
   }
+<<<<<<< HEAD
 
   getUserById(userId: string): Observable<User> {
     return this.http.get<User>(`${this.baseUrl}/Users/${userId}`);
@@ -137,6 +138,13 @@ export class APIService {
     return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/admin`, request);
   }
 
+=======
+  getUserById(userId: string): Observable<User> { return this.http.get<User>(`${this.baseUrl}/Users/${userId}`); }
+  teamLeadApproval(request: CreateApprovalRequestDto): Observable<CreateApprovalResponseDto> { return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/teamlead`, request); }
+  managerApproval(request: CreateApprovalRequestDto): Observable<CreateApprovalResponseDto> { return this.http.post<CreateApprovalResponseDto>(`${this.baseUrl}/Approval/manager`, request); }
+  getPendingTeamLeadExpenses(): Observable<any[]> { return this.http.get<any[]>(`${this.baseUrl}/Approval/pending/teamlead`); }
+  getPendingManagerExpenses(): Observable<any[]> { return this.http.get<any[]>(`${this.baseUrl}/Approval/pending/manager`); }
+>>>>>>> eba5464 (Feature added)
   getAllApprovals(pagination: PaginationParams): Observable<PagedResponse<CreateApprovalResponseDto>> {
     let params = new HttpParams()
       .set('pageNumber', pagination.pageNumber)

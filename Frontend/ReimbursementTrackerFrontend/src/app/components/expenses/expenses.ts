@@ -54,7 +54,11 @@ export class Expenses implements OnInit {
   editExpenseId:  string | null = null;
   lastCreatedExpenseId: string | null = null;
   role = '';
+<<<<<<< HEAD
   approverName = ''; // reporting manager (employee) or admin name (manager/finance)
+=======
+  isAdvanceRequest = false;  // Manager-only toggle
+>>>>>>> eba5464 (Feature added)
 
   // ── Filters ────────────────────────────────────────────────────────────────
   filterStatus      = '';
@@ -107,6 +111,7 @@ export class Expenses implements OnInit {
   ngOnInit() {
     this.role = this.tokenService.getRoleFromToken() ?? '';
 
+<<<<<<< HEAD
     // Load approver name for toast message
     const r = this.role.toLowerCase();
     const myId = this.tokenService.getUserIdFromToken();
@@ -119,11 +124,17 @@ export class Expenses implements OnInit {
     } else if (r === 'manager' || r === 'finance') {
       this.approverName = 'Admin';
     }
+=======
+    // Managers can submit future-dated (advance) requests — no month restriction
+    const dateValidators = this.role === 'Manager'
+      ? [Validators.required]
+      : [Validators.required, currentMonthOnlyValidator];
+>>>>>>> eba5464 (Feature added)
 
     this.form = this.fb.group({
       categoryId:  ['', Validators.required],
       amount:      ['', [Validators.required, Validators.min(0.01)]],
-      expenseDate: ['', [Validators.required, currentMonthOnlyValidator]]
+      expenseDate: ['', dateValidators]
     });
 
     // Auto-fetch category limit when categoryId changes
@@ -318,12 +329,19 @@ export class Expenses implements OnInit {
     }
 
     const fd = new FormData();
+<<<<<<< HEAD
     fd.append('categoryId',   this.form.value.categoryId);
     // Also send categoryName so backend can use it directly
     const selectedCat = this.categories.find(c => c.categoryId === this.form.value.categoryId);
     fd.append('categoryName', selectedCat?.categoryName ?? '');
     fd.append('amount',      this.form.value.amount);
     fd.append('expenseDate', this.form.value.expenseDate);
+=======
+    fd.append('categoryId',       this.form.value.categoryId);
+    fd.append('amount',           this.form.value.amount);
+    fd.append('expenseDate',      this.form.value.expenseDate);
+    fd.append('isAdvanceRequest', String(this.role === 'Manager' && this.isAdvanceRequest));
+>>>>>>> eba5464 (Feature added)
     this.files.forEach(f => fd.append('Documents', f));
 
     if (this.isEditMode && this.editExpenseId) {
@@ -350,11 +368,13 @@ export class Expenses implements OnInit {
       const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       const selDate    = new Date(this.form.value.expenseDate);
 
-      if (selDate < monthStart || selDate > monthEnd) {
+      // Only enforce current-month date restriction for non-Manager roles
+      if (this.role !== 'Manager' && (selDate < monthStart || selDate > monthEnd)) {
         this.toast.showWarning(`Only expenses for ${this.currentMonthLabel} are allowed.`);
         return;
       }
 
+<<<<<<< HEAD
       const duplicate = this.allExpenses.some(e => {
         const eDate = new Date(this.parseDate(e.expenseDate));
         return eDate >= monthStart && eDate <= monthEnd && e.status !== 'Rejected';
@@ -364,6 +384,19 @@ export class Expenses implements OnInit {
       if (duplicate) {
         this.toast.showWarning(`You already have an expense for ${this.currentMonthLabel}.`);
         return;
+=======
+      // Check monthly request count limit (Employee: 2, TeamLead: 5)
+      const maxRequests = this.role === 'Employee' ? 2 : this.role === 'TeamLead' ? 5 : null;
+      if (maxRequests !== null) {
+        const activeThisMonth = this.allExpenses.filter(e => {
+          const eDate = new Date(this.parseDate(e.expenseDate));
+          return eDate >= monthStart && eDate <= monthEnd && e.status !== 'Rejected';
+        });
+        if (activeThisMonth.length >= maxRequests) {
+          this.toast.showWarning(`Monthly request limit reached (${maxRequests} requests for ${this.role}).`);
+          return;
+        }
+>>>>>>> eba5464 (Feature added)
       }
 
       this.loader.show();
@@ -478,9 +511,15 @@ export class Expenses implements OnInit {
   resetForm()   {
     this.form.reset();
     this.clearFiles();
+<<<<<<< HEAD
     this.isEditMode      = false;
     this.editExpenseId   = null;
     this.existingDocUrls = [];
+=======
+    this.isEditMode    = false;
+    this.editExpenseId = null;
+    this.isAdvanceRequest  = false;
+>>>>>>> eba5464 (Feature added)
     this.categoryMaxLimit  = null;
     this.categoryLimitName = '';
   }

@@ -64,6 +64,7 @@ export class Login {
 
         switch (role?.toLowerCase()) {
           case 'employee': this.router.navigate(['/employee']); break;
+          case 'teamlead': this.router.navigate(['/teamlead']); break;
           case 'manager':  this.router.navigate(['/manager']);  break;
           case 'admin':    this.router.navigate(['/admin']);    break;
           case 'finance':  this.router.navigate(['/finance']);  break;

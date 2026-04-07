@@ -24,9 +24,13 @@ export class Approvals implements OnInit {
   approvals: any[] = [];
   filteredApprovals: any[] = [];
   pagedApprovals: any[] = [];
+<<<<<<< HEAD
   submittedExpenses: any[] = [];
   filteredSubmitted: any[] = [];   // filtered view for manager
   pagedSubmitted: any[] = [];
+=======
+  pendingExpenses: any[] = [];   // expenses awaiting this role's approval
+>>>>>>> eba5464 (Feature added)
   loading = false;
   role: string = '';
 
@@ -68,8 +72,13 @@ export class Approvals implements OnInit {
   ngOnInit(): void {
     this.role = this.token.getRoleFromToken() ?? '';
     this.loadApprovals();
+<<<<<<< HEAD
     if (this.role.toLowerCase() === 'manager' || this.role.toLowerCase() === 'admin')
       this.loadSubmittedExpenses();
+=======
+    if (this.role.toLowerCase() === 'manager') this.loadPendingExpenses();
+    if (this.role.toLowerCase() === 'teamlead') this.loadPendingExpenses();
+>>>>>>> eba5464 (Feature added)
   }
 
   loadApprovals(): void {
@@ -123,6 +132,7 @@ export class Approvals implements OnInit {
     }
   }
 
+<<<<<<< HEAD
   loadSubmittedExpenses(): void {
     const myId = this.token.getUserIdFromToken();
     this.api.getAllExpenses(1, 200, 'Submitted').subscribe({
@@ -145,6 +155,16 @@ export class Approvals implements OnInit {
         this.applyManagerFilters();
       },
       error: () => {}
+=======
+  loadPendingExpenses(): void {
+    const obs = this.role.toLowerCase() === 'teamlead'
+      ? this.api.getPendingTeamLeadExpenses()
+      : this.api.getPendingManagerExpenses();
+
+    obs.subscribe({
+      next: (res) => { this.pendingExpenses = res ?? []; },
+      error: () => { this.toast.showError('Failed to load pending expenses.'); }
+>>>>>>> eba5464 (Feature added)
     });
   }
 
@@ -261,7 +281,41 @@ export class Approvals implements OnInit {
     this.loadApprovals();
   }
 
+<<<<<<< HEAD
   clearFilters() { this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = ''; this.filterMinAmount = null; this.filterMaxAmount = null; this.filterUserName = ''; this.filterApproverName = ''; this.sortBy = ''; this.sortDir = 'desc'; this.applyFilters(); }
+=======
+  clearFilters() { this.filterStatus = ''; this.filterDateFrom = ''; this.filterDateTo = ''; this.filterMinAmount = null; this.filterMaxAmount = null; this.sortBy = ''; this.sortDir = 'desc'; this.applyFilters(); }
+
+  approve(): void {
+    if (this.approvalForm.invalid) { this.toast.showWarning('Please fill in all required fields.'); return; }
+    const approverId = this.token.getUserIdFromToken();
+    if (!approverId) { this.toast.showError('User ID not found in token.'); return; }
+
+    const request: CreateApprovalRequestDto = {
+      expenseId: this.approvalForm.value.expenseId,
+      managerId: approverId,
+      status:    this.approvalForm.value.status,
+      comments:  this.approvalForm.value.comments,
+      level:     this.role.toLowerCase() === 'teamlead' ? 'Level1' : 'Level2'
+    };
+
+    const roleLower = this.role.toLowerCase();
+    const apiCall = roleLower === 'teamlead'
+      ? this.api.teamLeadApproval(request)
+      : this.api.managerApproval(request);
+
+    this.loader.show();
+    apiCall.subscribe({
+      next: () => {
+        this.toast.show(`Expense ${request.status === 'approved' ? 'Approved ✅' : 'Rejected ❌'} successfully`);
+        this.approvalForm.reset({ status: 'approved' });
+        this.loadPendingExpenses();
+        this.loader.hide();
+      },
+      error: (err) => { this.toast.showError(err?.error?.message || 'Approval failed.'); this.loader.hide(); }
+    });
+  }
+>>>>>>> eba5464 (Feature added)
 
   openFileModal(urls: string[]) { this.modalFileUrls = urls || []; this.showFileModal = true; }
   closeFileModal() { this.showFileModal = false; this.modalFileUrls = []; }

@@ -40,7 +40,7 @@ namespace ReimbursementTrackerApp.Controllers
         //    service updates it in-place (no new record created).
         // =====================================================
         [HttpPost("Create")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,TeamLead,Manager,Finance,Admin")]
         public async Task<IActionResult> CreateExpense([FromForm] CreateExpenseRequestDto request)
         {
             _logger.LogInformation("Request to create expense");
@@ -92,7 +92,7 @@ namespace ReimbursementTrackerApp.Controllers
         // ✅ New files are appended to existing DocumentUrls
         // =====================================================
         [HttpPut("{expenseId}")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,TeamLead,Manager,Finance,Admin")]
         public async Task<IActionResult> UpdateExpense(string expenseId, [FromForm] CreateExpenseRequestDto dto)
         {
             _logger.LogInformation("Request to update Expense {ExpenseId}", expenseId);
@@ -143,7 +143,7 @@ namespace ReimbursementTrackerApp.Controllers
         // (unchanged — resubmit uses the dedicated endpoint below)
         // =====================================================
         [HttpPost("Submit/{expenseId}")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,TeamLead,Manager,Finance,Admin")]
         public async Task<IActionResult> SubmitExpense(string expenseId)
         {
             _logger.LogInformation("Request to submit Expense {ExpenseId}", expenseId);
@@ -183,7 +183,7 @@ namespace ReimbursementTrackerApp.Controllers
         //   3. Employee calls POST /api/Expense/Resubmit/{id} → Status = Submitted
         // =====================================================
         [HttpPost("Resubmit/{expenseId}")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,TeamLead,Manager,Finance,Admin")]
         public async Task<IActionResult> ResubmitExpense(string expenseId)
         {
             _logger.LogInformation("Request to resubmit Expense {ExpenseId}", expenseId);
@@ -253,8 +253,13 @@ namespace ReimbursementTrackerApp.Controllers
         // =====================================================
         // GET ALL EXPENSES — unchanged
         // =====================================================
+<<<<<<< HEAD
         [HttpGet("all")]
         [Authorize(Roles = "Manager,Finance,Admin")]
+=======
+        [HttpPost("all")]
+        [Authorize(Roles = "TeamLead,Manager,Finance,Admin")]
+>>>>>>> eba5464 (Feature added)
         public async Task<IActionResult> GetAllExpenses([FromQuery] PaginationParams paginationParams)
         {
             _logger.LogInformation("Fetching all expenses. Page {Page}, Size {Size}",

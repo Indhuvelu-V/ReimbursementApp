@@ -62,36 +62,56 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // =====================================================
+        // ROLE-BASED MONTHLY LIMITS
+        // Employee  : max 2 bills, ₹5,000 total, no advance
+        // TeamLead  : max 5 bills, ₹10,000 total, no advance
+        // Manager   : unlimited bills, ₹20,000 total, can advance
+        // Finance   : no limit enforced here (Finance approves, not submits)
+        // =====================================================
+        private static (int? maxBills, decimal maxAmount, bool canAdvance) GetRoleLimits(UserRole role) =>
+            role switch
+            {
+                UserRole.Employee => (2, 5000m, false),
+                UserRole.TeamLead => (5, 10000m, false),
+                UserRole.Manager  => (null, 20000m, true),
+                _                 => (null, decimal.MaxValue, true)
+            };
+
+        // =====================================================
         // CREATE EXPENSE
-        //
-        // ✅ RULE 1 — Current month only
-        // ✅ RULE 2 — One expense per current month
-        // ✅ RULE 3 — If a REJECTED expense exists for this month
-        //             → UPDATE it instead of creating a new one.
-        //             This replaces the old "block on rejected" logic:
-        //             the user now edits and resubmits the same record.
-        // ✅ FILE UPLOAD — Documents attached via IFormFile are
-        //             saved to wwwroot/uploads via FileUploadService.
+        // Enforces role-based monthly bill count + amount limits.
+        // Advance requests restricted to Manager only.
+        // Manager can submit future-dated bills (post-advance).
         // =====================================================
         public async Task<CreateExpenseResponseDto?> CreateExpense(CreateExpenseRequestDto request)
         {
             var (userId, userName, role) = GetUserFromToken();
 
-            // ── Current-month boundary ────────────────────────────────────────
             var today = DateTime.UtcNow;
             var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
 
-            // ── RULE 1: date must be within current month ─────────────────────
-            if (request.ExpenseDate < monthStart || request.ExpenseDate > monthEnd)
+            var (maxBills, maxAmount, canAdvance) = GetRoleLimits(role);
+
+            // ── Advance request restriction ───────────────────────────────────
+            if (request.IsAdvanceRequest && !canAdvance)
+                throw new InvalidOperationException(
+                    $"Role '{role}' is not allowed to create advance requests. Only Managers can request advances.");
+
+            // ── Date rule: Employee/TeamLead → current month only
+            //              Manager → can submit future-dated bills (post-advance usage)
+            if (!canAdvance && (request.ExpenseDate < monthStart || request.ExpenseDate > monthEnd))
                 throw new InvalidOperationException(
                     $"Expense date must be within the current month " +
-                    $"({monthStart:dd MMM yyyy} – {monthEnd:dd MMM yyyy}). " +
-                    $"You cannot create expenses for past or future months.");
+                    $"({monthStart:dd MMM yyyy} – {monthEnd:dd MMM yyyy}).");
 
+<<<<<<< HEAD
             // ── Handle file uploads ──────────────────────────────────────────
             // Files are saved by the controller via FileUploadService before calling this method.
             // DocumentUrls already contains the saved paths — no re-upload needed here.
+=======
+            // ── Handle file uploads ───────────────────────────────────────────
+>>>>>>> eba5464 (Feature added)
             var documentUrls = request.DocumentUrls ?? new List<string>();
 
             // ── Fetch category ────────────────────────────────────────────────
@@ -100,21 +120,60 @@ namespace ReimbursementTrackerApp.Services
             catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense category not found."); }
 
             if (request.Amount > category.MaxLimit)
-                throw new InvalidOperationException($"Amount exceeds limit for {category.CategoryName}");
+                throw new InvalidOperationException($"Amount exceeds the category limit for {category.CategoryName}.");
 
+<<<<<<< HEAD
             // ── RULE 2 + 3: check for existing expenses this month ────────────
             // ── RULE 2 + 3: check for existing expense this month ─────────────
+=======
+            // ── Monthly aggregates for this user ──────────────────────────────
+>>>>>>> eba5464 (Feature added)
             var allExpenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
 
-            var existingThisMonth = allExpenses.FirstOrDefault(e =>
+            var thisMonthExpenses = allExpenses
+                .Where(e => e.UserId == userId &&
+                            e.ExpenseDate >= monthStart &&
+                            e.ExpenseDate <= monthEnd &&
+                            e.Status != ExpenseStatus.Rejected)
+                .ToList();
+
+            // ── Bill count limit ──────────────────────────────────────────────
+            if (maxBills.HasValue && thisMonthExpenses.Count >= maxBills.Value)
+                throw new InvalidOperationException(
+                    $"Monthly bill limit reached. Role '{role}' can submit at most {maxBills} bills per month.");
+
+            // ── Amount limit ──────────────────────────────────────────────────
+            var totalThisMonth = thisMonthExpenses.Sum(e => e.Amount);
+            if (totalThisMonth + request.Amount > maxAmount)
+                throw new InvalidOperationException(
+                    $"Monthly reimbursement limit exceeded. Role '{role}' can claim at most ₹{maxAmount:N0} per month. " +
+                    $"Already claimed: ₹{totalThisMonth:N0}, Requested: ₹{request.Amount:N0}.");
+
+            // ── Rejected expense reuse (same month) ───────────────────────────
+            var rejectedThisMonth = allExpenses.FirstOrDefault(e =>
                 e.UserId == userId &&
                 e.ExpenseDate >= monthStart &&
-                e.ExpenseDate <= monthEnd);
+                e.ExpenseDate <= monthEnd &&
+                e.Status == ExpenseStatus.Rejected);
 
-            if (existingThisMonth != null)
+            if (rejectedThisMonth != null)
             {
-                if (existingThisMonth.Status == ExpenseStatus.Rejected)
+                var oldAmount = rejectedThisMonth.Amount;
+                var oldDocs   = rejectedThisMonth.DocumentUrls ?? new List<string>();
+
+                rejectedThisMonth.CategoryId      = category.CategoryId;
+                rejectedThisMonth.CategoryName    = category.CategoryName.ToString();
+                rejectedThisMonth.Amount          = request.Amount;
+                rejectedThisMonth.ExpenseDate     = request.ExpenseDate;
+                rejectedThisMonth.DocumentUrls    = documentUrls;
+                rejectedThisMonth.IsAdvanceRequest = request.IsAdvanceRequest;
+                rejectedThisMonth.Status          = ExpenseStatus.Draft;
+
+                await _expenseRepo.UpdateAsync(rejectedThisMonth.ExpenseId, rejectedThisMonth);
+
+                await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
                 {
+<<<<<<< HEAD
                     // ✅ RULE 3 — Rejected expense exists → UPDATE it in-place
                     var oldAmount = existingThisMonth.Amount;
                     var oldDocs = existingThisMonth.DocumentUrls ?? new List<string>();
@@ -153,26 +212,39 @@ namespace ReimbursementTrackerApp.Services
                         $"You have already submitted an expense for " +
                         $"{today:MMMM yyyy}. Only one expense is allowed per month.");
                 }
+=======
+                    Action = $"Re-edited rejected expense {rejectedThisMonth.ExpenseId}",
+                    ExpenseId = rejectedThisMonth.ExpenseId,
+                    Amount = rejectedThisMonth.Amount,
+                    OldAmount = oldAmount,
+                    DocumentUrls = rejectedThisMonth.DocumentUrls,
+                    OldDocumentUrls = oldDocs,
+                    Date = DateTime.UtcNow
+                });
+
+                return MapToDto(rejectedThisMonth);
+>>>>>>> eba5464 (Feature added)
             }
 
             // ── Create new expense ────────────────────────────────────────────
             var expense = new Expense
             {
-                ExpenseId = Guid.NewGuid().ToString(),
-                UserId = userId,
-                CategoryId = category.CategoryId,
-                CategoryName = category.CategoryName.ToString(),
-                Amount = request.Amount,
-                ExpenseDate = request.ExpenseDate,
-                DocumentUrls = documentUrls,
-                Status = ExpenseStatus.Draft
+                ExpenseId        = Guid.NewGuid().ToString(),
+                UserId           = userId,
+                CategoryId       = category.CategoryId,
+                CategoryName     = category.CategoryName.ToString(),
+                Amount           = request.Amount,
+                ExpenseDate      = request.ExpenseDate,
+                DocumentUrls     = documentUrls,
+                IsAdvanceRequest = request.IsAdvanceRequest,
+                Status           = ExpenseStatus.Draft
             };
 
             await _expenseRepo.AddAsync(expense);
 
             await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
             {
-                Action = $"Created Expense {expense.ExpenseId}",
+                Action = $"Created expense {expense.ExpenseId}" + (expense.IsAdvanceRequest ? " [ADVANCE]" : ""),
                 ExpenseId = expense.ExpenseId,
                 Amount = expense.Amount,
                 DocumentUrls = expense.DocumentUrls,
@@ -608,6 +680,10 @@ namespace ReimbursementTrackerApp.Services
                 ExpenseDate = e.ExpenseDate.ToString("dd-MM-yyyy"),
                 Status = e.Status.ToString(),
                 DocumentUrls = e.DocumentUrls ?? new List<string>(),
+<<<<<<< HEAD
+=======
+                IsAdvanceRequest = e.IsAdvanceRequest,
+>>>>>>> eba5464 (Feature added)
                 CanEdit = (e.UserId == userId || role == UserRole.Admin) &&
                                  (e.Status == ExpenseStatus.Draft ||
                                   e.Status == ExpenseStatus.Submitted ||
