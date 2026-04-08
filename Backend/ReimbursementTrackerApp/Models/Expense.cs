@@ -31,8 +31,6 @@ public class Expense
     }
 
     public ExpenseStatus Status { get; set; } = ExpenseStatus.Draft;
-
-    // True = advance request (Manager only); False = actual expense bill
     public bool IsAdvanceRequest { get; set; } = false;
 
     public User? User { get; set; }

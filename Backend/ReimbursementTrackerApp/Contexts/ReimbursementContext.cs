@@ -38,6 +38,10 @@ namespace ReimbursementTrackerApp.Contexts
                 .Property(a => a.Status)
                 .HasConversion<int>();
 
+            modelBuilder.Entity<Approval>()
+                .Property(a => a.Stage)
+                .HasConversion<int>();
+
             modelBuilder.Entity<Payment>()
                 .Property(p => p.PaymentStatus)
                 .HasConversion<int>();

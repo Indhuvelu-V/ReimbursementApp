@@ -94,6 +94,16 @@ namespace ReimbursementTrackerApp.Services
                     throw new InvalidOperationException($"A Manager already exists for the {request.Department} department. Please choose your role correctly.");
             }
 
+            // 🔹 Enforce: only one TeamLead per department
+            if (request.Role == UserRole.TeamLead)
+            {
+                var deptTeamLeadExists = (users ?? Enumerable.Empty<User>())
+                    .Any(u => u.Role == UserRole.TeamLead && u.Department == request.Department);
+
+                if (deptTeamLeadExists)
+                    throw new InvalidOperationException($"A Team Lead already exists for the {request.Department} department.");
+            }
+
             byte[]? hashKey;
             var passwordHash = _passwordService.HashPassword(request.Password, null, out hashKey);
 
@@ -114,9 +124,18 @@ namespace ReimbursementTrackerApp.Services
                     break;
             }
 
-            // 🔹 Auto-assign reporting manager from same department
+            // 🔹 Auto-assign reporting manager based on role hierarchy:
+            //    Employee  → same-dept TeamLead (their direct approver)
+            //    TeamLead  → same-dept Manager  (their direct approver)
+            //    Manager/Finance/Admin → no auto-assign
             string? managerId = null;
-            if (request.Role != UserRole.Manager)
+            if (request.Role == UserRole.Employee)
+            {
+                var deptTeamLead = (users ?? Enumerable.Empty<User>())
+                    .FirstOrDefault(u => u.Role == UserRole.TeamLead && u.Department == request.Department);
+                managerId = deptTeamLead?.UserId;
+            }
+            else if (request.Role == UserRole.TeamLead)
             {
                 var deptManager = (users ?? Enumerable.Empty<User>())
                     .FirstOrDefault(u => u.Role == UserRole.Manager && u.Department == request.Department);
@@ -281,6 +300,8 @@ namespace ReimbursementTrackerApp.Services
 
         // =====================================================
         // 4️⃣ ASSIGN MANAGER (Admin only — same department)
+        // Supports assigning either a Manager or TeamLead as
+        // the reporting approver for a user.
         // =====================================================
         public async Task<CreateUserResponseDto> AssignManager(AssignManagerRequestDto request)
         {
@@ -292,13 +313,13 @@ namespace ReimbursementTrackerApp.Services
             var manager = users.FirstOrDefault(u => u.UserId == request.ManagerId)
                 ?? throw new KeyNotFoundException($"Manager {request.ManagerId} not found.");
 
-            if (manager.Role != UserRole.Manager)
-                throw new InvalidOperationException($"{manager.UserName} is not a Manager.");
+            if (manager.Role != UserRole.Manager && manager.Role != UserRole.TeamLead)
+                throw new InvalidOperationException($"{manager.UserName} must be a Manager or Team Lead.");
 
             if (manager.Department != employee.Department)
                 throw new InvalidOperationException(
-                    $"Manager {manager.UserName} belongs to {manager.Department} department. " +
-                    $"You can only assign a manager from the same department ({employee.Department}).");
+                    $"{manager.UserName} belongs to {manager.Department} department. " +
+                    $"You can only assign someone from the same department ({employee.Department}).");
 
             employee.ManagerId = manager.UserId;
             await _userRepo.UpdateAsync(employee.UserId, employee);

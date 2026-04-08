@@ -2,11 +2,15 @@ import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 const STATUS_STEP: Record<string, number> = {
-  'Draft':     0,
-  'Submitted': 1,
-  'Approved':  2,
-  'Paid':      3,
-  'Rejected':  -1,
+  'Draft':            0,
+  'Submitted':        1,
+  'PendingTeamLead':  2,
+  'PendingManager':   3,
+  'PendingAdmin':     3,   // Manager/Finance expenses skip TeamLead, go straight to Admin
+  'PendingFinance':   4,
+  'Approved':         5,
+  'Paid':             6,
+  'Rejected':         -1,
 };
 
 export interface TrackerStep { label: string; icon: string; }
@@ -22,10 +26,13 @@ export class ExpenseStatusTracker {
   @Input() status: string = 'Draft';
 
   steps: TrackerStep[] = [
-    { label: 'Created',          icon: 'bi-file-earmark-plus' },
+    { label: 'Created',          icon: 'bi-file-earmark-plus'  },
     { label: 'Submitted',        icon: 'bi-send'               },
-    { label: 'Manager Approved', icon: 'bi-person-check'       },
-    { label: 'Finance Paid',     icon: 'bi-currency-rupee'     },
+    { label: 'Team Lead',        icon: 'bi-person-lines-fill'  },
+    { label: 'Manager',          icon: 'bi-person-check'       },
+    { label: 'Finance',          icon: 'bi-bank'               },
+    { label: 'Approved',         icon: 'bi-check-circle'       },
+    { label: 'Paid',             icon: 'bi-currency-rupee'     },
   ];
 
   get currentStep(): number  { return STATUS_STEP[this.status] ?? 0; }

@@ -5,23 +5,20 @@ namespace ReimbursementTrackerApp.Interfaces
 {
     public interface IApprovalService
     {
-        // Level1: TeamLead reviews Submitted expenses from Employees/TeamLeads
+        // Stage-based approval actions
         Task<CreateApprovalResponseDto?> TeamLeadApproval(CreateApprovalRequestDto request);
-
-        // Level2: Manager reviews Pending (post-TeamLead) or Submitted (Manager's own) expenses
         Task<CreateApprovalResponseDto?> ManagerApproval(CreateApprovalRequestDto request);
-<<<<<<< HEAD
-        Task<CreateApprovalResponseDto?> AdminApproval(CreateApprovalRequestDto request);
-=======
+        Task<CreateApprovalResponseDto?> FinanceApproval(CreateApprovalRequestDto request);
 
-        // Admin view
->>>>>>> eba5464 (Feature added)
+        // Legacy admin approval for Manager/Finance-submitted expenses
+        Task<CreateApprovalResponseDto?> AdminApproval(CreateApprovalRequestDto request);
+
         Task<PagedResponse<CreateApprovalResponseDto>> GetAllApprovals(PaginationParams paginationParams);
 
-        // Fetch expenses awaiting TeamLead review (status = Submitted, submitted by Employee or TeamLead)
-        Task<List<CreateExpenseResponseDto>> GetExpensesPendingTeamLeadApproval();
+        // Get pending approvals for the current approver's stage
+        Task<List<CreateApprovalResponseDto>> GetPendingApprovalsForMe(string approverId);
 
-        // Fetch expenses awaiting Manager review (status = Pending or Submitted by Manager)
-        Task<List<CreateExpenseResponseDto>> GetExpensesPendingManagerApproval();
+        // Get all approvals made BY this approver (their own history)
+        Task<List<CreateApprovalResponseDto>> GetMyApprovalHistory(string approverId);
     }
 }

@@ -1,11 +1,5 @@
 ﻿
 
-// FILE: Services/PaymentService.cs — FULL FILE
-// CHANGE: CompletePayment, GetAllPayments, GetPaymentByExpenseId
-//         now carry DocumentUrls from the linked expense into the
-//         response DTO. No re-upload. Same stored path reused.
-
-using Microsoft.EntityFrameworkCore;
 using ReimbursementTrackerApp.Interfaces;
 using ReimbursementTrackerApp.Models;
 using ReimbursementTrackerApp.Models.Common;
@@ -60,12 +54,19 @@ namespace ReimbursementTrackerApp.Services
             try { expense = await _expenseRepo.GetByIdAsync(expenseId) ?? throw new KeyNotFoundException("Expense not found."); }
             catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense not found."); }
 
+            // Reload from repo to bypass any stale cache
+            try { expense = await _expenseRepo.GetByIdAsync(expenseId) ?? expense; } catch { }
+
             var payment = expense.Payments?.FirstOrDefault();
             if (payment != null && payment.PaymentStatus == PaymentStatusEnum.Paid)
                 throw new InvalidOperationException("Payment has already been completed for this expense.");
 
-            if (expense.Status != ExpenseStatus.Approved)
-                throw new InvalidOperationException("Expense must be approved by manager before payment.");
+            if (expense.Status != ExpenseStatus.Approved && expense.Status != ExpenseStatus.PendingFinance)
+                throw new InvalidOperationException("Expense must be approved by Manager before Finance can process payment.");
+
+            // Auto-approve at Finance stage if still PendingFinance
+            if (expense.Status == ExpenseStatus.PendingFinance)
+                expense.Status = ExpenseStatus.Approved;
 
             // 🔹 Validate bank details for BankTransfer mode
             if (paymentMode.Equals("BankTransfer", StringComparison.OrdinalIgnoreCase))
@@ -246,9 +247,8 @@ namespace ReimbursementTrackerApp.Services
 
             role = (role ?? string.Empty).Trim();
 
-            // Employee, TeamLead & Manager → only own payments
+            // Employee & Manager → only own payments
             if ((role.Equals("Employee", StringComparison.OrdinalIgnoreCase) ||
-                 role.Equals("TeamLead", StringComparison.OrdinalIgnoreCase) ||
                  role.Equals("Manager", StringComparison.OrdinalIgnoreCase)) &&
                 payment.UserId != userId)
             {

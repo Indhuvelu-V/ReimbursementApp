@@ -62,7 +62,7 @@ namespace ReimbursementTrackerApp.Controllers
         // GET ALL CATEGORIES
         // =====================================================
         [HttpGet]
-        [Authorize(Roles = "Admin,Manager,Employee,Finance")]
+        [Authorize(Roles = "Admin,Manager,Employee,Finance,TeamLead")]
         public async Task<IActionResult> GetAllCategories()
         {
             _logger.LogInformation("Request to fetch all categories");
@@ -86,7 +86,7 @@ namespace ReimbursementTrackerApp.Controllers
         // GET CATEGORY BY TYPE
         // =====================================================
         [HttpGet("{categoryType}")]
-        [Authorize(Roles = "Admin,Manager,Employee,Finance")]
+        [Authorize(Roles = "Admin,Manager,Employee,Finance,TeamLead")]
         public async Task<IActionResult> GetCategoryByType(ExpenseCategoryType categoryType)
         {
             _logger.LogInformation("Request to fetch category {CategoryType}", categoryType);

@@ -19,13 +19,10 @@ namespace ReimbursementTrackerApp.Models.DTOs
         public bool CanEdit { get; set; }
         public string? Message { get; set; }
         public string? NotificationMessage { get; set; }
-<<<<<<< HEAD
         public string? AmountInRupees { get; set; }
         public string? ApprovalComment { get; set; }
         public string? ApproverName { get; set; }
-=======
-        public string? AmountInRupees { get; set; } // For Rupees format
         public bool IsAdvanceRequest { get; set; }
->>>>>>> eba5464 (Feature added)
+        public string? CurrentApprovalStage { get; set; }
     }
 }

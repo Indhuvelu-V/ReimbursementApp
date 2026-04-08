@@ -11,7 +11,8 @@ namespace ReimbursementTrackerApp.Models
         public string ExpenseId { get; set; } = string.Empty;
         public Expense? Expense { get; set; }
 
-        public string Level { get; set; } = string.Empty; // e.g., "Level1", "Level2"
+        public string Level { get; set; } = string.Empty; // e.g., "TeamLead", "Manager", "Finance"
+        public ApprovalStage Stage { get; set; } = ApprovalStage.Manager;
        
         public string Comments { get; set; } = string.Empty;
         public DateTime? ApprovedAt { get; set; }

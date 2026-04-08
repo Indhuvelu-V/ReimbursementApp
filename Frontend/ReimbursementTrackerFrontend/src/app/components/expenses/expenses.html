@@ -27,7 +27,6 @@
     <button class="btn-dismiss" (click)="dismissExpenseId()"><i class="bi bi-x-lg"></i></button>
   </div>
 
-<<<<<<< HEAD
   <!-- TAB SWITCHER -->
   <div class="view-tabs">
     <button class="view-tab" [class.active]="activeTab === 'create'" (click)="switchTab('create')">
@@ -38,248 +37,6 @@
       <i class="bi bi-list-ul"></i>
       My Expenses
       <span class="tab-badge" *ngIf="total > 0 && activeTab !== 'list'">{{ total }}</span>
-=======
-  <!-- CREATE / EDIT FORM -->
-  <div class="form-card">
-    <!-- Role-based limit info banner -->
-    <div *ngIf="role === 'Employee'" style="padding:10px 20px 0;font-size:12px;color:var(--text-muted)">
-      <i class="bi bi-info-circle me-1" style="color:var(--sky)"></i>
-      Limits: max 2 requests/month &nbsp;·&nbsp; max total Rs.5,000/month &nbsp;·&nbsp; current month only
-    </div>
-    <div *ngIf="role === 'TeamLead'" style="padding:10px 20px 0;font-size:12px;color:var(--text-muted)">
-      <i class="bi bi-info-circle me-1" style="color:var(--sky)"></i>
-      Limits: max 5 requests/month &nbsp;·&nbsp; max total Rs.10,000/month &nbsp;·&nbsp; current month only
-    </div>
-    <div *ngIf="role === 'Manager'" style="padding:10px 20px 0;font-size:12px;color:#a855f7">
-      <i class="bi bi-info-circle me-1"></i>
-      Limits: unlimited requests &nbsp;·&nbsp; max total Rs.20,000/month &nbsp;·&nbsp; advance (future-dated) requests allowed
-    </div>
-    <div class="form-card-header">
-      <div class="form-card-title">
-        <div class="form-card-icon" [class.edit-mode]="isEditMode">
-          <i class="bi" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-lg'"></i>
-        </div>
-        <span>{{ isEditMode ? 'Update Expense' : 'New Expense' }}</span>
-      </div>
-      <div *ngIf="isEditMode" class="editing-badge">
-        <i class="bi bi-pencil me-1"></i>Editing <code>{{ editExpenseId }}</code>
-      </div>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="submit()">
-      <div class="form-row">
-
-        <div class="field">
-          <label class="field-label"><i class="bi bi-tag me-1"></i>Category ID</label>
-          <input formControlName="categoryId" placeholder="e.g. C1" class="field-input"
-                 [class.is-error]="categoryId.invalid && categoryId.touched"
-                 [class.is-valid]="categoryId.valid && categoryId.touched" />
-          <span class="field-error" *ngIf="categoryId.invalid && categoryId.touched">
-            <i class="bi bi-exclamation-circle me-1"></i>Category ID is required
-          </span>
-        </div>
-
-        <div class="field">
-          <label class="field-label">
-            <i class="bi bi-currency-rupee me-1"></i>Amount
-            <span *ngIf="categoryMaxLimit !== null" class="field-optional">
-              — max {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
-            </span>
-            <span *ngIf="loadingCategoryLimit" class="field-optional">
-              <i class="bi bi-hourglass-split me-1"></i>Loading limit…
-            </span>
-          </label>
-          <div class="input-with-prefix">
-            <span class="input-prefix">₹</span>
-            <input type="number" formControlName="amount" placeholder="0.00" class="field-input has-prefix"
-                   [class.is-error]="(amount.invalid && amount.touched) || (categoryMaxLimit !== null && amount.value > categoryMaxLimit)"
-                   [class.is-valid]="amount.valid && amount.touched && !(categoryMaxLimit !== null && amount.value > categoryMaxLimit)" />
-          </div>
-          <span class="field-error" *ngIf="amount.invalid && amount.touched">
-            <i class="bi bi-exclamation-circle me-1"></i>
-            <span *ngIf="amount.errors?.['required']">Amount is required</span>
-            <span *ngIf="amount.errors?.['min']">Amount must be greater than 0</span>
-          </span>
-          <span class="field-error" *ngIf="categoryMaxLimit !== null && amount.value > categoryMaxLimit && amount.touched">
-            <i class="bi bi-exclamation-triangle-fill me-1"></i>
-            Exceeds max limit of {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
-          </span>
-        </div>
-
-        <div class="field">
-          <label class="field-label">
-            <i class="bi bi-calendar3 me-1"></i>Expense Date
-            <span class="field-optional" *ngIf="role !== 'Manager'">({{ currentMonthLabel }} only)</span>
-            <span class="field-optional" *ngIf="role === 'Manager'" style="color:#a855f7">(any date — advance requests allowed)</span>
-          </label>
-          <input type="date" formControlName="expenseDate" class="field-input"
-                 [min]="role !== 'Manager' ? minDate : ''"
-                 [max]="role !== 'Manager' ? maxDate : ''"
-                 [class.is-error]="expenseDate.invalid && expenseDate.touched"
-                 [class.is-valid]="expenseDate.valid && expenseDate.touched" />
-          <span class="field-error" *ngIf="expenseDate.errors?.['required'] && expenseDate.touched">
-            <i class="bi bi-exclamation-circle me-1"></i>Date is required
-          </span>
-          <span class="field-error" *ngIf="expenseDate.errors?.['notCurrentMonth'] && expenseDate.touched">
-            <i class="bi bi-exclamation-circle me-1"></i>Date must be within {{ currentMonthLabel }}
-          </span>
-        </div>
-
-        <!-- Advance Request toggle — Manager only -->
-        <div class="field" *ngIf="role === 'Manager'">
-          <label class="field-label">
-            <i class="bi bi-clock-history me-1" style="color:#a855f7"></i>Advance Request
-          </label>
-          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--card-bg)">
-            <input type="checkbox" [(ngModel)]="isAdvanceRequest" [ngModelOptions]="{standalone:true}" style="width:16px;height:16px;accent-color:#a855f7" />
-            <span style="font-size:13px;color:var(--text-muted)">
-              Mark as advance request (future-dated reimbursement)
-            </span>
-          </label>
-        </div>
-
-        <div class="field file-field">
-          <label class="field-label">
-            <i class="bi bi-paperclip me-1"></i>Documents<span class="field-optional">(optional)</span>
-          </label>
-          <label class="file-drop" [class.has-files]="files.length > 0">
-            <input type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.xlsx,.xls,.doc,.docx"
-                   (change)="onFileChange($event)" class="file-hidden" />
-            <i class="bi bi-cloud-arrow-up file-drop-icon"></i>
-            <span class="file-drop-text">
-              {{ files.length ? files.length + ' file(s) selected' : 'Click or drag to upload' }}
-            </span>
-            <span class="file-drop-hint">PNG, JPG, PDF, XLSX, DOC — max 10MB each</span>
-          </label>
-          <div *ngIf="filePreviews.length > 0" class="selected-files-grid">
-            <div *ngFor="let fp of filePreviews; let i = index" class="selected-file-item">
-              <img *ngIf="fp.isImage" [src]="fp.url" alt="preview" class="selected-file-img" />
-              <div *ngIf="!fp.isImage" class="selected-file-doc">
-                <i class="bi" [ngClass]="apiSvc.fileIcon(fp.name)"></i>
-              </div>
-              <span class="selected-file-name">{{ fp.name }}</span>
-              <button type="button" class="selected-file-remove" (click)="removeFile(i)">
-                <i class="bi bi-x"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn-primary">
-          <i class="bi" [ngClass]="isEditMode ? 'bi-save2' : 'bi-plus-circle'"></i>
-          {{ isEditMode ? 'Update Expense' : 'Create Expense' }}
-        </button>
-        <button *ngIf="isEditMode" type="button" (click)="resetForm()" class="btn-ghost">
-          <i class="bi bi-x-circle"></i>Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-
-  <!-- STATUS QUICK PILLS -->
-  <div class="filter-section">
-    <div class="filter-bar">
-      <button class="filter-pill" [class.active]="filterStatus === ''" (click)="applyFilter('')">
-        All <span class="filter-count" *ngIf="!filterStatus">{{ total }}</span>
-      </button>
-      <button class="filter-pill draft"     [class.active]="filterStatus === 'Draft'"     (click)="applyFilter('Draft')"><span class="filter-dot"></span>Draft</button>
-      <button class="filter-pill submitted" [class.active]="filterStatus === 'Submitted'" (click)="applyFilter('Submitted')"><span class="filter-dot"></span>Submitted</button>
-      <button class="filter-pill approved"  [class.active]="filterStatus === 'Approved'"  (click)="applyFilter('Approved')"><span class="filter-dot"></span>Approved</button>
-      <button class="filter-pill paid"      [class.active]="filterStatus === 'Paid'"      (click)="applyFilter('Paid')"><span class="filter-dot"></span>Paid</button>
-      <button class="filter-pill rejected"  [class.active]="filterStatus === 'Rejected'"  (click)="applyFilter('Rejected')"><span class="filter-dot"></span>Rejected</button>
-    </div>
-  </div>
-
-  <!-- ADVANCED FILTER BAR — same layout as Payments -->
-  <div class="form-card" style="padding:18px 24px;margin-bottom:16px">
-    <div class="admin-filter-row">
-
-      <div class="filter-group">
-        <label class="field-label">Status</label>
-        <select [(ngModel)]="filterStatus" class="field-input filter-select">
-          <option value="">All Statuses</option>
-          <option value="Draft">Draft</option>
-          <option value="Submitted">Submitted</option>
-          <option value="Approved">Approved</option>
-          <option value="Rejected">Rejected</option>
-          <option value="Paid">Paid</option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label class="field-label">Category</label>
-        <select [(ngModel)]="filterCategory" class="field-input filter-select">
-          <option value="">All Categories</option>
-          <option *ngFor="let cat of categories" [value]="cat.categoryName">
-            {{ cat.categoryName }}
-          </option>
-        </select>
-      </div>
-
-      <div class="filter-group">
-        <label class="field-label">Min Amount (₹)</label>
-        <input type="number" [(ngModel)]="filterMinAmount" placeholder="0"
-               class="field-input filter-select" min="0" />
-      </div>
-
-      <div class="filter-group">
-        <label class="field-label">Max Amount (₹)</label>
-        <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any"
-               class="field-input filter-select" min="0" />
-      </div>
-
-      <div class="filter-group">
-        <label class="field-label">From Date</label>
-        <input type="date" [(ngModel)]="filterDateFrom" class="field-input filter-select" />
-      </div>
-
-      <div class="filter-group">
-        <label class="field-label">To Date</label>
-        <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
-      </div>
-
-      <div class="filter-group filter-actions-group">
-        <button class="btn-primary" style="padding:8px 14px;font-size:12px"
-                (click)="applyAdvancedFilters()">
-          <i class="bi bi-funnel-fill"></i>Apply
-        </button>
-        <button class="btn-sort" [class.active]="sortBy === 'amount'"
-                (click)="toggleSort('amount')" title="Sort by Amount">
-          <i class="bi bi-currency-rupee"></i>
-          <i class="bi" [ngClass]="sortBy === 'amount'
-            ? (sortDir === 'asc' ? 'bi-sort-up' : 'bi-sort-down')
-            : 'bi-arrow-down-up'"></i>
-        </button>
-        <button class="btn-sort" [class.active]="sortBy === 'date'"
-                (click)="toggleSort('date')" title="Sort by Date">
-          <i class="bi bi-calendar3"></i>
-          <i class="bi" [ngClass]="sortBy === 'date'
-            ? (sortDir === 'asc' ? 'bi-sort-up' : 'bi-sort-down')
-            : 'bi-arrow-down-up'"></i>
-        </button>
-        <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearFilters()">
-          <i class="bi bi-x-circle"></i>Reset
-        </button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- EMPTY STATE -->
-  <div *ngIf="expenses.length === 0" class="empty-state">
-    <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-    <h3 class="empty-title">No expenses found</h3>
-    <p class="empty-sub">
-      {{ hasActiveFilters
-          ? 'No expenses match your current filters. Try adjusting them.'
-          : 'Create your first expense using the form above.' }}
-    </p>
-    <button *ngIf="hasActiveFilters" class="btn-ghost" style="margin-top:14px" (click)="clearFilters()">
-      <i class="bi bi-x-circle me-2"></i>Clear Filters
->>>>>>> eba5464 (Feature added)
     </button>
   </div>
 
@@ -293,17 +50,7 @@
           <div class="form-card-icon" [class.edit-mode]="isEditMode">
             <i class="bi" [ngClass]="isEditMode ? 'bi-pencil-square' : 'bi-plus-lg'"></i>
           </div>
-<<<<<<< HEAD
           <span>{{ isEditMode ? 'Update Expense' : 'New Expense' }}</span>
-=======
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-            <span class="status-badge" [ngClass]="'badge-' + e.status">{{ e.status }}</span>
-            <span *ngIf="e.isAdvanceRequest" class="status-badge"
-                  style="background:rgba(168,85,247,0.15);color:#a855f7;border-color:rgba(168,85,247,0.3);font-size:10px">
-              <i class="bi bi-clock-history me-1"></i>Advance
-            </span>
-          </div>
->>>>>>> eba5464 (Feature added)
         </div>
         <div *ngIf="isEditMode" class="editing-badge">
           <i class="bi bi-pencil me-1"></i>Editing <code>{{ editExpenseId }}</code>
@@ -350,6 +97,33 @@
               <i class="bi bi-exclamation-triangle-fill me-1"></i>
               Exceeds max limit of {{ categoryMaxLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }} for {{ categoryLimitName }}
             </span>
+            <!-- Monthly role budget indicator -->
+            <div *ngIf="monthlyRoleLimit !== null && !isEditMode" class="monthly-budget-bar">
+              <div class="mbb-row">
+                <span class="mbb-label"><i class="bi bi-calendar-month me-1"></i>Monthly budget</span>
+                <span class="mbb-values">
+                  <span class="mbb-spent">Spent: {{ monthlySpent | currency:'INR':'symbol':'1.0-0':'en-IN' }}</span>
+                  <span class="mbb-sep">/</span>
+                  <span class="mbb-limit">{{ monthlyRoleLimit | currency:'INR':'symbol':'1.0-0':'en-IN' }}</span>
+                </span>
+              </div>
+              <div class="mbb-track">
+                <div class="mbb-fill"
+                     [style.width.%]="(monthlySpent / monthlyRoleLimit!) * 100 | number:'1.0-0'"
+                     [class.mbb-warn]="(monthlySpent / monthlyRoleLimit!) >= 0.8"
+                     [class.mbb-danger]="(monthlySpent / monthlyRoleLimit!) >= 1">
+                </div>
+              </div>
+              <span class="mbb-remaining"
+                    [class.mbb-remaining-warn]="monthlyRemaining !== null && monthlyRemaining < (monthlyRoleLimit! * 0.2)"
+                    [class.mbb-remaining-ok]="monthlyRemaining !== null && monthlyRemaining >= (monthlyRoleLimit! * 0.2)">
+                Remaining: {{ monthlyRemaining | currency:'INR':'symbol':'1.0-0':'en-IN' }}
+              </span>
+              <span class="field-error" *ngIf="amount.touched && monthlyRemaining !== null && +amount.value > monthlyRemaining">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                Exceeds your monthly remaining budget of {{ monthlyRemaining | currency:'INR':'symbol':'1.0-0':'en-IN' }}
+              </span>
+            </div>
           </div>
 
           <div class="field">
@@ -378,7 +152,7 @@
               <span class="file-drop-text">
                 {{ files.length ? files.length + ' file(s) selected' : 'Click or drag to upload' }}
               </span>
-              <span class="file-drop-hint">PNG, JPG, PDF, XLSX, DOC — max 10MB each</span>
+              <span class="file-drop-hint">PNG, JPG, PDF, XLSX, DOC — max 10MB each<ng-container *ngIf="role.toLowerCase() === 'employee' || role.toLowerCase() === 'teamlead'"> · up to 5 files</ng-container></span>
             </label>
             <input #fileInput type="file" multiple accept=".png,.jpg,.jpeg,.pdf,.xlsx,.xls,.doc,.docx"
                    (change)="onFileChange($event)" class="file-hidden" style="display:none" />
@@ -450,9 +224,9 @@
         <span class="status-card-num">{{ countByStatus('Draft') }}</span>
         <span class="status-card-label"><i class="bi bi-pencil-square me-1"></i>Draft</span>
       </button>
-      <button class="status-card submitted" [class.active]="filterStatus === 'Submitted'" (click)="applyFilter('Submitted')">
-        <span class="status-card-num">{{ countByStatus('Submitted') }}</span>
-        <span class="status-card-label"><i class="bi bi-send me-1"></i>Submitted</span>
+      <button class="status-card submitted" [class.active]="filterStatus === 'PendingTeamLead' || filterStatus === 'PendingManager' || filterStatus === 'PendingFinance'" (click)="applyFilter('')">
+        <span class="status-card-num">{{ countByStatus('PendingTeamLead') + countByStatus('PendingManager') + countByStatus('PendingFinance') }}</span>
+        <span class="status-card-label"><i class="bi bi-hourglass-split me-1"></i>In Review</span>
       </button>
       <button class="status-card approved" [class.active]="filterStatus === 'Approved'" (click)="applyFilter('Approved')">
         <span class="status-card-num">{{ countByStatus('Approved') }}</span>
@@ -477,6 +251,10 @@
             <option value="">All Statuses</option>
             <option value="Draft">Draft</option>
             <option value="Submitted">Submitted</option>
+            <option value="PendingTeamLead">Pending Team Lead</option>
+            <option value="PendingManager">Pending Manager</option>
+            <option value="PendingAdmin">Pending Admin</option>
+            <option value="PendingFinance">Pending Finance</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
             <option value="Paid">Paid</option>
@@ -581,14 +359,18 @@
                 View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
               </button>
             </div>
-            <!-- Approval/Rejection comment from manager/admin -->
-            <div *ngIf="(e.status === 'Approved' || e.status === 'Rejected') && e.approvalComment !== null && e.approvalComment !== undefined"
-                 class="approval-comment-row"
-                 [ngClass]="e.status === 'Rejected' ? 'comment-rejected' : 'comment-approved'">
-              <i class="bi" [ngClass]="e.status === 'Rejected' ? 'bi-x-circle-fill' : 'bi-check-circle-fill'"></i>
+            <!-- Current approval stage indicator -->
+            <div *ngIf="e.currentApprovalStage" class="stage-indicator">
+              <i class="bi bi-hourglass-split me-1"></i>
+              Awaiting <strong>{{ e.currentApprovalStage }}</strong> approval
+            </div>
+            <!-- Approval/Rejection comments from all stages -->
+            <div *ngIf="e.approvalComment" class="approval-comment-row"
+                 [ngClass]="e.status === 'Rejected' ? 'comment-rejected' : e.status === 'Approved' ? 'comment-approved' : 'comment-info'">
+              <i class="bi" [ngClass]="e.status === 'Rejected' ? 'bi-x-circle-fill' : e.status === 'Approved' ? 'bi-check-circle-fill' : 'bi-chat-quote-fill'"></i>
               <div>
                 <span class="comment-by" *ngIf="e.approverName">{{ e.approverName }}:</span>
-                <span class="comment-text">{{ e.approvalComment || 'No comment provided.' }}</span>
+                <span class="comment-text">{{ e.approvalComment }}</span>
               </div>
             </div>
           </div>

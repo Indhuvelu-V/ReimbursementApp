@@ -1,32 +1,10 @@
 
-<<<<<<< HEAD
 import { inject } from "@angular/core";
 import { CanActivateFn, Router, UrlTree } from "@angular/router";
 import { TokenService } from "../services/token.service";
 
 export const authGuard: CanActivateFn = (route, state): boolean | UrlTree => {
   const token = sessionStorage.getItem('token');
-=======
-// Maps each protected route to the role that owns it
-const ROUTE_ROLE_MAP: Record<string, string> = {
-  employee: 'employee',
-  teamlead: 'teamlead',
-  manager:  'manager',
-  finance:  'finance',
-  admin:    'admin',
-};
-
-// Maps each role to its own home route
-const ROLE_HOME_MAP: Record<string, string> = {
-  employee: '/employee',
-  teamlead: '/teamlead',
-  manager:  '/manager',
-  finance:  '/finance',
-  admin:    '/admin',
-};
-
-export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
->>>>>>> eba5464 (Feature added)
   const tokenService = inject(TokenService);
   const router = inject(Router);
 
@@ -43,9 +21,10 @@ export const authGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
 
   const roleDashboardMap: Record<string, string> = {
     Employee: '/employee',
-    Manager: '/manager',
-    Admin: '/admin',
-    Finance: '/finance'
+    TeamLead: '/teamlead',
+    Manager:  '/manager',
+    Admin:    '/admin',
+    Finance:  '/finance'
   };
 
   const allowedDashboard = roleDashboardMap[role];

@@ -28,7 +28,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 1️⃣ CREATE NOTIFICATION
         // =====================================================
         [HttpPost("AllUsersCreate")]
-        [Authorize(Roles = "Manager,Finance,Admin,Employee")]
+        [Authorize(Roles = "Manager,Finance,Admin,Employee,TeamLead")]
         public async Task<IActionResult> CreateNotification([FromBody] CreateNotificationRequestDto request)
         {
             _logger.LogInformation("Request to create notification for User {UserId}", request.UserId);
@@ -67,7 +67,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 2️⃣ GET MY NOTIFICATIONS
         // =====================================================
         [HttpGet("GetMyNotifications")]
-        [Authorize(Roles = "Employee,Manager,Admin,Finance")]
+        [Authorize(Roles = "Employee,Manager,Admin,Finance,TeamLead")]
         public async Task<IActionResult> GetMyNotifications()
         {
             _logger.LogInformation("Request to fetch user notifications");
@@ -102,7 +102,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 2️⃣ LEGACY ROUTE
         // =====================================================
         [HttpGet("GetUsersNotifications")]
-        [Authorize(Roles = "Manager,Finance,Admin,Employee")]
+        [Authorize(Roles = "Manager,Finance,Admin,Employee,TeamLead")]
         public async Task<IActionResult> GetMyNotificationsLegacy()
         {
             _logger.LogInformation("Legacy route hit for fetching notifications");
@@ -113,7 +113,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 3️⃣ REPLY TO NOTIFICATION
         // =====================================================
         [HttpPost("Users/reply")]
-        [Authorize(Roles = "Manager,Finance,Admin,Employee")]
+        [Authorize(Roles = "Manager,Finance,Admin,Employee,TeamLead")]
         public async Task<IActionResult> ReplyNotification([FromBody] ReplyNotificationRequestDto request)
         {
             _logger.LogInformation("Request to reply to Notification {NotificationId}", request.NotificationId);
@@ -154,7 +154,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 4️⃣ MARK AS READ
         // =====================================================
         [HttpPost("Users/read/{notificationId}")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,Manager,Finance,Admin,TeamLead")]
         public async Task<IActionResult> MarkAsRead(string notificationId)
         {
             _logger.LogInformation("Request to mark Notification {NotificationId} as read", notificationId);
@@ -194,7 +194,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 5️⃣ GET SENT NOTIFICATIONS (Manager sees replies)
         // =====================================================
         [HttpGet("GetSentNotifications")]
-        [Authorize(Roles = "Manager,Admin,Finance,Employee")]
+        [Authorize(Roles = "Manager,Admin,Finance,Employee,TeamLead")]
         public async Task<IActionResult> GetSentNotifications()
         {
             try
@@ -215,7 +215,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 6️⃣ MARK SENT NOTIFICATION AS READ (Sender marks it)
         // =====================================================
         [HttpPost("Sender/read/{notificationId}")]
-        [Authorize(Roles = "Manager,Admin,Finance,Employee")]
+        [Authorize(Roles = "Manager,Admin,Finance,Employee,TeamLead")]
         public async Task<IActionResult> MarkSentAsRead(string notificationId)
         {
             try

@@ -1,10 +1,5 @@
-<<<<<<< HEAD
-export enum UserRole { Admin = 'Admin', Employee = 'Employee', Manager = 'Manager', Finance = 'Finance' }
-export enum DepartmentType { HR = 'HR', IT = 'IT', Sales = 'Sales', FinanceAnalyst = 'FinanceAnalyst' }
-=======
 export enum UserRole { Admin = 'Admin', Employee = 'Employee', TeamLead = 'TeamLead', Manager = 'Manager', Finance = 'Finance' }
-export enum DepartmentType { HR = 'HR', IT = 'IT', Sales = 'Sales', Marketing = 'Marketing', Finance = 'Finance' }
->>>>>>> eba5464 (Feature added)
+export enum DepartmentType { HR = 'HR', IT = 'IT', Sales = 'Sales', FinanceAnalyst = 'FinanceAnalyst' }
 export enum UserStatus { Active = 'Active', Inactive = 'Inactive', Suspended = 'Suspended' }
 export enum ApprovalLevel { Level1 = 'Level1', Level2 = 'Level2', Finance = 'Finance' }
 export class CreateUserResponseDto {

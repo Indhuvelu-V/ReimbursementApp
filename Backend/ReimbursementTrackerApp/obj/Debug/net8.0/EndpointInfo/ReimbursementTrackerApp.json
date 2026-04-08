@@ -5,7 +5,69 @@
     "version": "v1"
   },
   "paths": {
+    "/api/Approval/teamlead": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Approval/manager": {
+      "post": {
+        "tags": [
+          "Approval"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApprovalRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Approval/finance": {
       "post": {
         "tags": [
           "Approval"
@@ -154,6 +216,30 @@
               "type": "string"
             }
           }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Approval/my-history": {
+      "get": {
+        "tags": [
+          "Approval"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Approval/pending": {
+      "get": {
+        "tags": [
+          "Approval"
         ],
         "responses": {
           "200": {
@@ -353,6 +439,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "IsAdvanceRequest": {
+                    "type": "boolean"
                   }
                 }
               },
@@ -373,6 +462,9 @@
                   "style": "form"
                 },
                 "DocumentUrls": {
+                  "style": "form"
+                },
+                "IsAdvanceRequest": {
                   "style": "form"
                 }
               }
@@ -439,6 +531,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "IsAdvanceRequest": {
+                    "type": "boolean"
                   }
                 }
               },
@@ -459,6 +554,9 @@
                   "style": "form"
                 },
                 "DocumentUrls": {
+                  "style": "form"
+                },
+                "IsAdvanceRequest": {
                   "style": "form"
                 }
               }
@@ -1568,6 +1666,7 @@
         "enum": [
           "Admin",
           "Employee",
+          "TeamLead",
           "Manager",
           "Finance"
         ],

@@ -11,13 +11,20 @@ import { ExpenseStatusTracker } from '../expense-status-tracker/expense-status-t
 import { FileViewModal } from '../file-view-modal/file-view-modal';
 import { CreateExpenseCategoryResponseDto } from '../../models/expensecategory.model';
 
-function currentMonthOnlyValidator(control: AbstractControl): ValidationErrors | null {
-  if (!control.value) return null;
-  const selected = new Date(control.value);
-  const today    = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-  return (selected < monthStart || selected > monthEnd) ? { notCurrentMonth: true } : null;
+function currentMonthOnlyValidator(role: string) {
+  return (control: AbstractControl): ValidationErrors | null => {
+    if (!control.value) return null;
+    const selected = new Date(control.value);
+    const today    = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Manager: any date from start of current month onwards (including future)
+    if (role.toLowerCase() === 'manager') {
+      return selected < monthStart ? { notCurrentMonth: true } : null;
+    }
+    // All others: only dates from start of current month up to today
+    today.setHours(23, 59, 59, 999);
+    return (selected < monthStart || selected > today) ? { notCurrentMonth: true } : null;
+  };
 }
 
 @Component({
@@ -54,11 +61,7 @@ export class Expenses implements OnInit {
   editExpenseId:  string | null = null;
   lastCreatedExpenseId: string | null = null;
   role = '';
-<<<<<<< HEAD
   approverName = ''; // reporting manager (employee) or admin name (manager/finance)
-=======
-  isAdvanceRequest = false;  // Manager-only toggle
->>>>>>> eba5464 (Feature added)
 
   // ── Filters ────────────────────────────────────────────────────────────────
   filterStatus      = '';
@@ -82,6 +85,24 @@ export class Expenses implements OnInit {
   categoryLimitName    = '';
   loadingCategoryLimit = false;
 
+  // ── Monthly role limits ────────────────────────────────────────────────────
+  // Role caps: Employee ₹5000, TeamLead ₹10000, Manager ₹20000, Finance/Admin ₹30000
+  readonly ROLE_MONTHLY_LIMITS: Record<string, number | null> = {
+    employee: 5000,
+    teamlead: 10000,
+    manager:  20000,
+    finance:  30000,
+    admin:    30000
+  };
+
+
+  monthlyRoleLimit: number | null = null;  // max total for this role
+  monthlySpent     = 0;                    // sum of active expenses this month
+  get monthlyRemaining(): number | null {
+    if (this.monthlyRoleLimit === null) return null;
+    return Math.max(0, this.monthlyRoleLimit - this.monthlySpent);
+  }
+
   // ── File modal ─────────────────────────────────────────────────────────────
   showFileModal  = false;
   modalFileUrls: string[] = [];
@@ -93,16 +114,15 @@ export class Expenses implements OnInit {
 
   // ── Form dates ─────────────────────────────────────────────────────────────
   readonly minDate:          string;
-  readonly maxDate:          string;
+  maxDate:                   string;   // not readonly — Manager has no upper bound
   readonly currentMonthLabel: string;
   form!: FormGroup;
 
   constructor(public apiSvc: APIService) {
     const today = new Date();
     const ms = new Date(today.getFullYear(), today.getMonth(), 1);
-    const me = new Date(today.getFullYear(), today.getMonth() + 1, 0);
     this.minDate           = this.toInputDate(ms);
-    this.maxDate           = this.toInputDate(today);  // today — no future dates
+    this.maxDate           = this.toInputDate(today);  // default: today (no future for non-manager)
     this.currentMonthLabel = today.toLocaleString('default', { month: 'long', year: 'numeric' });
   }
 
@@ -111,7 +131,6 @@ export class Expenses implements OnInit {
   ngOnInit() {
     this.role = this.tokenService.getRoleFromToken() ?? '';
 
-<<<<<<< HEAD
     // Load approver name for toast message
     const r = this.role.toLowerCase();
     const myId = this.tokenService.getUserIdFromToken();
@@ -121,20 +140,22 @@ export class Expenses implements OnInit {
         next: (user: any) => { this.approverName = user?.reportingManagerName ?? ''; },
         error: () => {}
       });
-    } else if (r === 'manager' || r === 'finance') {
+    } else if (r === 'manager' || r === 'finance' || r === 'admin') {
       this.approverName = 'Admin';
     }
-=======
-    // Managers can submit future-dated (advance) requests — no month restriction
-    const dateValidators = this.role === 'Manager'
-      ? [Validators.required]
-      : [Validators.required, currentMonthOnlyValidator];
->>>>>>> eba5464 (Feature added)
+
+    // Set monthly role limit
+    this.monthlyRoleLimit = this.ROLE_MONTHLY_LIMITS[r] ?? null;
+
+    // Manager can pick future dates — remove the upper bound
+    if (r === 'manager') {
+      this.maxDate = '';  // no max date restriction
+    }
 
     this.form = this.fb.group({
       categoryId:  ['', Validators.required],
       amount:      ['', [Validators.required, Validators.min(0.01)]],
-      expenseDate: ['', dateValidators]
+      expenseDate: ['', [Validators.required, currentMonthOnlyValidator(this.role)]]
     });
 
     // Auto-fetch category limit when categoryId changes
@@ -173,14 +194,36 @@ export class Expenses implements OnInit {
 
   loadExpenses() {
     this.loader.show();
+    // Always load only the current user's own expenses for the "My Expenses" view
     this.api.getMyExpenses().subscribe({
       next: (res) => {
         this.allExpenses = Array.isArray(res) ? res : (res.data ?? []);
+        this.computeMonthlySpent();
         this.applyFiltersAndSort();
         this.loader.hide();
       },
       error: () => { this.toast.showError('Failed to load expenses.'); this.loader.hide(); }
     });
+  }
+
+  // Compute how much has been spent (active, non-rejected, non-draft) this month
+  computeMonthlySpent() {
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
+    this.monthlySpent = this.allExpenses
+      .filter(e => {
+        const d = new Date(this.parseDate(e.expenseDate));
+        return d >= monthStart && d <= monthEnd &&
+               e.status !== 'Rejected' && e.status !== 'Draft';
+      })
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+  }
+
+  private parseDateStr(dateStr: string): string {
+    if (!dateStr) return '';
+    const p = dateStr.split('-');
+    return (p.length === 3 && p[0].length === 2) ? `${p[2]}-${p[1]}-${p[0]}` : dateStr;
   }
 
   // ── Filter + Sort + Paginate (all client-side) ─────────────────────────────
@@ -288,8 +331,17 @@ export class Expenses implements OnInit {
     const selected: File[] = Array.from(event.target.files ?? []);
     if (!selected.length) return;
 
-    // Append new files to existing selection instead of replacing
-    this.files = [...this.files, ...selected];
+    const r = this.role.toLowerCase();
+    const maxFiles = (r === 'employee' || r === 'teamlead') ? 5 : null;
+    const combined = [...this.files, ...selected];
+
+    if (maxFiles !== null && combined.length > maxFiles) {
+      this.toast.showError(`You can upload a maximum of ${maxFiles} files per expense.`);
+      event.target.value = '';
+      return;
+    }
+
+    this.files = combined;
     this.filePreviews = this.files.map(f => ({
       url:     f.type.startsWith('image/') ? URL.createObjectURL(f) : '',
       name:    f.name,
@@ -328,20 +380,27 @@ export class Expenses implements OnInit {
       return;
     }
 
+    // Monthly role limit validation
+    if (!this.isEditMode && this.monthlyRoleLimit !== null) {
+      const remaining = this.monthlyRoleLimit - this.monthlySpent;
+      if (entered > remaining) {
+        const fmtLimit = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(this.monthlyRoleLimit);
+        const fmtSpent = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(this.monthlySpent);
+        const fmtLeft  = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Math.max(0, remaining));
+        this.toast.showError(
+          `Monthly limit exceeded. Limit: ${fmtLimit} | Spent: ${fmtSpent} | Remaining: ${fmtLeft}`
+        );
+        return;
+      }
+    }
+
     const fd = new FormData();
-<<<<<<< HEAD
     fd.append('categoryId',   this.form.value.categoryId);
     // Also send categoryName so backend can use it directly
     const selectedCat = this.categories.find(c => c.categoryId === this.form.value.categoryId);
     fd.append('categoryName', selectedCat?.categoryName ?? '');
     fd.append('amount',      this.form.value.amount);
     fd.append('expenseDate', this.form.value.expenseDate);
-=======
-    fd.append('categoryId',       this.form.value.categoryId);
-    fd.append('amount',           this.form.value.amount);
-    fd.append('expenseDate',      this.form.value.expenseDate);
-    fd.append('isAdvanceRequest', String(this.role === 'Manager' && this.isAdvanceRequest));
->>>>>>> eba5464 (Feature added)
     this.files.forEach(f => fd.append('Documents', f));
 
     if (this.isEditMode && this.editExpenseId) {
@@ -363,42 +422,18 @@ export class Expenses implements OnInit {
           error: (err) => { this.toast.showError(err?.error?.message || 'Failed to update expense.'); this.loader.hide(); }
         });
     } else {
+      const r = this.role.toLowerCase();
       const today      = new Date();
       const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-      const monthEnd   = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       const selDate    = new Date(this.form.value.expenseDate);
 
-      // Only enforce current-month date restriction for non-Manager roles
-      if (this.role !== 'Manager' && (selDate < monthStart || selDate > monthEnd)) {
-        this.toast.showWarning(`Only expenses for ${this.currentMonthLabel} are allowed.`);
+      // Only validate date range for non-manager roles
+      if (r !== 'manager' && (selDate < monthStart || selDate > today)) {
+        this.toast.showWarning(`Date must be within ${this.currentMonthLabel} and not in the future.`);
         return;
       }
 
-<<<<<<< HEAD
-      const duplicate = this.allExpenses.some(e => {
-        const eDate = new Date(this.parseDate(e.expenseDate));
-        return eDate >= monthStart && eDate <= monthEnd && e.status !== 'Rejected';
-      });
-
-      
-      if (duplicate) {
-        this.toast.showWarning(`You already have an expense for ${this.currentMonthLabel}.`);
-        return;
-=======
-      // Check monthly request count limit (Employee: 2, TeamLead: 5)
-      const maxRequests = this.role === 'Employee' ? 2 : this.role === 'TeamLead' ? 5 : null;
-      if (maxRequests !== null) {
-        const activeThisMonth = this.allExpenses.filter(e => {
-          const eDate = new Date(this.parseDate(e.expenseDate));
-          return eDate >= monthStart && eDate <= monthEnd && e.status !== 'Rejected';
-        });
-        if (activeThisMonth.length >= maxRequests) {
-          this.toast.showWarning(`Monthly request limit reached (${maxRequests} requests for ${this.role}).`);
-          return;
-        }
->>>>>>> eba5464 (Feature added)
-      }
-
+      // Let the backend enforce all request limits — no frontend duplicate block
       this.loader.show();
       this.api.createExpense(fd)
         .pipe(finalize(() => this.clearFiles()))
@@ -511,15 +546,9 @@ export class Expenses implements OnInit {
   resetForm()   {
     this.form.reset();
     this.clearFiles();
-<<<<<<< HEAD
     this.isEditMode      = false;
     this.editExpenseId   = null;
     this.existingDocUrls = [];
-=======
-    this.isEditMode    = false;
-    this.editExpenseId = null;
-    this.isAdvanceRequest  = false;
->>>>>>> eba5464 (Feature added)
     this.categoryMaxLimit  = null;
     this.categoryLimitName = '';
   }

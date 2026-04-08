@@ -21,8 +21,6 @@ namespace ReimbursementTrackerApp.Models.DTOs
         public List<IFormFile>? Documents { get; set; } // uploaded files
 
         public List<string>? DocumentUrls { get; set; }
-
-        // True = advance request (Manager only); False = actual expense bill
         public bool IsAdvanceRequest { get; set; } = false;
     }
 }

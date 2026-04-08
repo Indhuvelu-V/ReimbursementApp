@@ -63,25 +63,29 @@ namespace ReimbursementTrackerApp.Services
 
         // =====================================================
         // ROLE-BASED MONTHLY LIMITS
-        // Employee  : max 2 bills, ₹5,000 total, no advance
-        // TeamLead  : max 5 bills, ₹10,000 total, no advance
-        // Manager   : unlimited bills, ₹20,000 total, can advance
-        // Finance   : no limit enforced here (Finance approves, not submits)
+        //   Employee  : max 2 requests, max ₹5,000 total/month
+        //   TeamLead  : max 5 requests, max ₹10,000 total/month
+        //   Manager   : unlimited requests, max ₹20,000 total/month
+        //               + may submit advance (future-dated) requests
+        //   Finance/Admin: no monthly count/amount restrictions
         // =====================================================
-        private static (int? maxBills, decimal maxAmount, bool canAdvance) GetRoleLimits(UserRole role) =>
-            role switch
-            {
-                UserRole.Employee => (2, 5000m, false),
-                UserRole.TeamLead => (5, 10000m, false),
-                UserRole.Manager  => (null, 20000m, true),
-                _                 => (null, decimal.MaxValue, true)
-            };
+        private static (int? maxRequests, decimal? maxAmount) GetRoleLimits(UserRole role) => role switch
+        {
+            UserRole.Employee => (2, 5000m),
+            UserRole.TeamLead => (5, 10000m),
+            UserRole.Manager  => (null, 20000m),   // null = unlimited count
+            UserRole.Finance  => (null, 30000m),   // unlimited count, ₹30,000/month
+            UserRole.Admin    => (null, 30000m),   // unlimited count, ₹30,000/month
+            _                 => (null, null)
+        };
 
         // =====================================================
         // CREATE EXPENSE
-        // Enforces role-based monthly bill count + amount limits.
-        // Advance requests restricted to Manager only.
-        // Manager can submit future-dated bills (post-advance).
+        //
+        // ✅ Role-based monthly request count + amount limits
+        // ✅ Managers may submit future-dated (advance) requests
+        // ✅ Rejected expense for same month → UPDATE in-place
+        // ✅ FILE UPLOAD — paths already saved by controller
         // =====================================================
         public async Task<CreateExpenseResponseDto?> CreateExpense(CreateExpenseRequestDto request)
         {
@@ -89,29 +93,21 @@ namespace ReimbursementTrackerApp.Services
 
             var today = DateTime.UtcNow;
             var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            var monthEnd = monthStart.AddMonths(1).AddTicks(-1);
+            var monthEnd   = monthStart.AddMonths(1).AddTicks(-1);
 
-            var (maxBills, maxAmount, canAdvance) = GetRoleLimits(role);
-
-            // ── Advance request restriction ───────────────────────────────────
-            if (request.IsAdvanceRequest && !canAdvance)
+            // ── Advance request: only Managers may submit future-dated expenses ──
+            bool isAdvance = request.ExpenseDate > monthEnd;
+            if (isAdvance && role != UserRole.Manager)
                 throw new InvalidOperationException(
-                    $"Role '{role}' is not allowed to create advance requests. Only Managers can request advances.");
+                    "Only Managers are allowed to submit advance (future-dated) reimbursement requests.");
 
-            // ── Date rule: Employee/TeamLead → current month only
-            //              Manager → can submit future-dated bills (post-advance usage)
-            if (!canAdvance && (request.ExpenseDate < monthStart || request.ExpenseDate > monthEnd))
+            // ── Non-advance: date must be within current month ────────────────
+            if (!isAdvance && (request.ExpenseDate < monthStart || request.ExpenseDate > monthEnd))
                 throw new InvalidOperationException(
                     $"Expense date must be within the current month " +
-                    $"({monthStart:dd MMM yyyy} – {monthEnd:dd MMM yyyy}).");
+                    $"({monthStart:dd MMM yyyy} – {monthEnd:dd MMM yyyy}). " +
+                    $"Only Managers may submit advance requests.");
 
-<<<<<<< HEAD
-            // ── Handle file uploads ──────────────────────────────────────────
-            // Files are saved by the controller via FileUploadService before calling this method.
-            // DocumentUrls already contains the saved paths — no re-upload needed here.
-=======
-            // ── Handle file uploads ───────────────────────────────────────────
->>>>>>> eba5464 (Feature added)
             var documentUrls = request.DocumentUrls ?? new List<string>();
 
             // ── Fetch category ────────────────────────────────────────────────
@@ -120,36 +116,36 @@ namespace ReimbursementTrackerApp.Services
             catch (KeyNotFoundException) { throw new KeyNotFoundException("Expense category not found."); }
 
             if (request.Amount > category.MaxLimit)
-                throw new InvalidOperationException($"Amount exceeds the category limit for {category.CategoryName}.");
+                throw new InvalidOperationException($"Amount exceeds the category limit of ₹{category.MaxLimit:N2} for {category.CategoryName}.");
 
-<<<<<<< HEAD
-            // ── RULE 2 + 3: check for existing expenses this month ────────────
-            // ── RULE 2 + 3: check for existing expense this month ─────────────
-=======
-            // ── Monthly aggregates for this user ──────────────────────────────
->>>>>>> eba5464 (Feature added)
+            // ── Role-based monthly limits ─────────────────────────────────────
+            var (maxRequests, maxAmount) = GetRoleLimits(role);
             var allExpenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
 
-            var thisMonthExpenses = allExpenses
+            // Count active requests this month — exclude Draft and Rejected
+            // (Draft = not yet submitted, Rejected = doesn't count against limit)
+            var monthlyExpenses = allExpenses
                 .Where(e => e.UserId == userId &&
                             e.ExpenseDate >= monthStart &&
                             e.ExpenseDate <= monthEnd &&
-                            e.Status != ExpenseStatus.Rejected)
+                            e.Status != ExpenseStatus.Rejected &&
+                            e.Status != ExpenseStatus.Draft)
                 .ToList();
 
-            // ── Bill count limit ──────────────────────────────────────────────
-            if (maxBills.HasValue && thisMonthExpenses.Count >= maxBills.Value)
+            if (maxRequests.HasValue && monthlyExpenses.Count >= maxRequests.Value)
                 throw new InvalidOperationException(
-                    $"Monthly bill limit reached. Role '{role}' can submit at most {maxBills} bills per month.");
+                    $"You have reached the monthly request limit of {maxRequests.Value} for your role ({role}).");
 
-            // ── Amount limit ──────────────────────────────────────────────────
-            var totalThisMonth = thisMonthExpenses.Sum(e => e.Amount);
-            if (totalThisMonth + request.Amount > maxAmount)
-                throw new InvalidOperationException(
-                    $"Monthly reimbursement limit exceeded. Role '{role}' can claim at most ₹{maxAmount:N0} per month. " +
-                    $"Already claimed: ₹{totalThisMonth:N0}, Requested: ₹{request.Amount:N0}.");
+            if (maxAmount.HasValue)
+            {
+                var monthlyTotal = monthlyExpenses.Sum(e => e.Amount);
+                if (monthlyTotal + request.Amount > maxAmount.Value)
+                    throw new InvalidOperationException(
+                        $"This request would exceed your monthly reimbursement limit of ₹{maxAmount.Value:N2} for role {role}. " +
+                        $"Current total: ₹{monthlyTotal:N2}, Requested: ₹{request.Amount:N2}.");
+            }
 
-            // ── Rejected expense reuse (same month) ───────────────────────────
+            // ── RULE: If a REJECTED expense exists for this month → UPDATE it ─
             var rejectedThisMonth = allExpenses.FirstOrDefault(e =>
                 e.UserId == userId &&
                 e.ExpenseDate >= monthStart &&
@@ -161,58 +157,17 @@ namespace ReimbursementTrackerApp.Services
                 var oldAmount = rejectedThisMonth.Amount;
                 var oldDocs   = rejectedThisMonth.DocumentUrls ?? new List<string>();
 
-                rejectedThisMonth.CategoryId      = category.CategoryId;
-                rejectedThisMonth.CategoryName    = category.CategoryName.ToString();
-                rejectedThisMonth.Amount          = request.Amount;
-                rejectedThisMonth.ExpenseDate     = request.ExpenseDate;
-                rejectedThisMonth.DocumentUrls    = documentUrls;
-                rejectedThisMonth.IsAdvanceRequest = request.IsAdvanceRequest;
-                rejectedThisMonth.Status          = ExpenseStatus.Draft;
+                rejectedThisMonth.CategoryId    = category.CategoryId;
+                rejectedThisMonth.CategoryName  = category.CategoryName.ToString();
+                rejectedThisMonth.Amount        = request.Amount;
+                rejectedThisMonth.ExpenseDate   = request.ExpenseDate;
+                rejectedThisMonth.DocumentUrls  = documentUrls;
+                rejectedThisMonth.Status        = ExpenseStatus.Draft;
+                rejectedThisMonth.IsAdvanceRequest = isAdvance;
 
                 await _expenseRepo.UpdateAsync(rejectedThisMonth.ExpenseId, rejectedThisMonth);
-
                 await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
                 {
-<<<<<<< HEAD
-                    // ✅ RULE 3 — Rejected expense exists → UPDATE it in-place
-                    var oldAmount = existingThisMonth.Amount;
-                    var oldDocs = existingThisMonth.DocumentUrls ?? new List<string>();
-
-                    existingThisMonth.CategoryId = category.CategoryId;
-                    existingThisMonth.CategoryName = category.CategoryName.ToString();
-                    existingThisMonth.Amount = request.Amount;
-                    existingThisMonth.ExpenseDate = request.ExpenseDate;
-                    existingThisMonth.DocumentUrls = documentUrls;
-                    existingThisMonth.Status = ExpenseStatus.Draft;
-
-                    await _expenseRepo.UpdateAsync(existingThisMonth.ExpenseId, existingThisMonth);
-
-                    await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
-                    {
-                        Action = $"Updated Rejected Expense {existingThisMonth.ExpenseId} (re-edit after rejection)",
-                        ExpenseId = existingThisMonth.ExpenseId,
-                        Amount = existingThisMonth.Amount,
-                        OldAmount = oldAmount,
-                        DocumentUrls = existingThisMonth.DocumentUrls,
-                        OldDocumentUrls = oldDocs,
-                        Date = DateTime.UtcNow
-                    });
-
-                    return MapToDto(existingThisMonth);
-                }
-                else
-                {
-                    // ✅ RULE 2 — Active (non-rejected) expense already exists
-                    await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
-                    {
-                        Action = $"Blocked Expense creation — already submitted an expense for {today:MMMM yyyy}",
-                        Date = DateTime.UtcNow
-                    });
-                    throw new InvalidOperationException(
-                        $"You have already submitted an expense for " +
-                        $"{today:MMMM yyyy}. Only one expense is allowed per month.");
-                }
-=======
                     Action = $"Re-edited rejected expense {rejectedThisMonth.ExpenseId}",
                     ExpenseId = rejectedThisMonth.ExpenseId,
                     Amount = rejectedThisMonth.Amount,
@@ -221,30 +176,27 @@ namespace ReimbursementTrackerApp.Services
                     OldDocumentUrls = oldDocs,
                     Date = DateTime.UtcNow
                 });
-
                 return MapToDto(rejectedThisMonth);
->>>>>>> eba5464 (Feature added)
             }
 
             // ── Create new expense ────────────────────────────────────────────
             var expense = new Expense
             {
-                ExpenseId        = Guid.NewGuid().ToString(),
-                UserId           = userId,
-                CategoryId       = category.CategoryId,
-                CategoryName     = category.CategoryName.ToString(),
-                Amount           = request.Amount,
-                ExpenseDate      = request.ExpenseDate,
-                DocumentUrls     = documentUrls,
-                IsAdvanceRequest = request.IsAdvanceRequest,
-                Status           = ExpenseStatus.Draft
+                ExpenseId  = Guid.NewGuid().ToString(),
+                UserId     = userId,
+                CategoryId = category.CategoryId,
+                CategoryName = category.CategoryName.ToString(),
+                Amount     = request.Amount,
+                ExpenseDate = request.ExpenseDate,
+                DocumentUrls = documentUrls,
+                Status     = ExpenseStatus.Draft,
+                IsAdvanceRequest = isAdvance
             };
 
             await _expenseRepo.AddAsync(expense);
-
             await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
             {
-                Action = $"Created expense {expense.ExpenseId}" + (expense.IsAdvanceRequest ? " [ADVANCE]" : ""),
+                Action = $"Created expense {expense.ExpenseId}" + (isAdvance ? " [ADVANCE]" : ""),
                 ExpenseId = expense.ExpenseId,
                 Amount = expense.Amount,
                 DocumentUrls = expense.DocumentUrls,
@@ -367,7 +319,7 @@ namespace ReimbursementTrackerApp.Services
 
             if (expense.Status != ExpenseStatus.Draft &&
                 expense.Status != ExpenseStatus.Submitted)
-                return (false, "Cannot delete after manager approved", null);
+                return (false, "Cannot delete after manager approved or rejected", null);
 
             var response = MapToDto(expense);
 
@@ -421,17 +373,30 @@ namespace ReimbursementTrackerApp.Services
 
             if (role == UserRole.Employee)
                 query = query.Where(e => e.UserId == userId);
+            else if (role == UserRole.TeamLead)
+            {
+                // TeamLead sees same-dept employees' expenses + their own
+                var tlUser = users.FirstOrDefault(u => u.UserId == userId);
+                if (tlUser != null)
+                {
+                    var deptUserIds = users
+                        .Where(u => u.Department == tlUser.Department)
+                        .Select(u => u.UserId)
+                        .ToHashSet();
+                    query = query.Where(e => deptUserIds.Contains(e.UserId));
+                }
+            }
             else if (role == UserRole.Manager)
             {
-                // Manager sees only expenses from employees in their own department
+                // Manager sees expenses from same-department users (not their own)
                 var managerUser = users.FirstOrDefault(u => u.UserId == userId);
                 if (managerUser != null)
                 {
-                    var deptEmployeeIds = users
+                    var deptUserIds = users
                         .Where(u => u.Department == managerUser.Department && u.UserId != userId)
                         .Select(u => u.UserId)
                         .ToHashSet();
-                    query = query.Where(e => deptEmployeeIds.Contains(e.UserId));
+                    query = query.Where(e => deptUserIds.Contains(e.UserId));
                 }
             }
 
@@ -482,7 +447,7 @@ namespace ReimbursementTrackerApp.Services
         }
 
         // =====================================================
-        // GET MY EXPENSES — includes approval comments
+        // GET MY EXPENSES — includes ALL stage approval comments
         // =====================================================
         public async Task<List<CreateExpenseResponseDto>> GetMyExpenses()
         {
@@ -492,31 +457,95 @@ namespace ReimbursementTrackerApp.Services
             var approvals = await _approvalRepo.GetAllAsync() ?? new List<Approval>();
             var users = await _userRepo.GetAllAsync() ?? new List<User>();
 
-            // Build approval lookup: expenseId → latest approval
-            var approvalMap = approvals
-                .GroupBy(a => a.ExpenseId)
-                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.ApprovedAt).First());
-
             var userMap = users.GroupBy(u => u.UserId).ToDictionary(g => g.Key, g => g.First().UserName);
+
+            // Group all approvals per expense, ordered by stage
+            var approvalsByExpense = approvals
+                .GroupBy(a => a.ExpenseId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(a => a.ApprovedAt).ToList());
 
             return expenses
                 .Where(e => e.UserId == userId)
                 .Select(e =>
                 {
                     var dto = MapToDto(e, userName);
-                    if (approvalMap.TryGetValue(e.ExpenseId, out var approval))
+
+                    if (approvalsByExpense.TryGetValue(e.ExpenseId, out var expApprovals) && expApprovals.Any())
                     {
-                        dto.ApprovalComment = approval.Comments ?? string.Empty;
-                        userMap.TryGetValue(approval.ManagerId ?? "", out var approverName);
-                        dto.ApproverName = approverName ?? string.Empty;
+                        // Build a combined comment from all stages that have comments
+                        var commentParts = expApprovals
+                            .Where(a => !string.IsNullOrWhiteSpace(a.Comments))
+                            .Select(a =>
+                            {
+                                userMap.TryGetValue(a.ManagerId ?? "", out var approverName);
+                                var name = approverName ?? a.Level;
+                                return $"{name} ({a.Level}): {a.Comments}";
+                            })
+                            .ToList();
+
+                        dto.ApprovalComment = commentParts.Any()
+                            ? string.Join(" | ", commentParts)
+                            : string.Empty;
+
+                        // ApproverName = most recent approver
+                        var latest = expApprovals.First();
+                        userMap.TryGetValue(latest.ManagerId ?? "", out var latestApproverName);
+                        dto.ApproverName = latestApproverName ?? string.Empty;
                     }
+
                     return dto;
                 })
                 .ToList();
         }
 
         // =====================================================
-        // SUBMIT EXPENSE — auto-approves Admin expenses
+        // VALIDATE MONTHLY LIMITS — shared helper
+        // Called at both CreateExpense and SubmitExpense so
+        // limits are enforced at the point of entering the
+        // approval workflow, not just at draft creation.
+        // =====================================================
+        private async Task ValidateMonthlyLimits(string userId, UserRole role, decimal expenseAmount, string expenseId)
+        {
+            var (maxRequests, maxAmount) = GetRoleLimits(role);
+            if (!maxRequests.HasValue && !maxAmount.HasValue) return; // Finance/Admin — no limits
+
+            var today      = DateTime.UtcNow;
+            var monthStart = new DateTime(today.Year, today.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            var monthEnd   = monthStart.AddMonths(1).AddTicks(-1);
+
+            var allExpenses = await _expenseRepo.GetAllAsync() ?? new List<Expense>();
+
+            // Count submitted/active expenses this month — exclude the expense being submitted itself,
+            // Draft, and Rejected (they don't count until submitted)
+            var monthlyActive = allExpenses
+                .Where(e => e.UserId == userId &&
+                            e.ExpenseDate >= monthStart &&
+                            e.ExpenseDate <= monthEnd &&
+                            e.ExpenseId != expenseId &&          // exclude self
+                            e.Status != ExpenseStatus.Rejected &&
+                            e.Status != ExpenseStatus.Draft)
+                .ToList();
+
+            if (maxRequests.HasValue && monthlyActive.Count >= maxRequests.Value)
+                throw new InvalidOperationException(
+                    $"Monthly request limit of {maxRequests.Value} reached for role {role}. " +
+                    $"You cannot submit more expenses this month.");
+
+            if (maxAmount.HasValue)
+            {
+                var monthlyTotal = monthlyActive.Sum(e => e.Amount);
+                if (monthlyTotal + expenseAmount > maxAmount.Value)
+                    throw new InvalidOperationException(
+                        $"Submitting this expense would exceed your monthly limit of ₹{maxAmount.Value:N2} for role {role}. " +
+                        $"Already submitted: ₹{monthlyTotal:N2}, This expense: ₹{expenseAmount:N2}. " +
+                        $"Remaining budget: ₹{Math.Max(0, maxAmount.Value - monthlyTotal):N2}.");
+            }
+        }
+
+        // =====================================================
+        // SUBMIT EXPENSE
+        // Routes to the correct first approval stage based on role.
+        // Validates monthly limits before entering approval flow.
         // =====================================================
         public async Task<CreateExpenseResponseDto?> SubmitExpense(string expenseId)
         {
@@ -530,35 +559,36 @@ namespace ReimbursementTrackerApp.Services
             var users = await _userRepo.GetAllAsync() ?? new List<User>();
             var submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
 
+            // ── Enforce monthly limits before entering approval flow ───────────
+            if (submitter != null && submitter.Role != UserRole.Admin)
+                await ValidateMonthlyLimits(expense.UserId, submitter.Role, expense.Amount, expense.ExpenseId);
+
             if (submitter?.Role == UserRole.Admin)
             {
-                // Admin expense → skip approval, go directly to Approved
                 expense.Status = ExpenseStatus.Approved;
                 await _expenseRepo.UpdateAsync(expenseId, expense);
-
-                // Notify Finance for payment
                 var financeUser = users.FirstOrDefault(u => u.Role == UserRole.Finance);
                 if (financeUser != null)
-                {
-                    try
+                    await _notificationService.CreateNotification(new CreateNotificationRequestDto
                     {
-                        await _notificationService.CreateNotification(new CreateNotificationRequestDto
-                        {
-                            UserId = financeUser.UserId,
-                            Message = $"Admin expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) is ready for payment.",
-                            Description = $"Category: {expense.CategoryName} | Submitted by Admin",
-                            SenderRole = "System"
-                        });
-                    }
-                    catch { }
-                }
+                        UserId = financeUser.UserId,
+                        Message = $"Admin expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) is ready for payment.",
+                        Description = $"Category: {expense.CategoryName} | Submitted by Admin",
+                        SenderRole = "System"
+                    });
             }
             else
             {
-                // Non-admin → normal submit flow
-                expense.Status = ExpenseStatus.Submitted;
+                expense.Status = submitter?.Role switch
+                {
+                    UserRole.Employee => ExpenseStatus.PendingTeamLead,
+                    UserRole.TeamLead => ExpenseStatus.PendingManager,
+                    UserRole.Manager  => ExpenseStatus.PendingAdmin,   // Admin must approve
+                    UserRole.Finance  => ExpenseStatus.PendingAdmin,   // Admin must approve
+                    _                 => ExpenseStatus.Submitted
+                };
                 await _expenseRepo.UpdateAsync(expenseId, expense);
-                await NotifyApproverOnSubmit(expense);
+                await NotifyApproverOnSubmit(expense, submitter);
             }
 
             return MapToDto(expense);
@@ -596,11 +626,24 @@ namespace ReimbursementTrackerApp.Services
                     $"Only Rejected or Draft expenses can be resubmitted. " +
                     $"Current status: {expense.Status}.");
 
-            expense.Status = ExpenseStatus.Submitted;
-            await _expenseRepo.UpdateAsync(expenseId, expense);
+            var users = await _userRepo.GetAllAsync() ?? new List<User>();
+            var submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
 
-            // 🔹 Notify the approver on resubmit
-            await NotifyApproverOnSubmit(expense);
+            // ── Enforce monthly limits before re-entering approval flow ────────
+            if (submitter != null && submitter.Role != UserRole.Admin)
+                await ValidateMonthlyLimits(expense.UserId, submitter.Role, expense.Amount, expense.ExpenseId);
+
+            // Route to correct first stage again
+            expense.Status = submitter?.Role switch
+            {
+                UserRole.Employee => ExpenseStatus.PendingTeamLead,
+                UserRole.TeamLead => ExpenseStatus.PendingManager,
+                UserRole.Manager  => ExpenseStatus.PendingAdmin,
+                UserRole.Finance  => ExpenseStatus.PendingAdmin,
+                _                 => ExpenseStatus.Submitted
+            };
+            await _expenseRepo.UpdateAsync(expenseId, expense);
+            await NotifyApproverOnSubmit(expense, submitter);
 
             // ✅ Audit log for resubmission
             await _auditLogService.CreateLog(new CreateAuditLogsRequestDto
@@ -616,30 +659,33 @@ namespace ReimbursementTrackerApp.Services
 
         // =====================================================
         // NOTIFY APPROVER ON SUBMIT
-        // Employee → notify their reporting manager
-        // Manager/Finance → notify Admin
+        // Routes notification to the correct first approver:
+        //   Employee  → their assigned TeamLead (ManagerId)
+        //   TeamLead  → their assigned Manager (ManagerId)
+        //   Manager/Finance → Admin
         // =====================================================
-        private async Task NotifyApproverOnSubmit(Expense expense)
+        private async Task NotifyApproverOnSubmit(Expense expense, User? submitter = null)
         {
             try
             {
-                var users = await _userRepo.GetAllAsync() ?? new List<User>();
-                var submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
+                if (submitter == null)
+                {
+                    var users = await _userRepo.GetAllAsync() ?? new List<User>();
+                    submitter = users.FirstOrDefault(u => u.UserId == expense.UserId);
+                }
                 if (submitter == null) return;
 
                 string? approverId = null;
-                string approverRole = "Manager";
 
                 if (submitter.Role == UserRole.Manager || submitter.Role == UserRole.Finance)
                 {
-                    // Notify Admin
-                    var admin = users.FirstOrDefault(u => u.Role == UserRole.Admin);
+                    var allUsers = await _userRepo.GetAllAsync() ?? new List<User>();
+                    var admin = allUsers.FirstOrDefault(u => u.Role == UserRole.Admin);
                     approverId = admin?.UserId;
-                    approverRole = "Admin";
                 }
                 else
                 {
-                    // Notify reporting manager
+                    // Employee → TeamLead, TeamLead → Manager (both stored in ManagerId)
                     approverId = submitter.ManagerId;
                 }
 
@@ -649,7 +695,8 @@ namespace ReimbursementTrackerApp.Services
                 {
                     UserId = approverId,
                     Message = $"Expense '{expense.ExpenseId}' (₹{expense.Amount:N2}) submitted by {submitter.UserName} is awaiting your approval.",
-                    Description = $"Category: {expense.CategoryName} | Date: {expense.ExpenseDate:dd MMM yyyy}",
+                    Description = $"Category: {expense.CategoryName} | Date: {expense.ExpenseDate:dd MMM yyyy}" +
+                                  (expense.IsAdvanceRequest ? " [ADVANCE REQUEST]" : ""),
                     SenderRole = "System"
                 });
             }
@@ -680,10 +727,15 @@ namespace ReimbursementTrackerApp.Services
                 ExpenseDate = e.ExpenseDate.ToString("dd-MM-yyyy"),
                 Status = e.Status.ToString(),
                 DocumentUrls = e.DocumentUrls ?? new List<string>(),
-<<<<<<< HEAD
-=======
                 IsAdvanceRequest = e.IsAdvanceRequest,
->>>>>>> eba5464 (Feature added)
+                CurrentApprovalStage = e.Status switch
+                {
+                    ExpenseStatus.PendingTeamLead => "TeamLead",
+                    ExpenseStatus.PendingManager  => "Manager",
+                    ExpenseStatus.PendingAdmin    => "Admin",
+                    ExpenseStatus.PendingFinance  => "Finance",
+                    _ => null
+                },
                 CanEdit = (e.UserId == userId || role == UserRole.Admin) &&
                                  (e.Status == ExpenseStatus.Draft ||
                                   e.Status == ExpenseStatus.Submitted ||

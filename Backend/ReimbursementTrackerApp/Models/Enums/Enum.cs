@@ -5,10 +5,21 @@ namespace ReimbursementTrackerApp.Models.Enums
     {
         Draft,
         Submitted,
+        PendingTeamLead,
+        PendingManager,
+        PendingAdmin,
+        PendingFinance,
         Approved,
         Pending,
         Rejected,
         Paid
+    }
+
+    public enum ApprovalStage
+    {
+        TeamLead,
+        Manager,
+        Finance
     }
     public enum UserRole
     {

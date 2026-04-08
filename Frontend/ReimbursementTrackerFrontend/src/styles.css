@@ -297,12 +297,14 @@ html, body {
 .logout-btn:hover { background: rgba(244,63,94,0.1); color: var(--status-rejected); border-color: var(--status-rejected); }
 
 /* Role-specific nav */
-.nav-manager .nav-brand-icon { background: linear-gradient(135deg, var(--coral), var(--gold)); }
-.nav-manager .nav-link-item.active-link { background: var(--coral-dim); color: var(--coral); }
-.nav-finance .nav-brand-icon { background: linear-gradient(135deg, var(--mint), var(--teal)); }
-.nav-finance .nav-link-item.active-link { background: var(--mint-dim); color: var(--mint); }
-.nav-admin .nav-brand-icon { background: linear-gradient(135deg, var(--violet), var(--accent)); }
-.nav-admin .nav-link-item.active-link { background: var(--violet-dim); color: var(--violet); }
+.nav-manager  .nav-brand-icon { background: linear-gradient(135deg, var(--coral),  var(--gold)); }
+.nav-manager  .nav-link-item.active-link { background: var(--coral-dim);  color: var(--coral); }
+.nav-teamlead .nav-brand-icon { background: linear-gradient(135deg, var(--accent), var(--violet)); }
+.nav-teamlead .nav-link-item.active-link { background: var(--accent-dim); color: var(--accent); }
+.nav-finance  .nav-brand-icon { background: linear-gradient(135deg, var(--mint),   var(--teal)); }
+.nav-finance  .nav-link-item.active-link { background: var(--mint-dim);   color: var(--mint); }
+.nav-admin    .nav-brand-icon { background: linear-gradient(135deg, var(--violet), var(--accent)); }
+.nav-admin    .nav-link-item.active-link { background: var(--violet-dim); color: var(--violet); }
 
 .main-content { padding: 28px 24px; min-height: calc(100vh - var(--navbar-height)); }
 
@@ -386,11 +388,15 @@ select.field-input option { background: var(--surface2); }
 
 /* ── STATUS BADGES ─────────────────────────────────────── */
 .status-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; letter-spacing: 0.3px; }
-.badge-Draft     { background: rgba(245,158,11,0.15);  color: var(--status-draft);     border: 1px solid rgba(245,158,11,0.35); }
-.badge-Submitted { background: rgba(56,189,248,0.15);  color: var(--status-submitted); border: 1px solid rgba(56,189,248,0.35); }
-.badge-Approved  { background: rgba(16,185,129,0.15);  color: var(--status-approved);  border: 1px solid rgba(16,185,129,0.35); }
-.badge-Rejected  { background: rgba(244,63,94,0.15);   color: var(--status-rejected);  border: 1px solid rgba(244,63,94,0.35); }
-.badge-Paid      { background: rgba(167,139,250,0.15); color: var(--status-paid);      border: 1px solid rgba(167,139,250,0.35); }
+.badge-Draft              { background: rgba(245,158,11,0.15);  color: var(--status-draft);     border: 1px solid rgba(245,158,11,0.35); }
+.badge-Submitted          { background: rgba(56,189,248,0.15);  color: var(--status-submitted); border: 1px solid rgba(56,189,248,0.35); }
+.badge-PendingTeamLead    { background: rgba(167,139,250,0.15); color: var(--violet);           border: 1px solid rgba(167,139,250,0.35); }
+.badge-PendingManager     { background: rgba(249,115,22,0.15);  color: var(--coral);            border: 1px solid rgba(249,115,22,0.35); }
+.badge-PendingAdmin       { background: rgba(245,158,11,0.15);  color: var(--gold);             border: 1px solid rgba(245,158,11,0.35); }
+.badge-PendingFinance     { background: rgba(16,185,129,0.12);  color: var(--mint);             border: 1px solid rgba(16,185,129,0.3); }
+.badge-Approved           { background: rgba(16,185,129,0.15);  color: var(--status-approved);  border: 1px solid rgba(16,185,129,0.35); }
+.badge-Rejected           { background: rgba(244,63,94,0.15);   color: var(--status-rejected);  border: 1px solid rgba(244,63,94,0.35); }
+.badge-Paid               { background: rgba(167,139,250,0.15); color: var(--status-paid);      border: 1px solid rgba(167,139,250,0.35); }
 
 /* ── TABLE ─────────────────────────────────────────────── */
 .data-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow-md); border: 1px solid var(--border); }

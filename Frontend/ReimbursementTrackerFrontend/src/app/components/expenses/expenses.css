@@ -257,3 +257,58 @@
 .approval-comment-row i { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
 .comment-by { font-weight: 700; margin-right: 4px; }
 .comment-text { color: var(--text); }
+
+/* ── Stage indicator (shown while expense is in review) ── */
+.stage-indicator {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 10px; padding: 5px 12px;
+  background: var(--accent-dim); border: 1px solid var(--accent-glow);
+  border-radius: 99px; font-size: 12px; font-weight: 600; color: var(--accent);
+}
+.stage-indicator strong { color: var(--accent); }
+
+/* ── Info-style comment (for in-progress stages) ────────── */
+.comment-info {
+  background: rgba(14,165,233,0.08);
+  border: 1px solid rgba(14,165,233,0.25);
+  color: var(--accent);
+}
+.comment-info i { color: var(--accent); }
+
+/* ── Monthly budget bar ────────────────────────────────── */
+.monthly-budget-bar {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.mbb-row {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px;
+}
+.mbb-label { font-weight: 600; color: var(--text-muted); }
+.mbb-values { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+.mbb-spent  { color: var(--text-muted); font-weight: 600; }
+.mbb-sep    { color: var(--text-faint); }
+.mbb-limit  { color: var(--text); font-weight: 700; }
+
+.mbb-track {
+  height: 6px; background: var(--surface3);
+  border-radius: 99px; overflow: hidden;
+}
+.mbb-fill {
+  height: 100%; border-radius: 99px;
+  background: var(--status-approved);
+  transition: width 0.3s ease;
+  min-width: 0; max-width: 100%;
+}
+.mbb-fill.mbb-warn   { background: var(--gold); }
+.mbb-fill.mbb-danger { background: var(--status-rejected); }
+
+.mbb-remaining {
+  font-size: 11px; font-weight: 700;
+}
+.mbb-remaining-ok   { color: var(--status-approved); }
+.mbb-remaining-warn { color: var(--status-rejected); }

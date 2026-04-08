@@ -83,8 +83,60 @@
   },
   {
     "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
+    "Method": "FinanceApproval",
+    "RelativePath": "api/Approval/finance",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.CreateApprovalRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
     "Method": "ManagerApproval",
     "RelativePath": "api/Approval/manager",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "ReimbursementTrackerApp.Models.DTOs.CreateApprovalRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
+    "Method": "GetMyApprovalHistory",
+    "RelativePath": "api/Approval/my-history",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
+    "Method": "GetPendingForMe",
+    "RelativePath": "api/Approval/pending",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ReimbursementTrackerApp.Controllers.ApprovalController",
+    "Method": "TeamLeadApproval",
+    "RelativePath": "api/Approval/teamlead",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -237,6 +289,11 @@
         "Name": "DocumentUrls",
         "Type": "System.Collections.Generic.List\u00601[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
         "IsRequired": false
+      },
+      {
+        "Name": "IsAdvanceRequest",
+        "Type": "System.Boolean",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": []
@@ -359,6 +416,11 @@
       {
         "Name": "DocumentUrls",
         "Type": "System.Collections.Generic.List\u00601[[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "IsAdvanceRequest",
+        "Type": "System.Boolean",
         "IsRequired": false
       }
     ],

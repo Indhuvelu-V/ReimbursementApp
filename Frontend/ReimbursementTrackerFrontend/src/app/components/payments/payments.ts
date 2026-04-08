@@ -86,9 +86,11 @@ export class Payments implements OnInit {
   isFinance(): boolean      { return this.role?.toLowerCase() === 'finance'; }
 
   loadApprovedExpenses() {
+    // Load expenses with status PendingFinance — these are approved by Manager
+    // and are now awaiting Finance team action (approve + pay)
     this.api.getAllExpenses(
       this.approvedPage, this.approvedPageSize,
-      'Approved',
+      'PendingFinance',
       this.awaitingFilterDateFrom || undefined,
       this.awaitingFilterDateTo || undefined,
       this.awaitingFilterMinAmount,
@@ -97,7 +99,6 @@ export class Payments implements OnInit {
     ).subscribe({
       next: (res) => {
         let all: any[] = res.data ?? res ?? [];
-        // Client-side username filter as fallback
         if (this.awaitingFilterUserName.trim()) {
           const q = this.awaitingFilterUserName.trim().toLowerCase();
           all = all.filter(e =>

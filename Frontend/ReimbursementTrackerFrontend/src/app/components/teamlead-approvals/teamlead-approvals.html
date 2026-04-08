@@ -1,0 +1,267 @@
+<div class="approvals-wrapper fade-in">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon" style="background:var(--accent-dim);border-color:var(--accent-glow);">
+        <i class="bi bi-check2-square" style="color:var(--accent)"></i>
+      </div>
+      <div>
+        <h1 class="page-title">Approvals</h1>
+        <p class="page-sub">Review employee expense requests and forward approved ones to Manager</p>
+      </div>
+    </div>
+    <div class="stat-chip" style="background:var(--accent-dim);border-color:var(--accent-glow);">
+      <span class="stat-chip-num" style="color:var(--accent)">
+        {{ tab === 'pending' ? filteredPending.length : filteredHistory.length }}
+      </span>
+      <span class="stat-chip-label">{{ tab === 'pending' ? 'Pending' : 'Records' }}</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="view-tabs">
+    <button class="view-tab" [class.active]="tab === 'pending'" (click)="switchTab('pending')">
+      <i class="bi bi-inbox-fill"></i>Pending Approvals
+      <span class="tab-badge" *ngIf="pendingExpenses.length > 0">{{ pendingExpenses.length }}</span>
+    </button>
+    <button class="view-tab" [class.active]="tab === 'history'" (click)="switchTab('history')">
+      <i class="bi bi-clock-history"></i>Approval History
+      <span class="tab-badge history-badge" *ngIf="filteredHistory.length > 0">{{ filteredHistory.length }}</span>
+    </button>
+  </div>
+
+  <!-- ── PENDING TAB ──────────────────────────────────────────────────────── -->
+  <ng-container *ngIf="tab === 'pending'">
+
+    <!-- Filters -->
+    <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+      <div class="admin-filter-row">
+        <div class="filter-group">
+          <label class="field-label">Employee Name</label>
+          <input type="text" [(ngModel)]="filterUserName" placeholder="Search by name..." class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Min Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="filterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Max Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="filterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">From Date</label>
+          <input type="date" [(ngModel)]="filterDateFrom" class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">To Date</label>
+          <input type="date" [(ngModel)]="filterDateTo" class="field-input filter-select" />
+        </div>
+        <div class="filter-group filter-actions-group">
+          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyPendingFilters()">
+            <i class="bi bi-funnel-fill"></i>Apply
+          </button>
+          <button class="btn-sort" [class.active]="sortBy==='amount'" (click)="toggleSort('amount')">
+            <i class="bi bi-currency-rupee"></i>
+            <i class="bi" [ngClass]="sortBy==='amount' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+          </button>
+          <button class="btn-sort" [class.active]="sortBy==='date'" (click)="toggleSort('date')">
+            <i class="bi bi-calendar3"></i>
+            <i class="bi" [ngClass]="sortBy==='date' ? (sortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearPendingFilters()">
+            <i class="bi bi-x-circle"></i>Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty states -->
+    <div *ngIf="pendingExpenses.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-check2-all"></i></div>
+      <h3 class="empty-title">All caught up!</h3>
+      <p class="empty-sub">No employee expenses are awaiting your approval.</p>
+    </div>
+    <div *ngIf="pendingExpenses.length > 0 && filteredPending.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-funnel"></i></div>
+      <p class="empty-sub">No expenses match your filters.</p>
+      <button class="btn-ghost" style="margin-top:12px;font-size:12px" (click)="clearPendingFilters()">
+        <i class="bi bi-x-circle me-1"></i>Clear Filters
+      </button>
+    </div>
+
+    <!-- Cards -->
+    <div class="cards-grid" *ngIf="filteredPending.length > 0">
+      <div class="approval-expense-card" *ngFor="let e of pagedPending">
+        <div class="card-header">
+          <div class="card-header-left">
+            <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
+            <div>
+              <span class="card-category">{{ e.categoryName }}</span>
+              <span class="card-expid">{{ e.expenseId }}</span>
+            </div>
+          </div>
+          <span class="status-badge badge-Submitted">Pending TL</span>
+        </div>
+        <div class="card-body">
+          <div *ngIf="e.userName" class="card-user-row" style="margin-bottom:8px">
+            <i class="bi bi-person-fill me-1" style="color:var(--accent)"></i>
+            <span style="font-size:13px;font-weight:600;color:var(--text)">{{ e.userName }}</span>
+          </div>
+          <div class="card-meta-row">
+            <div class="card-meta-item">
+              <span class="meta-label">Amount</span>
+              <span class="amount-value">{{ e.amountInRupees || ('&#8377;' + e.amount) }}</span>
+            </div>
+            <div class="card-meta-item">
+              <span class="meta-label">Date</span>
+              <span class="meta-value">{{ e.expenseDate }}</span>
+            </div>
+          </div>
+          <!-- Advance request badge -->
+          <div *ngIf="e.isAdvanceRequest" style="margin-top:6px">
+            <span class="level-badge" style="background:var(--gold-dim);color:var(--gold);border-color:var(--gold-glow)">
+              <i class="bi bi-calendar-plus me-1"></i>Advance Request
+            </span>
+          </div>
+          <div *ngIf="e.documentUrls?.length" class="docs-row">
+            <button class="btn-view-docs" (click)="openFileModal(e.documentUrls)">
+              <i class="bi bi-paperclip me-1"></i>View {{ e.documentUrls.length }} File{{ e.documentUrls.length !== 1 ? 's' : '' }}
+            </button>
+          </div>
+          <div class="inline-comment">
+            <input type="text" [(ngModel)]="cardComments[e.expenseId]"
+              placeholder="Add comment (optional)..." class="field-input comment-input" />
+          </div>
+        </div>
+        <div class="card-footer">
+          <button class="action-btn btn-approve" [disabled]="submittingId === e.expenseId"
+            (click)="decide(e.expenseId, 'approved')">
+            <i class="bi bi-check-circle"></i>Approve → Manager
+          </button>
+          <button class="action-btn btn-reject" [disabled]="submittingId === e.expenseId"
+            (click)="decide(e.expenseId, 'rejected')">
+            <i class="bi bi-x-circle"></i>Reject
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pagination-bar" *ngIf="totalPages() > 1">
+      <button class="pg-btn" (click)="prevPage()" [disabled]="page === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+      <span class="pg-info">Page <strong>{{ page }}</strong> of <strong>{{ totalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredPending.length }} records</span>
+      <button class="pg-btn" (click)="nextPage()" [disabled]="page >= totalPages()">Next <i class="bi bi-chevron-right"></i></button>
+    </div>
+  </ng-container>
+
+  <!-- ── HISTORY TAB ──────────────────────────────────────────────────────── -->
+  <ng-container *ngIf="tab === 'history'">
+
+    <!-- Filters -->
+    <div class="form-card" style="padding:16px 20px;margin-bottom:16px">
+      <div class="admin-filter-row">
+        <div class="filter-group">
+          <label class="field-label">Status</label>
+          <select [(ngModel)]="hFilterStatus" class="field-input filter-select">
+            <option value="">All</option>
+            <option value="Approved">Approved</option>
+            <option value="Rejected">Rejected</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Employee Name</label>
+          <input type="text" [(ngModel)]="hFilterUserName" placeholder="Search by name..." class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Min Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="hFilterMinAmount" placeholder="0" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">Max Amount (&#8377;)</label>
+          <input type="number" [(ngModel)]="hFilterMaxAmount" placeholder="Any" class="field-input filter-select" min="0" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">From Date</label>
+          <input type="date" [(ngModel)]="hFilterDateFrom" class="field-input filter-select" />
+        </div>
+        <div class="filter-group">
+          <label class="field-label">To Date</label>
+          <input type="date" [(ngModel)]="hFilterDateTo" class="field-input filter-select" />
+        </div>
+        <div class="filter-group filter-actions-group">
+          <button class="btn-primary" style="padding:8px 14px;font-size:12px" (click)="applyHistoryFilters()">
+            <i class="bi bi-funnel-fill"></i>Apply
+          </button>
+          <button class="btn-sort" [class.active]="hSortBy==='amount'" (click)="toggleHSort('amount')">
+            <i class="bi bi-currency-rupee"></i>
+            <i class="bi" [ngClass]="hSortBy==='amount' ? (hSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+          </button>
+          <button class="btn-sort" [class.active]="hSortBy==='date'" (click)="toggleHSort('date')">
+            <i class="bi bi-calendar3"></i>
+            <i class="bi" [ngClass]="hSortBy==='date' ? (hSortDir==='asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up'"></i>
+          </button>
+          <button class="btn-ghost" style="padding:8px 14px;font-size:12px" (click)="clearHistoryFilters()">
+            <i class="bi bi-x-circle"></i>Reset
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="filteredHistory.length === 0" class="empty-state">
+      <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+      <h3 class="empty-title">No history yet</h3>
+      <p class="empty-sub">Your approval decisions will appear here.</p>
+    </div>
+
+    <div *ngIf="filteredHistory.length > 0">
+      <div class="cards-grid">
+        <div class="approval-record-card" *ngFor="let a of pagedHistory">
+          <div class="arc-header">
+            <div>
+              <span class="arc-expid"><i class="bi bi-receipt me-1"></i>{{ a.expenseId }}</span>
+              <span class="arc-approver" *ngIf="a.employeeName">
+                <i class="bi bi-person me-1"></i>Employee: {{ a.employeeName }}
+              </span>
+            </div>
+            <span class="status-badge"
+              [ngClass]="{'badge-Approved': a.status === 'Approved', 'badge-Rejected': a.status === 'Rejected'}">
+              {{ a.status }}
+            </span>
+          </div>
+          <div class="arc-body">
+            <div class="arc-meta">
+              <div class="arc-meta-item" *ngIf="a.expenseAmount">
+                <span class="meta-label">Amount</span>
+                <span class="amount-value" style="font-size:16px">{{ a.amountInRupees || ('&#8377;' + a.expenseAmount) }}</span>
+              </div>
+              <div class="arc-meta-item">
+                <span class="meta-label">Stage</span>
+                <span class="level-badge">Team Lead</span>
+              </div>
+              <div class="arc-meta-item">
+                <span class="meta-label">Date</span>
+                <span class="meta-value">{{ a.approvedAt | date:'dd MMM yyyy' }}</span>
+              </div>
+            </div>
+            <div *ngIf="a.comments" class="arc-comments">
+              <i class="bi bi-chat-quote me-1" style="color:var(--text-faint)"></i>{{ a.comments }}
+            </div>
+            <div *ngIf="a.documentUrls?.length" class="docs-row">
+              <button class="btn-view-docs" (click)="openFileModal(a.documentUrls)">
+                <i class="bi bi-paperclip me-1"></i>View {{ a.documentUrls.length }} File{{ a.documentUrls.length !== 1 ? 's' : '' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="pagination-bar" *ngIf="hTotalPages() > 1">
+        <button class="pg-btn" (click)="hPrevPage()" [disabled]="hPage === 1"><i class="bi bi-chevron-left"></i>Prev</button>
+        <span class="pg-info">Page <strong>{{ hPage }}</strong> of <strong>{{ hTotalPages() }}</strong> &nbsp;&middot;&nbsp; {{ filteredHistory.length }} records</span>
+        <button class="pg-btn" (click)="hNextPage()" [disabled]="hPage >= hTotalPages()">Next <i class="bi bi-chevron-right"></i></button>
+      </div>
+    </div>
+  </ng-container>
+
+</div>
+
+<app-file-view-modal [visible]="showFileModal" [urls]="modalFileUrls" (closed)="closeFileModal()"></app-file-view-modal>

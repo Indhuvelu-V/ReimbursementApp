@@ -28,7 +28,7 @@ namespace ReimbursementTrackerApp.Controllers
         // 🔹 Get All Policies (Employee/Admin/Finance)
         // =====================================================
         [HttpGet("getall")]
-        [Authorize(Roles = "Employee,Manager,Finance,Admin")]
+        [Authorize(Roles = "Employee,Manager,Finance,Admin,TeamLead")]
         public async Task<IActionResult> GetAllPolicies()
         {
             _logger.LogInformation("Request received to fetch all policies");
